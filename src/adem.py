@@ -1,4 +1,12 @@
+from __future__ import division
+
+from math import ceil as ceiling
+
+import combinatorics
 from memoized import memoized
+
+def unit():
+    return { () : 1 }
 
 @memoized
 def adem_2(a, b, c=0):
@@ -10,7 +18,7 @@ def adem_2(a, b, c=0):
         return {(a,b): 1}
     result = {}
     for c in range(1 + a//2):
-        if binomial_mod2(b-c-1, a-2*c) == 1:
+        if combinatorics.binomial_mod2(b-c-1, a-2*c) == 1:
             if c == 0:
                 result[(a+b,)] = 1
             else:
@@ -38,7 +46,7 @@ def adem_odd(a, b, c, p):
             return {(0,A,0,B,0): 1}
         result = {}
         for j in range(1 + a//p):
-            coeff = (-1)**(A+j) * binomial_modp((B-j) * (p-1) - 1, A - p*j, p)
+            coeff = (-1)**(A+j) * combinatorics.binomial_modp((B-j) * (p-1) - 1, A - p*j, p)
             if coeff % p != 0:
                 if j == 0:
                     result[(0,A+B,0)] = coeff
@@ -49,14 +57,14 @@ def adem_odd(a, b, c, p):
             return {(0,A,1,B,0): 1}
         result = {}
         for j in range(1 + a//p):
-            coeff = (-1)**(A+j) * binomial_modp((B-j) * (p-1), A - p*j, p)
+            coeff = (-1)**(A+j) * combinatorics.binomial_modp((B-j) * (p-1), A - p*j, p)
             if coeff % p != 0:
                 if j == 0:
                     result[(1,A+B,0)] = coeff
                 else:
                     result[(1,A+B-j,0,j,0)] = coeff
         for j in range(1 + (a-1)//p):
-            coeff = (-1)**(A+j-1) * binomial_modp((B-j) * (p-1) - 1, A - p*j - 1, p)
+            coeff = (-1)**(A+j-1) * combinatorics.binomial_modp((B-j) * (p-1) - 1, A - p*j - 1, p)
             if coeff % p != 0:
                 if j == 0:
                     result[(0,A+B,1)] = coeff
@@ -80,26 +88,6 @@ def adem(a, b, c=0, p=2, generic=None):
 
     a dictionary representing the mod `p` Adem relations
     applied to `P^a P^b` or (if `c` present) to `P^a \beta^b P^c`.
-
-    The mod `p` Adem relations for the mod `p` Steenrod algebra are as
-    follows: if `p=2`, then if `a < 2b`,
-
-    .. MATH::
-
-       \text{Sq}^a \text{Sq}^b = \sum_{j=0}^{a/2} \binom{b-j-1}{a-2j} \text{Sq}^{a+b-j} \text{Sq}^j
-
-    If `p` is odd, then if `a < pb`,
-
-    .. MATH::
-
-       P^a P^b = \sum_{j=0}^{a/p} (-1)^{a+j} \binom{(b-j)(p-1)-1}{a-pj} P^{a+b-j} P^j
-
-    Also for `p` odd, if `a \leq pb`,
-
-    .. MATH::
-
-       P^a \beta P^b = \sum_{j=0}^{a/p} (-1)^{a+j} \binom{(b-j)(p-1)}{a-pj} \beta P^{a+b-j} P^j
-           + \sum_{j=0}^{a/p} (-1)^{a+j-1} \binom{(b-j)(p-1)-1}{a-pj-1} P^{a+b-j} \beta P^j
 
     EXAMPLES:
 
@@ -281,49 +269,67 @@ def make_mono_admissible(mono, p=2, generic=None):
     else:
         return make_mono_admissible_odd(mono, p)
 
+def product_2(m1, m2):
+    return make_mono_admissible_2(m1 + m2)
+
+def product_odd(m1, m2, p):
+    return make_mono_admissible_odd(m1 + m2, p)
+
+def product(m1, m2, p, generic = None):
+    return make_mono_admissible(m1 + m2, p, generic)
+
+
+
+
 @memoized
-def serre_cartan_basis_2(n, bound = 1):
+def basis_2(n, bound = 1):
     # Build basis recursively.  last = last term.
     # last is >= bound, and we will append (last,) to the end of
-    # elements from serre_cartan_basis (n - last, bound=2 * last).
+    # elements from basis (n - last, bound=2 * last).
     # This means that 2 last <= n - last, or 3 last <= n.
     if(n == 0):
         return [[]]
     result = [[n]];
-    for last in range(bound, 1 + n/3):
-        for vec in serre_cartan_basis_2(n - last, 2 * last):
+    for last in range(bound, 1 + n // 3):
+        for vec in basis_2(n - last, 2 * last):
             result.append(vec + [last])
     return result
     
 @memoized
-def serre_cartan_basis_odd(n, p, bound = 1):
+def basis_odd(n, p, bound = 1):
     if(n == 0):
-        return [[]]
-    elif n % (2 * (p-1)) == 0 and n/(2 * (p-1)) >= bound:
-        result = [[0, n // (2 * (p-1)), 0]]
+        return ((),)
+    elif n % (2 * (p-1)) == 0 and n // (2 * (p-1)) >= bound:
+        result = [(0, n // (2 * (p-1)), 0)]
     elif n == 1:
-        result = [[1]]
+        result = [(1,)]
     else:
         result = []
     # 2 cases: append P^{last}, or append P^{last} beta
     # case 1: append P^{last}
-    for last in range(bound, 1 + n/(2*(p - 1))):
+    # We do decimal division and take ceiling so if (2*(p - 1)) divides n evenly, we get one fewer iteration.
+    # Annoying that range cannot take floating endpoints. Note we need __future__ division for this to work.
+    for last in range(bound, int(ceiling(n / (2*(p - 1))))):
         remaining_degree = n - 2*(p-1)*last
-        for vec in serre_cartan_basis(remaining_degree, p, p * last):
-            result.append( vec + [last, 0] )
+        basis = basis_odd(remaining_degree, p, p * last)
+        for vec in basis:
+            result.append(vec + (last, 0))
             
     # case 2: append P^{last} beta
     if(bound == 1):
         bound = 0
-    for last in range(bound + 1, 1 + (n/(2*(p - 1)))):
-        basis = serre_cartan_basis_odd(n - 2 * (p - 1) * last - 1, p, p * last)
+    # Note that in this loop we do integer division so we don't have the 
+    # "it divides evenly" edge case that we had in the other one
+    for last in range(bound + 1, 1 + (n // (2*(p - 1)))):
+        remaining_degree = n - 2 * (p - 1) * last - 1
+        basis = basis_odd(remaining_degree, p, p * last)
         for vec in basis:
             if not vec:
-                vec = [0];
-            result.append(vec + [last, 1]);
-    return result
+                vec = (0,)
+            result.append(vec + (last, 1))
+    return tuple(result)
 
-def serre_cartan_basis(n, p = 2, generic = None):
+def basis(n, p = 2, generic = None):
     """
     Serre-Cartan basis in dimension `n`.
 
@@ -347,6 +353,6 @@ def serre_cartan_basis(n, p = 2, generic = None):
     """
     generic = generic or p != 2;
     if not generic: 
-        return serre_cartan_basis_2(n)
+        return basis_2(n)
     else:
-        return serre_cartan_basis_odd(n, p)
+        return basis_odd(n, p)

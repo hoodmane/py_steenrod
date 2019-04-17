@@ -1,12 +1,48 @@
+from itertools import product
+
 import combinatorics
 from memoized import memoized
 from infinity import Infinity
 
+def unit(p, generic = None):
+    if p > 2 or generic :
+        return { ((),()) : 1 }
+    else:
+        return { () : 1 }
+        
+        
+def ademSq(i):
+    return { (i,) : 1 } 
+    
+def ademP(i):
+    return { ((i,),()) : 1 }
+    
+def Q(i):
+    return { ((),(i,)) : 1 }
+    
+
+def step_milnor_matrix(M, i, j):
+    """
+        This seems to move an i x j block of M back to the first row and column.
+        To be honest, I don't really know what the point is, but the milnor_matrices 
+        function was a little long and this seemed like a decent chunk to extract.
+    """
+    for row in range(1,i):
+        M[row][0] = r[row-1]
+        for col in range(1,cols):
+            M[0][col] += M[row][col]
+            M[row][col] = 0
+    for col in range(1,j):
+        M[0][col] += M[i][col]
+        M[i][col] = 0
+    M[0][j] -= 1
+    M[i][j] += 1 
+
 def milnor_matrices(r, s, p):
     r"""
-        Generator for Milnor matrices. milnor_multiplication_even iterates over this.
+        Generator for Milnor matrices. milnor_product_even iterates over this.
         Uses the same algorithm Monks does in his Maple package to iterate through the possible matrices: see
-        http://mathweb.scranton.edu/monks/software/Steenrod/steen.html.
+        https://monks.scranton.edu/files/software/Steenrod/steen.html
     """
     rows = len(r) + 1;
     cols = len(s) + 1;
@@ -31,23 +67,14 @@ def milnor_matrices(r, s, p):
                 if sum < p_to_the_j or all([M[k][j] == 0 for k in range(i)]):
                     sum += M[i][j] * p_to_the_j
                 else:
-                    for row in range(1,i):
-                        M[row][0] = r[row-1]
-                        for col in range(1,cols):
-                            M[0][col] += M[row][col]
-                            M[row][col] = 0
-                    for col in range(1,j):
-                        M[0][col] += M[i][col]
-                        M[i][col] = 0
-                    M[0][j] -= 1
-                    M[i][j] += 1
-                    M[i][0] = sum - p_to_the_j  
+                    milnor_matrix_next(M, i, j)
+                    M[i][0] = sum - p_to_the_j 
                     found = True
                     yield M
                     break
 
 @memoized
-def milnor_multiplication_even(r, s, p):
+def product_even(r, s, p):
     r"""
         Handles the multiplication in the even subalgebra of the Steenrod algebra P.
         When p = 2, this is isomorphic to the whole Steenrod algebra so this method does everything.
@@ -59,7 +86,7 @@ def milnor_multiplication_even(r, s, p):
     for M in milnor_matrices(r, s, p):
         # check diagonals
         coeff = 1
-        diagonal_sums = [0]*diags
+        diagonal_sums = [0] * diags
         for n in range(1, diags + 1):
             nth_diagonal = [M[i][n-i] for i in range(max(0,n-cols+1), min(1+n,rows))]
             coeff *= combinatorics.multinomial(nth_diagonal, p)
@@ -77,7 +104,7 @@ def milnor_multiplication_even(r, s, p):
     return result
 
 
-def milnor_multiplication_odd_Qpart(m1, f, p):
+def product_full_Qpart(m1, f, p):
     """
         Reduce m1 * f = (Q_e0 Q_e1 ... P(r1, r2, ...)) * (Q_f0 Q_f1 ...) into the form Q's * P's
         Result is represented as dictionary of pairs of tuples.
@@ -114,7 +141,7 @@ def milnor_multiplication_odd_Qpart(m1, f, p):
     return result
 
 @memoized
-def milnor_multiplication_odd(m1,m2,p):
+def product_full(m1,m2,p):
     r"""
     Product of Milnor basis elements defined by m1 and m2 at the odd prime p.
 
@@ -135,15 +162,14 @@ def milnor_multiplication_odd(m1,m2,p):
     $Q_{f_1} Q_{f_2} ... P(s_1, s_2, ...)$.
 
     EXAMPLES::
-
-        sage: from sage.algebras.steenrod.steenrod_algebra_mult import milnor_multiplication_odd
-        sage: sorted(milnor_multiplication_odd(((0,2),(5,)), ((1,),(1,)), 5).items())
+        import milnor
+        sorted(milnor.product_odd(((0,2),(5,)), ((1,),(1,)), 5).items())
         [(((0, 1, 2), (0, 1)), 4), (((0, 1, 2), (6,)), 4)]
-        sage: milnor_multiplication_odd(((0,2,4),()), ((1,3),()), 7)
+        milnor.product_odd(((0,2,4),()), ((1,3),()), 7)
         {((0, 1, 2, 3, 4), ()): 6}
-        sage: milnor_multiplication_odd(((0,2,4),()), ((1,5),()), 7)
+        milnor.product_odd(((0,2,4),()), ((1,5),()), 7)
         {((0, 1, 2, 4, 5), ()): 1}
-        sage: sorted(milnor_multiplication_odd(((),(6,)), ((),(2,)), 3).items())
+        sorted(milnor.product_odd(((),(6,)), ((),(2,)), 3).items())
         [(((), (0, 2)), 1), (((), (4, 1)), 1), (((), (8,)), 1)]    Associativity once failed because of a sign error::
 
         sage: a,b,c = A.Q_exp(0,1), A.P(3), A.Q_exp(1,1)
@@ -151,7 +177,7 @@ def milnor_multiplication_odd(m1,m2,p):
         True
     """
     (f,s) = m2
-    m1_times_f = milnor_multiplication_odd_Qpart(m1, f, p)
+    m1_times_f = product_full_Qpart(m1, f, p)
     # Now for the Milnor matrices.  For each entry '(e,r): coeff' in answer,
     # multiply r with s.  Record coefficient for matrix and multiply by coeff.
     # Store in 'result'.
@@ -162,18 +188,24 @@ def milnor_multiplication_odd(m1,m2,p):
         for (e, r) in m1_times_f:
             coeff = m1_times_f[(e,r)]
             # Milnor multiplication for r and s
-            prod = milnor_multiplication_even(r, s, p)
+            prod = product_even(r, s, p)
             for k in prod:
                 old_coeff = result[(e,k)] if (e, k) in result else 0
                 result[(e,k)] = (old_coeff + coeff*prod[k]) % p
     return result
 
+def product_2(r, s):
+    return product_even(r, s, 2)
 
-def milnor_multiplication(r, s, p):
-    if p == 2: # Should also be not generic...
-        return milnor_multiplication_even(r, s, p)
+product_odd = product_full
+
+def product(r, s, p, generic = None):
+    if generic is None:
+        generic = p != 2
+    if generic: # Should also be not generic...
+        return product_full(r, s, p)
     else:
-        return milnor_multiplication_full(r, s, p)
+        return product_even(r, s, p)
         
         
 class FullProfile:
@@ -217,7 +249,7 @@ class Profile:
             res = p ** res    
         return res        
 
-def milnor_basis_even(n, p, profile):
+def basis_even(n, p, profile):
     if n == 0:
         return [[]]
     result = []
@@ -234,7 +266,7 @@ def milnor_basis_even(n, p, profile):
             result.append(tuple(exponents)) 
     return tuple(result)  
 
-def milnor_basis_odd_Q_part(q_deg, p, profile):
+def basis_odd_Q_part(q_deg, p, profile):
     q_degrees = combinatorics.xi_degrees((q_deg - 1)//(2*(p-1)), p)
     q_degrees = [ 1+2*(p-1)*d for d in q_degrees ]
     q_degrees.append(1);
@@ -254,7 +286,7 @@ def milnor_basis_odd_Q_part(q_deg, p, profile):
             result.append(q_mono)
     return result
 
-def milnor_basis_odd(n, p, profile):
+def basis_odd(n, p, profile):
     if n == 0:
         return (((),()))
     result = []
@@ -269,15 +301,14 @@ def milnor_basis_odd(n, p, profile):
         if q_deg < min_q_deg:
             break;
         
-        P_parts = milnor_basis_even(p_deg, p, profile.getEvenPart())
-        Q_parts = milnor_basis_odd_Q_part(q_deg, p, profile.getOddPart())
-        for p_mono in P_parts:
-            for q_mono in Q_parts:
-                result.append((tuple(q_mono), tuple(p_mono)));
+        P_parts = basis_even(p_deg, p, profile.getEvenPart())
+        Q_parts = basis_odd_Q_part(q_deg, p, profile.getOddPart())
+        for (p_mono, q_mono) in product(P_parts, Q_parts):
+            result.append((tuple(q_mono), tuple(p_mono)));
     return tuple(result);
     
 
-def milnor_basis(n, p=2, **kwds):
+def basis(n, p=2, **kwds):
     r"""
     Milnor basis in dimension `n` with profile function ``profile``.
 
@@ -312,34 +343,34 @@ def milnor_basis(n, p=2, **kwds):
 
     EXAMPLES::
 
-        sage: from sage.algebras.steenrod.steenrod_algebra_bases import milnor_basis
-        sage: milnor_basis(7)
+        sage: import milnor
+        sage: milnor.basis(7)
         ((0, 0, 1), (1, 2), (4, 1), (7,))
-        sage: milnor_basis(7, 2)
+        sage: milnor.basis(7, 2)
         ((0, 0, 1), (1, 2), (4, 1), (7,))
-        sage: milnor_basis(4, 2)
+        sage: milnor.basis(4, 2)
         ((1, 1), (4,))
-        sage: milnor_basis(4, 2, profile=[2,1])
+        sage: milnor.basis(4, 2, profile=[2,1])
         ((1, 1),)
-        sage: milnor_basis(4, 2, profile=(), truncation_type=0)
+        sage: milnor.basis(4, 2, profile=(), truncation_type=0)
         ()
-        sage: milnor_basis(4, 2, profile=(), truncation_type=Infinity)
+        sage: milnor.basis(4, 2, profile=(), truncation_type=Infinity)
         ((1, 1), (4,))
-        sage: milnor_basis(9, 3)
+        sage: milnor.basis(9, 3)
         (((1,), (1,)), ((0,), (2,)))
-        sage: milnor_basis(17, 3)
+        sage: milnor.basis(17, 3)
         (((2,), ()), ((1,), (3,)), ((0,), (0, 1)), ((0,), (4,)))
-        sage: milnor_basis(48, p=5)
+        sage: milnor.basis(48, p=5)
         (((), (0, 1)), ((), (6,)))
-        sage: len(milnor_basis(100,3))
+        sage: len(milnor.basis(100,3))
         13
-        sage: len(milnor_basis(200,7))
+        sage: len(milnor.basis(200,7))
         0
-        sage: len(milnor_basis(240,7))
+        sage: len(milnor.basis(240,7))
         3
-        sage: len(milnor_basis(240,7, profile=((),()), truncation_type=Infinity))
+        sage: len(milnor.basis(240,7, profile=((),()), truncation_type=Infinity))
         3
-        sage: len(milnor_basis(240,7, profile=((),()), truncation_type=0))
+        sage: len(milnor.basis(240,7, profile=((),()), truncation_type=0))
         0
     """
     generic = kwds.get('generic', False if p==2 else True)
@@ -349,10 +380,10 @@ def milnor_basis(n, p=2, **kwds):
 
     if not generic:
         profile = Profile(profile, trunc)
-        return milnor_basis_even(n, 2, profile)
+        return basis_even(n, 2, profile)
     else:  # p odd
         profile = FullProfile(profile and profile[0], profile and profile[1], trunc)
-        return milnor_basis_odd(n, p, profile)
+        return basis_odd(n, p, profile)
         
 
 
