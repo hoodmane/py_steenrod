@@ -1,6 +1,5 @@
 from __future__ import division
-
-from math import ceil as ceiling
+import math
 
 import combinatorics
 from memoized import memoized
@@ -9,7 +8,7 @@ def unit():
     return { () : 1 }
 
 @memoized
-def adem_2(a, b, c=0):
+def adem_2(a, b):
     if b == 0:
         return {(a,): 1}
     elif a == 0:
@@ -17,18 +16,18 @@ def adem_2(a, b, c=0):
     elif a >= 2*b:
         return {(a,b): 1}
     result = {}
-    for c in range(1 + a//2):
-        if combinatorics.binomial_mod2(b-c-1, a-2*c) == 1:
-            if c == 0:
+    for j in range(1 + a//2):
+        if combinatorics.binomial_mod2(b-j-1, a-2*j) == 1:
+            if j == 0:
                 result[(a+b,)] = 1
             else:
-                result[(a+b-c,c)] = 1
+                result[(a+b-j,j)] = 1
     return result
 
 @memoized
 def adem_odd(a, b, c, p):
     if a == 0 and b == 0:
-            return {(c,): 1}
+        return {(c,): 1}
     if c == 0:
         bockstein = 0
         A = a
@@ -41,35 +40,32 @@ def adem_odd(a, b, c, p):
         return {(bockstein, B, 0): 1}
     if B == 0:
         return {(0, A, bockstein): 1}
-    if bockstein == 0:
-        if A >= p*B: # admissible
-            return {(0,A,0,B,0): 1}
+    if A >= p*B and bockstein == 0 : # admissible
+        result = {(0,A,0,B,0): 1}
+    elif A >= p*B + 1 and bockstein != 0: # admissible
+        result = {(0,A,1,B,0): 1}        
+    elif A < p*B and bockstein == 0: # inadmissible 
         result = {}
         for j in range(1 + a//p):
             coeff = (-1)**(A+j) * combinatorics.binomial_modp((B-j) * (p-1) - 1, A - p*j, p)
-            if coeff % p != 0:
-                if j == 0:
-                    result[(0,A+B,0)] = coeff
-                else:
-                    result[(0,A+B-j,0,j,0)] = coeff
-    else:
-        if A >= p*B + 1: # admissible
-            return {(0,A,1,B,0): 1}
+            if coeff % p != 0 and j == 0:
+                result[(0,A+B,0)] = coeff
+            elif coeff % p != 0 and j != 0:
+                result[(0,A+B-j,0,j,0)] = coeff
+    elif A < p*B and bockstein != 0:
         result = {}
         for j in range(1 + a//p):
             coeff = (-1)**(A+j) * combinatorics.binomial_modp((B-j) * (p-1), A - p*j, p)
-            if coeff % p != 0:
-                if j == 0:
-                    result[(1,A+B,0)] = coeff
-                else:
-                    result[(1,A+B-j,0,j,0)] = coeff
+            if coeff % p != 0 and j == 0:
+                result[(1,A+B,0)] = coeff
+            elif coeff % p != 0 and j != 0:
+                result[(1,A+B-j,0,j,0)] = coeff
         for j in range(1 + (a-1)//p):
             coeff = (-1)**(A+j-1) * combinatorics.binomial_modp((B-j) * (p-1) - 1, A - p*j - 1, p)
-            if coeff % p != 0:
-                if j == 0:
-                    result[(0,A+B,1)] = coeff
-                else:
-                    result[(0,A+B-j,1,j,0)] = coeff
+            if coeff % p != 0 and j == 0:
+                result[(0,A+B,1)] = coeff
+            elif coeff % p != 0 and j != 0:
+                result[(0,A+B-j,1,j,0)] = coeff
     return result
 
 
@@ -130,10 +126,10 @@ def adem(a, b, c=0, p=2, generic=None):
     """
     if generic is None:
         generic = False if p==2 else True
-    if not generic:
-        return adem_2(a,b,c)
-    else:
+    if generic:
         return adem_odd(a, b, c, p)
+    else:
+        return adem_2(a,b,c)
 
 @memoized
 def make_mono_admissible_2(mono):
@@ -142,15 +138,11 @@ def make_mono_admissible_2(mono):
     if len(mono) == 2:
         return adem_2(*mono)
     # check to see if admissible:
-    admissible = True
-    for j in range(len(mono)-1):
-        if mono[j] < 2*mono[j+1]:
-            admissible = False
-            break
-    if admissible:
+    nonadmissible_indices = [ j for j in range(len(mono) - 1) if mono[j] < 2*mono[j+1]]
+    if len(nonadmissible_indices) == 0:
         return {mono: 1}
-    # else j is the first index where admissibility fails
     ans = {}
+    j = nonadmissible_indices[0]
     y = adem(mono[j], mono[j+1])
     for x in y:
         new = mono[:j] + x + mono[j+2:]
@@ -158,7 +150,7 @@ def make_mono_admissible_2(mono):
         for m in new:
             if m in ans:
                 ans[m] = ans[m] + y[x] * new[m]
-                if ans[m] % p == 0:
+                if ans[m] % 2 == 0:
                     del ans[m]
             else:
                 ans[m] = y[x] * new[m]
@@ -167,14 +159,10 @@ def make_mono_admissible_2(mono):
 @memoized
 def make_mono_admissible_odd(mono, p):
     # check to see if admissible:
-    admissible = True
-    for j in range(1, len(mono)-2, 2):
-        if mono[j] < mono[j+1] + p*mono[j+2]:
-            admissible = False
-            break
-    if admissible:
+    nonadmissible_indices = [ j for j in range(len(mono) - 1) if mono[j] < mono[j+1] + p * mono[j+2]]
+    if len(nonadmissible_indices) == 0:
         return {mono: 1}
-    # else j is the first index where admissibility fails
+    j = nonadmissible_indices[0]
     ans = {}
     y = adem_odd(*mono[j:j+3], p=p)
     for x in y:
@@ -264,10 +252,10 @@ def make_mono_admissible(mono, p=2, generic=None):
         return {mono: 1}
     if not generic and len(mono) == 2:
         return adem(*mono, p=p, generic=generic)
-    if not generic:
-        return make_mono_admissible_2(mono)
-    else:
+    if generic:
         return make_mono_admissible_odd(mono, p)
+    else:
+        return make_mono_admissible_2(mono)
 
 def product_2(m1, m2):
     return make_mono_admissible_2(m1 + m2)
@@ -287,9 +275,9 @@ def basis_2(n, bound = 1):
     # last is >= bound, and we will append (last,) to the end of
     # elements from basis (n - last, bound=2 * last).
     # This means that 2 last <= n - last, or 3 last <= n.
-    if(n == 0):
+    if n == 0:
         return [[]]
-    result = [[n]];
+    result = [[n]]
     for last in range(bound, 1 + n // 3):
         for vec in basis_2(n - last, 2 * last):
             result.append(vec + [last])
@@ -297,7 +285,7 @@ def basis_2(n, bound = 1):
     
 @memoized
 def basis_odd(n, p, bound = 1):
-    if(n == 0):
+    if n == 0:
         return ((),)
     elif n % (2 * (p-1)) == 0 and n // (2 * (p-1)) >= bound:
         result = [(0, n // (2 * (p-1)), 0)]
@@ -309,10 +297,10 @@ def basis_odd(n, p, bound = 1):
     # case 1: append P^{last}
     # We do decimal division and take ceiling so if (2*(p - 1)) divides n evenly, we get one fewer iteration.
     # Annoying that range cannot take floating endpoints. Note we need __future__ division for this to work.
-    for last in range(bound, int(ceiling(n / (2*(p - 1))))):
+    for last in range(bound, int(math.ceil(n / (2*(p - 1))))):
         remaining_degree = n - 2*(p-1)*last
-        basis = basis_odd(remaining_degree, p, p * last)
-        for vec in basis:
+        basis_in_remaining_degree = basis_odd(remaining_degree, p, p * last)
+        for vec in basis_in_remaining_degree:
             result.append(vec + (last, 0))
             
     # case 2: append P^{last} beta
@@ -322,8 +310,8 @@ def basis_odd(n, p, bound = 1):
     # "it divides evenly" edge case that we had in the other one
     for last in range(bound + 1, 1 + (n // (2*(p - 1)))):
         remaining_degree = n - 2 * (p - 1) * last - 1
-        basis = basis_odd(remaining_degree, p, p * last)
-        for vec in basis:
+        basis_in_remaining_degree = basis_odd(remaining_degree, p, p * last)
+        for vec in basis_in_remaining_degree:
             if not vec:
                 vec = (0,)
             result.append(vec + (last, 1))
@@ -351,8 +339,8 @@ def basis(n, p = 2, generic = None):
         sage: serre_cartan_basis(50,5)
         ((1, 5, 0, 1, 1), (1, 6, 1))
     """
-    generic = generic or p != 2;
-    if not generic: 
-        return basis_2(n)
-    else:
+    generic = generic or p != 2
+    if generic: 
         return basis_odd(n, p)
+    else:
+        return basis_2(n)

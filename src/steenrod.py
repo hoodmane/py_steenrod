@@ -13,9 +13,9 @@ def add_vectors(v1, v2, p):
     for b in v2:
         if b not in result:
             result[b] = 0
-        result[b] += other.dict[b]
+        result[b] += v2.dict[b]
         result[b] = result[b] % p
-    return result
+    return None
     
 def linearly_extend_map(p, f):
     """
@@ -27,27 +27,27 @@ def linearly_extend_map(p, f):
             coeff = 1
             for i in range(len(args)):
                 coeff *= args[i][l[i]]
-            output_vector = f(*args)
+            w = f(*args)
             for b in w:
-                output_vector[b] *= coeff
-            addDicts(result, output_vector, p)
+                w[b] *= coeff
+            add_vectors(result, w, p)
         return result
     return extension
 
 @memoized
-def get_product(type, p, generic = None):
+def get_product(basis, p, generic = None):
     """
         Return the linearly extended product function which takes a pair of 
         vectors in the appropriate basis and returns their product.
         
-        type -- milnor or adem
+        basis -- milnor or adem
     """
     if generic is None:
         generic = p != 2
-    if not generic:
-        return linearly_extend_map(p, lambda m1, m2: type.product_2(m1, m2))
+    if generic:
+        return linearly_extend_map(p, lambda m1, m2: basis.product_odd(m1, m2, p))
     else:
-        return linearly_extend_map(p, lambda m1, m2: type.product_odd(m1, m2, p))
+        return linearly_extend_map(p, lambda m1, m2: type.product_2(m1, m2))
 
 milnor_product_2 = get_product(milnor, 2, False)
 adem_product_2   = get_product(adem  , 2, False)
@@ -67,7 +67,7 @@ def adem_to_milnor_on_basis_odd(b, p):
     unit = milnor.unit(p, True)
     mult = get_product(milnor, p, True)
     sqs = []
-    for idx, j in enumerated(b):
+    for idx, j in enumerate(b):
         if idx % 2 == 1:
             if j != 0:
                 sqs.append(milnor.Q(0))
@@ -78,10 +78,10 @@ def adem_to_milnor_on_basis_odd(b, p):
 def adem_to_milnor_on_basis(b, p, generic = None):
     if generic is None:
         generic = p != 2
-    if not generic:
-        return adem_to_milnor_on_basis_2(b)
-    else:
+    if generic:
         return adem_to_milnor_on_basis_odd(b, p)
+    else:
+        return adem_to_milnor_on_basis_2(b)
 
 @memoized
 def milnor_to_adem_on_basis_2(b):
@@ -89,17 +89,17 @@ def milnor_to_adem_on_basis_2(b):
     t[-1] = b[-1]
     for i in range(len(b) - 2, -1, -1):
         t[i] = b[i] + 2 * t[i + 1]
-    x = adem_to_milnor_on_basis_2(t)
+    x = adem_to_milnor_on_basis_2(tuple(t))
     x.pop(b)
     result = milnor_to_adem_2(x)
-    result.set(t,1);
+    result.set(t,1)
     return result
 
 @memoized
 def milnor_to_adem_on_basis_odd(b, p):
-    e = b[0];
-    s = b[1];
-    pad_length = max(*e);
+    e = b[0]
+    s = b[1]
+    pad_length = max(*e)
     # Important that we are using tuples here so the input object doesn't
     # get changed!
     s += (0,) * (pad_length - len(s)) 
@@ -115,7 +115,7 @@ def milnor_to_adem_on_basis_odd(b, p):
     for b1 in x:
         x[b1] *= -1
     result = milnor_to_adem_odd(x, p)
-    result.set(t,1);
+    result.set(t,1)
     return result
 
 def milnor_to_adem_on_basis(b, p, generic):
@@ -131,10 +131,10 @@ def milnor_to_adem_on_basis(b, p, generic):
         See Monks paper page 8
     """
     generic = p != 2
-    if not generic:
-        milnor_to_adem_on_basis_2(b)
-    else:
+    if generic:
         milnor_to_adem_on_basis_odd(b, p)
+    else:
+        milnor_to_adem_on_basis_2(b)
 
 @memoized
 def get_adem_to_milnor(p, generic = None):
@@ -169,7 +169,7 @@ adem_to_milnor_odd = lambda  v, p: get_adem_to_milnor(p, True)(v)
 #        return self.dict == other.dict
 #    
 #    def __add__(self, other):
-#        return ModuleElement(self.p, addDicts(self.p, self.dict.copy(), other.dict))
+#        return ModuleElement(self.p, add_vectors(self.p, self.dict.copy(), other.dict))
 #            
 #class AdemElement(ModuleElement):
 #    def __init__(self, p, generic, dict):
@@ -182,7 +182,7 @@ adem_to_milnor_odd = lambda  v, p: get_adem_to_milnor(p, True)(v)
 #            coeff = self.dict[k] * other.dict[l]
 #            prod = adem.make_mono_admissible(k + l, p, generic)
 #            prod = { k : v * coeff for k ,v in prod.items()}
-#            addDicts(self.p, result, prod)
+#            add_vectors(self.p, result, prod)
 #    
 #    def toMilnor(self):
 #        pass

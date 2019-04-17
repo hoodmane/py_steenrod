@@ -19,14 +19,14 @@ def brunerFileToJSONFile(input_file, output_file):
 
 def JSONFileToBrunerFile(input_file, output_file):
     json_str = readFile(input_file)
-    module = json.loads(json_str);
+    module = json.loads(json_str)
     bruner_str = moduleToBrunerString(module)
     writeFile(output_file, bruner_str)
 
 def parseBrunerString(module):
-    lines = filter(lambda str : str, module.split("\n"));
+    lines = [s for s in module.split("\n") if s]
     num_gens = int(lines[0])
-    gens =  map(lambda str: int(str), filter(lambda str : str, lines[1].split(" ")))
+    gens =  [int(s) for s in lines[1].split(" ") if s]
     gens_dict = {}
     idx = 0
     for g in gens:
@@ -34,7 +34,7 @@ def parseBrunerString(module):
         idx += 1
     actions = []
     for l in lines[2:]:
-        l = map(int,filter(lambda str : str, l.split(" ")))
+        l = [int(s) for s in l.split(" ") if s]
         act = {"Sq" : l[1], "input" : str(l[0]), "output" : []}
         for e in l[3:]:
             act["output"].append([1, str(e)])
@@ -56,7 +56,7 @@ def moduleToBrunerString(obj):
         action_list = [gen_name_to_idx[act["input"]]]
         action_list += [str(act["Sq"])]
         action_list += [str(len(act["output"]))] 
-        action_list += map(lambda x : str(gen_name_to_idx[x[1]]), act["output"])
+        action_list += [str(gen_name_to_idx[x[1]]) for x in act["output"]]
         output_lines += [ " ".join(action_list) ]
     return "\n".join(output_lines)
     

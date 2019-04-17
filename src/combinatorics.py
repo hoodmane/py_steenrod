@@ -16,29 +16,29 @@ def binomial(n, k):
 
 
 # Mod 2 multinomial coefficient
-def multinomial_mod_2(list):
-    old_sum = list[0]
-    for x in list[1:]:
+def multinomial_mod_2(l):
+    old_sum = l[0]
+    for x in l[1:]:
         j = 1
-        while j <= min(old_sum, list[i]):
-            if ((j & old_sum ) == j) and ((j & list[i]) != 0):
+        while j <= min(old_sum, x):
+            if ((j & old_sum ) == j) and ((j & x) != 0):
                 return 0
             j = j << 1
-        old_sum += list[i]
+        old_sum += x
     return 1
 
 def binomial_mod2(n,k):
     if n < k:
         return 0
     else:
-        return + ( (n-k) & k == 0 )
+        return  +((n-k) & k == 0)
 
 
-def multinomial_odd(list,p):
-    n = sum(list)
+def multinomial_odd(l, p):
+    n = sum(l)
     answer = 1
     n_expansion = base_p_expansion(n, p)
-    list_expansion = map(lambda x: base_p_expansion(x, p, len(n_expansion) ), list)
+    list_expansion = [base_p_expansion(x, p, len(n_expansion) ) for x in l]
     index = 0
     for index in range(len(n_expansion)):
         multi = 1
@@ -58,11 +58,11 @@ def binomial_modp(n, k, p):
     return multinomial_odd([n-k, k], p)
 
 
-def multinomial(list, p = 2):
+def multinomial(l, p = 2):
     if p == 2:
-        return multinomial_mod_2(list)
+        return multinomial_mod_2(l)
     else:
-        return multinomial_odd(list, p)
+        return multinomial_odd(l, p)
 
 
 def binomial_gen(n, k, p = 2):
