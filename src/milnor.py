@@ -3,6 +3,61 @@ import itertools
 import combinatorics
 from memoized import memoized
 from infinity import Infinity
+
+class FullProfile:
+    def __init__(self, even_part = None, odd_part = None, truncation = None):
+        self.even_restricted = not (even_part is None and truncation is None)
+        self.odd_restricted = not (odd_part is None and truncation is None)
+        self.restricted = self.even_restricted or self.odd_restricted
+        self.even_part = even_part or []
+        self.odd_part = odd_part or []
+        self.truncation = truncation
+        if truncation is None and (even_part or odd_part):
+            self.truncation = 0
+        elif truncation is None:
+            self.truncation = Infinity
+    
+    def getEvenPart(self):
+        return Profile(self.even_part, self.truncation)
+    
+    def getOddPart(self):
+        return Profile(self.odd_part, self.truncation)
+
+class Profile:
+    def __init__(self, profile = None, truncation = None):
+        self.even_restricted = not (profile is None and truncation is None)
+        self.restricted = self.even_restricted
+        self.profile = profile or []
+        self.truncation = truncation
+        if truncation is None and profile:
+            self.truncation = 0
+        elif truncation is None:
+            self.truncation = Infinity        
+
+    def __getitem__(self,index):
+        if callable(self.profile):
+            return self.profile(index)
+        if index < len(self.profile):
+            return self.profile[index]
+        else:
+            return self.truncation
+    
+    def exponent(self, i, p):
+        res = self[i]
+        if res < Infinity:
+            res = p ** res    
+        return res    
+
+class MinimalMilnorAlgebra:
+    def __init__(self, p, generic = None, profile = None, truncation_type = None):
+        self.p = p
+        if generic is None:
+            generic = p != 2
+        self.generic = generic
+        if generic:
+            self.profile = FullProfile(profile and profile[0], profile and profile[1], truncation_type)
+        else:  
+            self.profile = Profile(profile, truncation_type)    
     
 def initialize_milnor_matrix(r, s):
     rows = len(r) + 1
@@ -186,53 +241,12 @@ def product_2(r, s):
 
 product_generic = product_full
 
-def product(r, s, *, p, generic = None):
-    if generic is None:
-        generic = p != 2
-    if generic: # Should also be not generic...
-        return product_full(r, s, p = p)
+def product(r, s, *, algebra):
+    if algebra.generic: # Should also be not generic...
+        return product_full(r, s, algebra.p)
     else:
-        return product_even(r, s, p = p)
-        
-        
-class FullProfile:
-    def __init__(self, even_part = None, odd_part = None, truncation = None):
-        self.even_part = even_part or []
-        self.odd_part = odd_part or []
-        self.truncation = truncation
-        if truncation is None and (even_part or odd_part):
-            self.truncation = 0
-        elif truncation is None:
-            self.truncation = Infinity
-    
-    def getEvenPart(self):
-        return Profile(self.even_part, self.truncation)
-    
-    def getOddPart(self):
-        return Profile(self.odd_part, self.truncation)
-
-class Profile:
-    def __init__(self, profile, truncation = None):
-        self.profile = profile or []
-        self.truncation = truncation
-        if truncation is None and profile:
-            self.truncation = 0
-        elif truncation is None:
-            self.truncation = Infinity        
-
-    def __getitem__(self,index):
-        if callable(self.profile):
-            return self.profile(index)
-        if index < len(self.profile):
-            return self.profile[index]
-        else:
-            return self.truncation
-    
-    def exponent(self, i, p):
-        res = self[i]
-        if res < Infinity:
-            res = p ** res    
-        return res        
+        return product_even(r, s, algebra.p)
+            
 
 def basis_even(n, p, profile):
     if n == 0:
@@ -243,10 +257,11 @@ def basis_even(n, p, profile):
         while len(exponents) > 0 and exponents[-1] == 0: 
             exponents.pop()
         okay = True
-        for i in range(len(exponents)):
-            if exponents[i] >= profile.exponent(i, p):
-                okay = False
-                break
+        if profile.even_restricted:
+            for i in range(len(exponents)):
+                if exponents[i] >= profile.exponent(i, p):
+                    okay = False
+                    break
         if okay:
             result.append(tuple(exponents)) 
     return tuple(result)  
@@ -263,10 +278,11 @@ def basis_generic_Q_part(q_deg, p, profile):
         q_mono = [idx for (idx, q_deg) in enumerate(q_degrees) if q_deg in sigma]
         # check profile:
         okay = True
-        for i in q_mono:
-            if profile[i] <= 1:
-                okay = False
-                break
+        if profile.odd_restricted:
+            for i in q_mono:
+                if profile[i] <= 1:
+                    okay = False
+                    break
         if okay:
             result.append(q_mono)
     return result
@@ -293,7 +309,7 @@ def basis_generic(n, p, profile):
     return tuple(result)
     
 
-def basis(n, *, p, generic = None, profile = None, truncation_type = None):
+def basis(n, *, algebra):
     r"""
     Milnor basis in dimension `n` with profile function ``profile``.
 
@@ -358,14 +374,10 @@ def basis(n, *, p, generic = None, profile = None, truncation_type = None):
         sage: len(milnor.basis(240,7, profile=((),()), truncation_type=0))
         0
     """
-    if generic is None:
-        generic = (p != 2)
-    if generic:
-        profile = FullProfile(profile and profile[0], profile and profile[1], truncation_type)
-        return basis_generic(n, p, profile)
-    else:  # p odd
-        profile = Profile(profile, truncation_type)
-        return basis_even(n, 2, profile)
+    if algebra.generic:
+        return basis_generic(n, algebra.p, algebra.profile)
+    else:  
+        return basis_even(n, 2, algebra.profile)
         
 
 

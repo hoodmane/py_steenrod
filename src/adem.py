@@ -3,6 +3,14 @@ import math
 import combinatorics
 from memoized import memoized
 
+class MinimalAdemAlgebra:
+    def __init__(self, p, generic = None):
+        self.p = p
+        if generic is None:
+            generic = p != 2  
+        self.generic = generic
+    
+
 
 ##@memoized
 def adem_2(a, b):
@@ -66,7 +74,7 @@ def adem_generic(a, b, c, *, p):
     return result
 
 
-def adem(a, b, c = None, *, p, generic=None):
+def adem(a, b, c = None, *, algebra):
     r"""
     The mod `p` Adem relations
 
@@ -121,10 +129,8 @@ def adem(a, b, c = None, *, p, generic=None):
         sage: adem(1,1,2, p=5) == {(0, 3, 1): 1, (1, 3, 0): 2}
         True
     """
-    if generic is None:
-        generic = False if p==2 else True
-    if generic:
-        return adem_generic(a, b, c, p = p)
+    if algebra.generic:
+        return adem_generic(a, b, c, p = algebra.p)
     else:
         if c is not None:
             raise ValueError("When p = 2, c should be None")
@@ -183,7 +189,7 @@ def make_mono_admissible_generic(mono, p):
     return ans
 
 
-def make_mono_admissible(mono, *,  p, generic = None):
+def make_mono_admissible(mono, *, algebra):
     r"""
     Given a tuple ``mono``, view it as a product of Steenrod
     operations, and return a dictionary giving data equivalent to
@@ -245,13 +251,11 @@ def make_mono_admissible(mono, *,  p, generic = None):
         sage: SteenrodAlgebra(p=2, basis='adem').Q(2) * (Sq(6) * Sq(2)) # indirect doctest
         Sq^10 Sq^4 Sq^1 + Sq^10 Sq^5 + Sq^12 Sq^3 + Sq^13 Sq^2
     """
-    if generic is None:
-        generic = False if p==2 else True
     if len(mono) == 1:
         return {mono: 1}
     if not generic and len(mono) == 2:
-        return adem(*mono, p=p, generic=generic)
-    if generic:
+        return adem(*mono, algebra = algebra)
+    if algebra.generic:
         return make_mono_admissible_generic(mono, p)
     else:
         return make_mono_admissible_2(mono)
@@ -265,10 +269,8 @@ def product_generic(m1, m2, *, p):
     else:
         return make_mono_admissible_generic(m1[:-1] + ( m1[-1] + m2[0], ) + m2[1:], p)
 
-def product(m1, m2, *, p, generic = None):
-    if generic is None:
-        generic = p != 2
-    if generic:
+def product(m1, m2, *, algebra):
+    if algebra.generic:
         product_generic(m1, m2, p=p)
     else:
         product_2(m1, m2)
@@ -324,7 +326,7 @@ def basis_generic(n, *, p, bound = 1):
             result.append(vec + (last, 1))
     return tuple(result)
 
-def basis(n, *, p, generic = None):
+def basis(n, *, algebra):
     """
     Serre-Cartan basis in dimension `n`.
 
@@ -346,8 +348,7 @@ def basis(n, *, p, generic = None):
         sage: serre_cartan_basis(50,5)
         ((1, 5, 0, 1, 1), (1, 6, 1))
     """
-    generic = generic or p != 2
-    if generic: 
+    if algebra.generic: 
         return basis_generic(n, p)
     else:
         return basis_2(n)

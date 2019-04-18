@@ -47,7 +47,7 @@ class AdemElement(Vector):
        
     def to_milnor(self):
         implementedByAssignmentLaterInThisFile()
-               
+        
     def basis_elt_to_string(self, b):
         if(self.algebra.generic):
             Ps = b[1::2]
@@ -76,6 +76,9 @@ class AdemAlgebra:
         if (p,generic) not in AdemAlgebra.instance_dict:
             AdemAlgebra(self, p, generic)
         return AdemAlgebra.instance_dict[(p,generic)]
+    
+    def basis(self, n):
+        adem.basis(n, algebra = self)
     
     def zero(self):
         return AdemElement(self, {})
@@ -107,13 +110,9 @@ class AdemAlgebra:
 AdemAlgebra.instance_dict = {}
     
     
-class MilnorAlgebra:
-    def __init__(self, p, generic = None, profile = None):
-        if generic is None:
-            generic = p != 2
-        self.p = p
-        self.generic = generic
-        self.profile = profile
+class MilnorAlgebra(milnor.MinimalMilnorAlgebra):
+    def __init__(self, p, generic = None, profile = None, truncation_type = None):
+        super(MilnorAlgebra, self).__init__(p, generic, profile, truncation_type)
         self.unit_monomial = ((),()) if generic else ()
     
     @staticmethod
@@ -122,8 +121,11 @@ class MilnorAlgebra:
             generic = p != 2
         instance_dict = MilnorAlgebra.instance_dict
         if (p,generic, profile) not in instance_dict:
-            instance_dict[(p,generic, profile)] = MilnorAlgebra(p, generic, profile)
+            instance_dict[(p,generic, profile)] = MilnorAlgebra(p, generic, profile, truncation)
         return instance_dict[(p,generic, profile)]
+    
+    def basis(self, n):
+        return [MilnorElement(self, {b:1}) for b in milnor.basis(n, algebra = self)]
     
     def zero(self):
         return MilnorElement(self, {})
@@ -216,8 +218,8 @@ def milnor_to_adem_on_basis_generic(b, *, p):
     result[t] = 1
     return result
 
-def milnor_to_adem_on_basis(b, *, p, generic):
-    if generic:
+def milnor_to_adem_on_basis(b, *, algebra):
+    if algebra.generic:
         return milnor_to_adem_on_basis_generic(b, p)
     else:
         return milnor_to_adem_on_basis_2(b)
@@ -225,3 +227,23 @@ def milnor_to_adem_on_basis(b, *, p, generic):
 AdemElement.to_milnor = Vector.linearly_extend_map(adem_to_milnor_on_basis)
 MilnorElement.to_adem = Vector.linearly_extend_map(milnor_to_adem_on_basis)
 
+
+
+def adem_antipode_on_basis(b, *, algebra):
+    antipode = algebra.unit()
+    milnor_alg = MilnorAlgebra.getAlgebra(algebra.p, algebra.generic)
+    if not algebra.generic:
+        for n in b:
+            antipode = self(sum(milnor_alg.basis(n))) * antipode
+    else:
+        Ps = b[1::2]
+        bs = b[0::2]
+        [-algebra.Q(0) for i in bs if i != 0]
+    
+        B = milnor_alg.basis(n * 2 * (p-1))
+        s = self(0)
+        for b in B:
+            if len(b.leading_support()[0]) == 0:
+                s += self(b)
+        antipode = (-1)**n * s * antipode
+    return antipode
