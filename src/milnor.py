@@ -3,22 +3,6 @@ import itertools
 import combinatorics
 from memoized import memoized
 from infinity import Infinity
-
-def unit(p, generic = None):
-    if p > 2 or generic :
-        return { ((),()) : 1 }
-    else:
-        return { () : 1 }
-        
-        
-def ademSq(i):
-    return { (i,) : 1 } 
-    
-def ademP(i):
-    return { ((i,),()) : 1 }
-    
-def Q(i):
-    return { ((),(i,)) : 1 }
     
 def initialize_milnor_matrix(r, s):
     rows = len(r) + 1
@@ -80,9 +64,9 @@ def milnor_matrices(r, s, p):
 def remove_trailing_zeroes(l):
     for i in range(len(l) - 1 , -1, -1):
         if l[i] != 0:
-            return l[:i] 
+            return l[ : i+1] 
 
-@memoized
+#@memoized
 def product_even(r, s, p):
     r"""
         Handles the multiplication in the even subalgebra of the Steenrod algebra P.
@@ -143,8 +127,8 @@ def product_full_Qpart(m1, f, p):
                     result[(q_mono, tuple(p_mono))] = coeff % p
     return result
 
-@memoized
-def product_full(m1,m2,p):
+#@memoized
+def product_full(m1, m2, *, p):
     r"""
     Product of Milnor basis elements defined by m1 and m2 at the prime p.
 
@@ -166,13 +150,13 @@ def product_full(m1,m2,p):
 
     EXAMPLES::
         import milnor
-        sorted(milnor.product_odd(((0,2),(5,)), ((1,),(1,)), 5).items())
+        sorted(milnor.product_generic(((0,2),(5,)), ((1,),(1,)), 5).items())
         [(((0, 1, 2), (0, 1)), 4), (((0, 1, 2), (6,)), 4)]
-        milnor.product_odd(((0,2,4),()), ((1,3),()), 7)
+        milnor.product_generic(((0,2,4),()), ((1,3),()), 7)
         {((0, 1, 2, 3, 4), ()): 6}
-        milnor.product_odd(((0,2,4),()), ((1,5),()), 7)
+        milnor.product_generic(((0,2,4),()), ((1,5),()), 7)
         {((0, 1, 2, 4, 5), ()): 1}
-        sorted(milnor.product_odd(((),(6,)), ((),(2,)), 3).items())
+        sorted(milnor.product_generic(((),(6,)), ((),(2,)), 3).items())
         [(((), (0, 2)), 1), (((), (4, 1)), 1), (((), (8,)), 1)]    Associativity once failed because of a sign error::
 
         sage: a,b,c = A.Q_exp(0,1), A.P(3), A.Q_exp(1,1)
@@ -200,15 +184,15 @@ def product_full(m1,m2,p):
 def product_2(r, s):
     return product_even(r, s, 2)
 
-product_odd = product_full
+product_generic = product_full
 
-def product(r, s, p, generic = None):
+def product(r, s, *, p, generic = None):
     if generic is None:
         generic = p != 2
     if generic: # Should also be not generic...
-        return product_full(r, s, p)
+        return product_full(r, s, p = p)
     else:
-        return product_even(r, s, p)
+        return product_even(r, s, p = p)
         
         
 class FullProfile:
@@ -267,7 +251,7 @@ def basis_even(n, p, profile):
             result.append(tuple(exponents)) 
     return tuple(result)  
 
-def basis_odd_Q_part(q_deg, p, profile):
+def basis_generic_Q_part(q_deg, p, profile):
     q_degrees = combinatorics.xi_degrees((q_deg - 1)//(2*(p-1)), p)
     q_degrees = [ 1+2*(p-1)*d for d in q_degrees ]
     q_degrees.append(1)
@@ -287,7 +271,7 @@ def basis_odd_Q_part(q_deg, p, profile):
             result.append(q_mono)
     return result
 
-def basis_odd(n, p, profile):
+def basis_generic(n, p, profile):
     if n == 0:
         return (((),()))
     result = []
@@ -303,13 +287,13 @@ def basis_odd(n, p, profile):
             break
         
         P_parts = basis_even(p_deg, p, profile.getEvenPart())
-        Q_parts = basis_odd_Q_part(q_deg, p, profile.getOddPart())
+        Q_parts = basis_generic_Q_part(q_deg, p, profile.getOddPart())
         for (p_mono, q_mono) in itertools.product(P_parts, Q_parts):
             result.append((tuple(q_mono), tuple(p_mono)))
     return tuple(result)
     
 
-def basis(n, p=2, **kwds):
+def basis(n, *, p, generic = None, profile = None, truncation_type = None):
     r"""
     Milnor basis in dimension `n` with profile function ``profile``.
 
@@ -317,7 +301,7 @@ def basis(n, p=2, **kwds):
 
     - ``n`` - non-negative integer
 
-    - ``p`` - positive prime number (optional, default 2)
+    - ``p`` - positive prime number
 
     - ``profile`` - profile function (optional, default None).
       Together with ``truncation_type``, specify the profile function
@@ -374,15 +358,13 @@ def basis(n, p=2, **kwds):
         sage: len(milnor.basis(240,7, profile=((),()), truncation_type=0))
         0
     """
-    generic = kwds.get('generic', False if p==2 else True)
-    profile = kwds.get("profile", None)
-    trunc = kwds.get("truncation_type", None)
-
+    if generic is None:
+        generic = (p != 2)
     if generic:
-        profile = FullProfile(profile and profile[0], profile and profile[1], trunc)
-        return basis_odd(n, p, profile)
+        profile = FullProfile(profile and profile[0], profile and profile[1], truncation_type)
+        return basis_generic(n, p, profile)
     else:  # p odd
-        profile = Profile(profile, trunc)
+        profile = Profile(profile, truncation_type)
         return basis_even(n, 2, profile)
         
 

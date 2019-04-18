@@ -1,13 +1,10 @@
-from __future__ import division
 import math
 
 import combinatorics
 from memoized import memoized
 
-def unit():
-    return { () : 1 }
 
-@memoized
+##@memoized
 def adem_2(a, b):
     if b == 0:
         return {(a,): 1}
@@ -24,8 +21,8 @@ def adem_2(a, b):
                 result[(a+b-j,j)] = 1
     return result
 
-@memoized
-def adem_odd(a, b, c, p):
+#@memoized
+def adem_generic(a, b, c, *, p):
     if a == 0 and b == 0:
         return {(c,): 1}
     if c == 0:
@@ -69,7 +66,7 @@ def adem_odd(a, b, c, p):
     return result
 
 
-def adem(a, b, c=0, p=2, generic=None):
+def adem(a, b, c = None, *, p, generic=None):
     r"""
     The mod `p` Adem relations
 
@@ -77,7 +74,7 @@ def adem(a, b, c=0, p=2, generic=None):
 
     - `a`, `b`, `c` (optional) - nonnegative integers, corresponding
       to either `P^a P^b` or (if `c` present) to `P^a \beta^b P^c`
-    - `p` - positive prime number (optional, default 2)
+    - `p` - positive prime number
     - `generic` - whether to use the generic Steenrod algebra, (default: depends on prime)
 
     OUTPUT:
@@ -127,11 +124,13 @@ def adem(a, b, c=0, p=2, generic=None):
     if generic is None:
         generic = False if p==2 else True
     if generic:
-        return adem_odd(a, b, c, p)
+        return adem_generic(a, b, c, p = p)
     else:
-        return adem_2(a,b,c)
+        if c is not None:
+            raise ValueError("When p = 2, c should be None")
+        return adem_2(a, b)
 
-@memoized
+#@memoized
 def make_mono_admissible_2(mono):
     if len(mono) == 1:
         return {mono: 1}
@@ -143,7 +142,7 @@ def make_mono_admissible_2(mono):
         return {mono: 1}
     ans = {}
     j = nonadmissible_indices[0]
-    y = adem(mono[j], mono[j+1])
+    y = adem_2(mono[j], mono[j+1])
     for x in y:
         new = mono[:j] + x + mono[j+2:]
         new = make_mono_admissible_2(new)
@@ -156,15 +155,15 @@ def make_mono_admissible_2(mono):
                 ans[m] = y[x] * new[m]
     return ans
 
-@memoized
-def make_mono_admissible_odd(mono, p):
+#@memoized
+def make_mono_admissible_generic(mono, p):
     # check to see if admissible:
-    nonadmissible_indices = [ j for j in range(len(mono) - 1) if mono[j] < mono[j+1] + p * mono[j+2]]
+    nonadmissible_indices = [ j for j in range(1, len(mono) - 2, 2) if mono[j] < mono[j+1] + p * mono[j+2]]
     if len(nonadmissible_indices) == 0:
         return {mono: 1}
     j = nonadmissible_indices[0]
     ans = {}
-    y = adem_odd(*mono[j:j+3], p=p)
+    y = adem_generic(*mono[j:j+3], p=p)
     for x in y:
         new_x = list(x)
         new_x[0] = mono[j-1] + x[0]
@@ -172,7 +171,7 @@ def make_mono_admissible_odd(mono, p):
             new_x[-1] = mono[j+3] + x[-1]
         if new_x[0] <= 1 and new_x[-1] <= 1:
             new = mono[:j-1] + tuple(new_x) + mono[j+4:]
-            new = make_mono_admissible_odd(new, p)
+            new = make_mono_admissible_generic(new, p)
             for m in new:
                 if m in ans:
                     ans[m] += y[x] * new[m]
@@ -184,7 +183,7 @@ def make_mono_admissible_odd(mono, p):
     return ans
 
 
-def make_mono_admissible(mono, p=2, generic=None):
+def make_mono_admissible(mono, *,  p, generic = None):
     r"""
     Given a tuple ``mono``, view it as a product of Steenrod
     operations, and return a dictionary giving data equivalent to
@@ -201,7 +200,7 @@ def make_mono_admissible(mono, p=2, generic=None):
     INPUT:
 
     - ``mono`` - a tuple of non-negative integers
-    - `p` - prime number, optional (default 2)
+    - `p` - prime number
     - `generic` - whether to use the generic Steenrod algebra, (default: depends on prime)
 
     OUTPUT:
@@ -253,24 +252,32 @@ def make_mono_admissible(mono, p=2, generic=None):
     if not generic and len(mono) == 2:
         return adem(*mono, p=p, generic=generic)
     if generic:
-        return make_mono_admissible_odd(mono, p)
+        return make_mono_admissible_generic(mono, p)
     else:
         return make_mono_admissible_2(mono)
 
 def product_2(m1, m2):
     return make_mono_admissible_2(m1 + m2)
 
-def product_odd(m1, m2, p):
-    return make_mono_admissible_odd(m1 + m2, p)
+def product_generic(m1, m2, *, p):
+    if m1[-1] == m2[0] == 1:
+        return {}
+    else:
+        return make_mono_admissible_generic(m1[:-1] + ( m1[-1] + m2[0], ) + m2[1:], p)
 
-def product(m1, m2, p, generic = None):
-    return make_mono_admissible(m1 + m2, p, generic)
+def product(m1, m2, *, p, generic = None):
+    if generic is None:
+        generic = p != 2
+    if generic:
+        product_generic(m1, m2, p=p)
+    else:
+        product_2(m1, m2)
 
 
 
 
-@memoized
-def basis_2(n, bound = 1):
+#@memoized
+def basis_2(n, * , bound = 1):
     # Build basis recursively.  last = last term.
     # last is >= bound, and we will append (last,) to the end of
     # elements from basis (n - last, bound=2 * last).
@@ -279,12 +286,12 @@ def basis_2(n, bound = 1):
         return [[]]
     result = [[n]]
     for last in range(bound, 1 + n // 3):
-        for vec in basis_2(n - last, 2 * last):
+        for vec in basis_2(n - last, bound = 2 * last):
             result.append(vec + [last])
     return result
     
-@memoized
-def basis_odd(n, p, bound = 1):
+#@memoized
+def basis_generic(n, *, p, bound = 1):
     if n == 0:
         return ((),)
     elif n % (2 * (p-1)) == 0 and n // (2 * (p-1)) >= bound:
@@ -299,7 +306,7 @@ def basis_odd(n, p, bound = 1):
     # Annoying that range cannot take floating endpoints. Note we need __future__ division for this to work.
     for last in range(bound, int(math.ceil(n / (2*(p - 1))))):
         remaining_degree = n - 2*(p-1)*last
-        basis_in_remaining_degree = basis_odd(remaining_degree, p, p * last)
+        basis_in_remaining_degree = basis_generic(remaining_degree, p = p, bound = p * last)
         for vec in basis_in_remaining_degree:
             result.append(vec + (last, 0))
             
@@ -310,14 +317,14 @@ def basis_odd(n, p, bound = 1):
     # "it divides evenly" edge case that we had in the other one
     for last in range(bound + 1, 1 + (n // (2*(p - 1)))):
         remaining_degree = n - 2 * (p - 1) * last - 1
-        basis_in_remaining_degree = basis_odd(remaining_degree, p, p * last)
+        basis_in_remaining_degree = basis_generic(remaining_degree, p = p, bound = p * last)
         for vec in basis_in_remaining_degree:
             if not vec:
                 vec = (0,)
             result.append(vec + (last, 1))
     return tuple(result)
 
-def basis(n, p = 2, generic = None):
+def basis(n, *, p, generic = None):
     """
     Serre-Cartan basis in dimension `n`.
 
@@ -325,7 +332,7 @@ def basis(n, p = 2, generic = None):
 
     - ``n`` - non-negative integer
     - ``bound`` - positive integer (optional)
-    - ``prime`` - positive prime number (optional, default 2)
+    - ``prime`` - positive prime number
 
     OUTPUT: tuple of mod p Serre-Cartan basis elements in dimension n
 
@@ -341,6 +348,6 @@ def basis(n, p = 2, generic = None):
     """
     generic = generic or p != 2
     if generic: 
-        return basis_odd(n, p)
+        return basis_generic(n, p)
     else:
         return basis_2(n)

@@ -13,7 +13,7 @@ class memoized(object):
       try:
          args in self.cache
       except TypeError:
-         print args
+         print(args)
          return self.func(*args)
       if args in self.cache:
          return self.cache[args]

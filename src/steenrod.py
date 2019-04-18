@@ -1,254 +1,227 @@
-from itertools import product, izip
+import itertools
+from functools import reduce
 
 from memoized import memoized
 import adem
 import milnor
+from FpVectorSpace import Vector
 
-def add_vectors(v1, v2, p):
-    """
-        Addition in Fp vector space.
-        Add v2 to v1 in place, and reduce resulting keys mod p.
-    """
-    result = v1 # Don't copy()
-    for b in v2:
-        if b not in result:
-            result[b] = 0
-        result[b] += v2.dict[b]
-        result[b] = result[b] % p
-    return None
-    
-def linearly_extend_map(p, f):
-    """
-        V is an Fp vector space with basis B, extend a map f: B1 x ... x Bn -> W to a multilinear map V1 x ... x Vn  -> W.
-    """    
-    def extension(*args):
-        result = {}
-        for l in product(*args):
-            coeff = 1
-            for i in range(len(args)):
-                coeff *= args[i][l[i]]
-            w = f(*args)
-            for b in w:
-                w[b] *= coeff
-            add_vectors(result, w, p)
-        return result
-    return extension
+def implementedByAssignmentLaterInThisFile():
+    assert False, "We implement this by assignment from Vector.linearly_extend_map later in this file Steenrod.py"
 
-@memoized
-def get_product(basis, p, generic = None):
-    """
-        Return the linearly extended product function which takes a pair of 
-        vectors in the appropriate basis and returns their product.
+
+class MilnorElement(Vector):
+    def __init__(self, algebra, dictionary):
+        self.algebra = algebra
+        super(MilnorElement, self).__init__(algebra.p, dictionary)
         
-        basis -- milnor or adem
-    """
-    if generic is None:
-        generic = p != 2
-    if generic:
-        return linearly_extend_map(p, lambda m1, m2: basis.product_odd(m1, m2, p))
-    else:
-        return linearly_extend_map(p, lambda m1, m2: type.product_2(m1, m2))
-
-milnor_product_2 = get_product(milnor, 2, False)
-adem_product_2   = get_product(adem  , 2, False)
-
-milnor_product_odd = lambda  v, w, p: get_product(milnor, p, True)(v, w)
-adem_product_odd   = lambda  v, w, p: get_product(adem,   p, True)(v, w)
-
-@memoized
-def adem_to_milnor_on_basis_2(b):
-    unit = milnor.unit(2, False)
-    mult = get_product(milnor, 2, False)
-    sqs = map(milnor.ademSq, b)
-    return reduce(mult, sqs, unit)
-
-@memoized
-def adem_to_milnor_on_basis_odd(b, p):
-    unit = milnor.unit(p, True)
-    mult = get_product(milnor, p, True)
-    sqs = []
-    for idx, j in enumerate(b):
-        if idx % 2 == 1:
-            if j != 0:
-                sqs.append(milnor.Q(0))
+    def __mul__(self, v):
+        implementedByAssignmentLaterInThisFile()
+            
+    def to_adem(self):
+        implementedByAssignmentLaterInThisFile()
+            
+    def basis_elt_to_string(self, b):
+        if(self.algebra.generic):
+            Qs = ["Q(%s)" % s for s in b[0]]
+            Ps = ""
+            if len(b[1]) > 0:
+                Ps = "P(%s)" % ", ".join([str(s) for s in b[1]])
+            return " ".join(Qs + [Ps]) or '1'
         else:
-            sqs.append(milnor.ademP(j))
-    return reduce(mult, sqs, unit)
+            Sqs = ""
+            if len(b) > 0:
+                Sqs = "Sq(%s)" % ", ".join([str(s) for s in b])
+            return Sqs or '1'
+            
+MilnorElement.__mul__ = Vector.linearly_extend_map(milnor.product)
+       
+       
+class AdemElement(Vector):
+    def __init__(self, dictionary, *,  algebra):
+        self.algebra = algebra
+        super(AdemElement, self).__init__(algebra.p, dictionary)
+    
+    def __mul__(self, v):
+        implementedByAssignmentLaterInThisFile()
+       
+    def to_milnor(self):
+        implementedByAssignmentLaterInThisFile()
+               
+    def basis_elt_to_string(self, b):
+        if(self.algebra.generic):
+            Ps = b[1::2]
+            bs = b[0::2]
+            Ps = [ " P%s" % s for s in Ps]
+            bs = [ " b" if s else "" for s in b[0::2]]
+            result = [None]*len(b)
+            result[1::2] = Ps
+            result[0::2] = bs
+            return "".join(result)[1:]
+        else:
+            return " ".join(["Sq%s" % s for s in b])
 
-def adem_to_milnor_on_basis(b, p, generic = None):
-    if generic is None:
-        generic = p != 2
+AdemElement.__mul__ = Vector.linearly_extend_map(adem.product)
+
+
+class AdemAlgebra:
+    def __init__(self, p, generic = None):
+        self.p = p
+        self.generic = generic
+    
+    @staticmethod
+    def getAlgebra(p, generic = None):
+        if generic is None:
+            generic = p != 2
+        if (p,generic) not in AdemAlgebra.instance_dict:
+            AdemAlgebra(self, p, generic)
+        return AdemAlgebra.instance_dict[(p,generic)]
+    
+    def zero(self):
+        return AdemElement(self, {})
+
+    def unit():
+        return AdemElement(self, {() : 1})    
+    
+    def b():
+        return AdemElement(self, {(1,) : 1})
+    
+    def Sq(n):
+        if self.generic:
+            return AdemElement(self, {(n % 2, n//2, 0) : 1})
+        else:
+            return AdemElement(self, {(n,) : 1})
+    
+    def P(n):
+        if self.generic:
+            return AdemElement(self, {(0, n, 0) : 1})
+        else:
+            return AdemElement(self, {(2*n,) : 1})
+    
+    def bP(n):
+        if self.generic:
+            return AdemElement(self, {(1, n, 0) : 1})
+        else:
+            return AdemElement(self, {(2*n + 1,) : 1})
+        
+AdemAlgebra.instance_dict = {}
+    
+    
+class MilnorAlgebra:
+    def __init__(self, p, generic = None, profile = None):
+        if generic is None:
+            generic = p != 2
+        self.p = p
+        self.generic = generic
+        self.profile = profile
+        self.unit_monomial = ((),()) if generic else ()
+    
+    @staticmethod
+    def getAlgebra(p, generic = None, profile = None, truncation = None):
+        if generic is None:
+            generic = p != 2
+        instance_dict = MilnorAlgebra.instance_dict
+        if (p,generic, profile) not in instance_dict:
+            instance_dict[(p,generic, profile)] = MilnorAlgebra(p, generic, profile)
+        return instance_dict[(p,generic, profile)]
+    
+    def zero(self):
+        return MilnorElement(self, {})
+    
+    def unit(self):
+        return MilnorElement(self, { self.unit_monomial : 1 })
+    
+    def Sq(self, *l):
+        if self.generic:
+            raise NotImplementedError()
+        else:
+            return MilnorElement(self, { l : 1 })
+    
+    def Q(self, *l):
+        if self.generic:
+            return MilnorElement(self, { (l,()) : 1 })
+        else:
+            return reduce(AdemElement.__mul__, [MilnorElement(self, { ((0,)* (i) + (1,)) : 1 }) for i in l])
+    
+    def P(self, *l):
+        if self.generic:
+            return MilnorElement(self, {((), l) : 1})
+        else:
+            return MilnorElement(self, {tuple(2 * i for i in l) : 1})
+
+MilnorAlgebra.instance_dict = {}
+
+
+
+#@memoized
+def adem_to_milnor_on_basis_2(b):
+    A = MilnorAlgebra.getAlgebra(2)
+    unit = A.unit()
+    sqs = [A.Sq(i) for i in b]
+    return reduce(lambda a,b : a*b, sqs, unit)
+
+#@memoized
+def adem_to_milnor_on_basis_generic(b, p):
+    A = MilnorAlgebra.getAlgebra(p)
+    unit = A.unit()
+    Ps = b[1::2]
+    bs = b[0::2]
+    Q0 = A.Q(0)
+    Ps = [A.P(j) for j in Ps]
+    bs = [Q0 if j else None for j in bs]
+    sqs = [None]*len(b)
+    sqs[1::2] = Ps
+    sqs[0::2] = bs
+    sqs = [j for j in result if j is not None]
+    return reduce(lambda a,b : a*b, sqs, unit)
+    
+def adem_to_milnor_on_basis(b, *, p, generic):
     if generic:
-        return adem_to_milnor_on_basis_odd(b, p)
+        return adem_to_milnor_on_basis_generic(b, p)
     else:
         return adem_to_milnor_on_basis_2(b)
 
-@memoized
+#@memoized
 def milnor_to_adem_on_basis_2(b):
     t = [0] * len(b)
     t[-1] = b[-1]
     for i in range(len(b) - 2, -1, -1):
         t[i] = b[i] + 2 * t[i + 1]
-    x = adem_to_milnor_on_basis_2(tuple(t))
+    t = tuple(t)
+    x = adem_to_milnor_on_basis_2(t)
     x.pop(b)
-    result = milnor_to_adem_2(x)
-    result.set(t,1)
+    result = x.to_adem()
+    result[t] = 1
     return result
 
-@memoized
-def milnor_to_adem_on_basis_odd(b, p):
+#@memoized
+def milnor_to_adem_on_basis_generic(b, *, p):
     e = b[0]
     s = b[1]
     pad_length = max(*e)
-    # Important that we are using tuples here so the input object doesn't
-    # get changed!
     s += (0,) * (pad_length - len(s)) 
-    t = (0,) * (2*len + 1)
+    t = [0,] * (2*len + 1)
+    
     for i in e:
         t[2*i] = 1
+            
     t[-2] = s[-1] + t[-1]
-    for i, idx in izip(range(len(s) - 2, -1, -1), range(len(t) - 2, -1, -2)):
-        idx -= 2
-        t[idx] = t[idx + 1] + s[i] + p * t[idx + 2]
-    x = adem_to_milnor_on_basis_odd(t, p)
+    for i in range(2, s.length + 1):
+        t[-2*i] = t[-2*i + 1] + s[-i] + p * t[-2*i + 2]
+    t = tuple(t)
+    x = adem_to_milnor_on_basis_generic(t, p)
     x.pop(b)
-    for b1 in x:
-        x[b1] *= -1
-    result = milnor_to_adem_odd(x, p)
-    result.set(t,1)
+    x.scale_in_place(-1)
+    result = x.to_adem()
+    result[t] = 1
     return result
 
-def milnor_to_adem_on_basis(b, p, generic):
-    """
-        Use the upper triangularity of the change of basis matrix from milnor to adem.
-        Monks gives us the ordering with respect to which the change of basis is 
-        upper triangular and tells us the leading term corresponding to each 
-        milnor basis element. 
-        
-        I guess we wouldn't need to do this if we actually had Fp linear algebra,
-        but it's a nice approach.
-        
-        See Monks paper page 8
-    """
-    generic = p != 2
+def milnor_to_adem_on_basis(b, *, p, generic):
     if generic:
-        milnor_to_adem_on_basis_odd(b, p)
+        return milnor_to_adem_on_basis_generic(b, p)
     else:
-        milnor_to_adem_on_basis_2(b)
+        return milnor_to_adem_on_basis_2(b)
 
-@memoized
-def get_adem_to_milnor(p, generic = None):
-    if generic is None:
-        generic = p != 2
-    if generic:
-        return linearly_extend_map(p, lambda b: adem_to_milnor_on_basis_odd(b, p))
-    else:
-        return linearly_extend_map(p, lambda b: adem_to_milnor_on_basis_2(b))
+AdemElement.to_milnor = Vector.linearly_extend_map(adem_to_milnor_on_basis)
+MilnorElement.to_adem = Vector.linearly_extend_map(milnor_to_adem_on_basis)
 
-@memoized
-def get_milnor_to_adem(p, generic = None):
-    if generic is None:
-        generic = p != 2
-    if generic:
-        return linearly_extend_map(p, lambda b: milnor_to_adem_on_basis_odd(b, p))
-    else:
-        return linearly_extend_map(p, lambda b: milnor_to_adem_on_basis_2(b))
-        
-adem_to_milnor_2 = get_adem_to_milnor(2, False)
-adem_to_milnor_odd = lambda  v, p: get_adem_to_milnor(p, True)(v)
-
-
-    
-#
-#class ModuleElement:
-#    __init__(self, p, dict):
-#        self.dict = dict
-#        self.p = p
-#    
-#    def __eq__(self, other):
-#        return self.dict == other.dict
-#    
-#    def __add__(self, other):
-#        return ModuleElement(self.p, add_vectors(self.p, self.dict.copy(), other.dict))
-#            
-#class AdemElement(ModuleElement):
-#    def __init__(self, p, generic, dict):
-#        ModuleElement.__init__(self, p, dict)
-#        self.generic = generic
-#        
-#    def __mult__(self, other):
-#        result = {}
-#        for (k, l) in product(self.dict, other.dict):
-#            coeff = self.dict[k] * other.dict[l]
-#            prod = adem.make_mono_admissible(k + l, p, generic)
-#            prod = { k : v * coeff for k ,v in prod.items()}
-#            add_vectors(self.p, result, prod)
-#    
-#    def toMilnor(self):
-#        pass
-#    
-#    
-#class AdemAlgebra:
-#    def __init__(self, p, generic):
-#        self.p = p
-#        self.generic = generic
-#    
-#    @staticmethod
-#    def getAlgebra(p, generic = None):
-#        if generic is None:
-#            generic = p != 2
-#        if (p,generic) not in instance_dict:
-#            AdemAlgebra(self, p, generic)
-#        return AdemAlgebra.instance_dict[(p,generic)]
-#        
-#    def Sq(n):
-#    
-#    def P(n):
-#    
-#    def bP(n):
-#    
-#AdemAlgebra.instance_dict = {}
-#        
-#
-#class MilnorElement(ModuleElement):
-#    def __init__(self, p, generic, profile, dict):
-#        ModuleElement.__init__(self, p, dict)
-#        self.generic = generic
-#        self.profile = profile
-#    
-#    def __mult__(self, other):
-#    
-#    def __eq__(self, other):
-#    
-#    def toAdem(self):
-#    
-#    
-#class MilnorAlgebra:
-#    def __init__(self, p, generic, profile):
-#        if generic is None:
-#            generic = p != 2
-#        self.p = p
-#        self.generic = generic
-#        self.profile = profile
-#        unit_monomial = ((),()) if generic else ()
-#        self.unit = MilnorElement(p, generic, profile, { unit_monomial : 1 })
-#    
-#    @staticmethod
-#    def getAlgebra(p, generic = None, profile = None, truncation = None):
-#        if generic is None:
-#            generic = p != 2
-#        if (p,generic) not in instance_dict:
-#            MilnorAlgebra(self, p, generic, profile)
-#        return MilnorAlgebra.instance_dict[(p,generic, profile)]
-#    
-#    def unit():
-#        return self.unit
-#    
-#    def Sq(l):
-#    
-#    def Q(l):
-#    
-#    def P(l):
-#    
-#    
-#MilnorAlgebra.instance_dict = {}

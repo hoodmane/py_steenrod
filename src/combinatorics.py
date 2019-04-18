@@ -2,16 +2,18 @@ def base_p_expansion(n, p, padlength = 0):
     result = []
     while n != 0:
         result.append(n % p)
-        n /= p
+        n //= p
     while len(result) < padlength:
         result.append(0)
     return result
 
 # Integral binomial coefficient.
 def binomial(n, k):
-    coeff = reduce( lambda x, y: x*y, range(n-k+1, n+1), 1 )
+    coeff = 1
+    for i in range(n-k+1, n+1):
+        coeff *= i
     for x in range(1,k+1):
-        coeff /= x
+        coeff //= x
     return coeff
 
 
@@ -116,11 +118,11 @@ def xi_degrees(n, p=2, reverse = True):
     N = n*(p-1) + 1
     xi_max = 1
     while N > 0:
-        N = N/p
+        N = N//p
         xi_max += 1
     l = []
     for d in range(1, xi_max):
-        l.append(((p**d-1)/(p-1)))
+        l.append(((p**d-1)//(p-1)))
     if(reverse):
         l.reverse()
     return l
@@ -158,11 +160,11 @@ def WeightedIntegerVectors(n, l):
         
     if len(l) == 1:
         if n % l[0] == 0:
-            yield [n / l[0]]
+            yield [n // l[0]]
         return
 
     k = 0
-    cur = [ n / l[k]  + 1 ]
+    cur = [ n // l[k]  + 1 ]
     rem = n - cur[ -1 ] * l[k] # Amount remaining
     while len(cur) > 0:
         cur[-1] -= 1
@@ -174,10 +176,10 @@ def WeightedIntegerVectors(n, l):
             k -= 1
         elif len(l) == len(cur) + 1:
             if rem % l[-1] == 0:
-                yield cur + [rem / l[- 1]]
+                yield cur + [rem // l[- 1]]
         else:
             k += 1
-            cur.append(rem / l[k] + 1)
+            cur.append(rem // l[k] + 1)
             rem -= cur[- 1] * l[k]
 
 # fle.log(Array.from(WeightedIntegerVectors(3, [2,1,1])))
