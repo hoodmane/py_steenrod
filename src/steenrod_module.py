@@ -3,6 +3,7 @@ import itertools
 import math
 from functools import reduce
 
+from infinity import Infinity
 from FpVectorSpace import Vector
 import adem
 import steenrod
@@ -31,8 +32,9 @@ class SteenrodModuleElement(Vector):
         steenrod.implementedByAssignmentLaterInThisFile()    
 
 class SteenrodModule:
-    def __init__(self, *, p, generic = None, gens = None, sq_actions = None, milnor_actions = None):
+    def __init__(self, *, p, name = None, generic = None, gens = None, sq_actions = None, milnor_actions = None):
         self.p = p
+        self.name = name
         if generic is None:
             generic = p != 2
         self.generic = generic
@@ -49,12 +51,15 @@ class SteenrodModule:
                 self.add_b_action(self, act["input_gen"], act["output_vec"])
             else:
                 raise ValueError()
-        self.verified = True
+        self.validated = True
         self.failed_relations = {} 
         self.milnor_actions = sq_actions or []
     
     def getBasisElement(self, b):
         return SteenrodModuleElement({b : 1}, module = self)
+        
+    def getElement(self, dict):
+        return SteenrodModuleElement(dict, module = self)
         
     def zero(self):
         return SteenrodModuleElement({}, module = self)
@@ -64,7 +69,7 @@ class SteenrodModule:
             Used for adem_basis_act which is extended to the general action
         """
         if sq == 0:
-            return algebra.getBasisElement( module_basis_elt )
+            return self.algebra.getBasisElement( module_basis_elt )
         actions = self.sq_actions
         key = (sq, module_basis_elt)
         return actions[key] if key in actions else None
@@ -80,7 +85,6 @@ class SteenrodModule:
         if algebra.generic:
             sqs = adem.adem_basis_elt_generic_map(P_fn = lambda P : P, b = 'b', basis_elt = adem_basis_elt)
         result = reduce(algebra.sq_act, sqs, module_basis_elt)
-        #print(adem_basis_elt, module_basis_elt, result)
         return result
         
     @staticmethod
@@ -94,19 +98,27 @@ class SteenrodModule:
         #return algebra.milnor_actions[
     
         
-    def add_generator(self, name, degree):
+    def add_basis_element(self, name, degree):
         self.gens[name] = degree
+        self.sq_actions[(0, name)] = self.getBasisElement(name)
         
     def add_Sq_action(self, Sq, input_gen, output_vec):
-        self.clear_verification()
-        self.sq_actions[(Sq, input_gen)] = output_vec
+        if self.validated:
+            self.clear_validation()
+        key = (Sq, input_gen)
+        if key in self.sq_actions:
+            output_vec += self.sq_actions[key]
+        output_vec = self.getElement(output_vec)            
+        self.sq_actions[key] = output_vec
         
     def add_P_action(self, P, input_gen, output_vec):
-        self.clear_verification()
+        if self.validated:
+            self.clear_validation()
         self.sq_actions[(P, input_gen)] = output_vec
     
     def add_b_action(self, input_gen, output_vec):
-        self.clear_verification()
+        if self.validated:
+            self.clear_validation()
         self.sq_actions[('b', input_gen)] = output_vec
         
     def add_milnor_Q_action(self, Q, input_gen, output_vec):
@@ -115,13 +127,19 @@ class SteenrodModule:
     def add_milnor_P_action(self, Q, input_gen, output_vec):
         raise NotImplementedError()
         
-    def clear_verification(self):
-        self.verified = False
+    def sq_action_strs(self):
+        result = []
+        for ((sq, input), output) in [ x for x in self.sq_actions.items() if x[0][0] != 0 ]:
+            result += ["Sq%s(%s) = %s" % (sq, input, output)]
+        return result
+        
+    def clear_validation(self):
+        self.validated = False
         self.failed_relations = {}
     
-    def verify(self):
-        self.clear_verification()
-        
+    def validate(self):
+        self.failed_relations = {}
+        self.validated = True
         max_dim = max(self.gens.values())
         for gen, degree in self.gens.items():
             for dimop in range(2, max_dim - degree + 1):
@@ -140,27 +158,83 @@ class SteenrodModule:
             a = reln[0]
             b = reln[1]
             v = reln[2]
-            Sqa = self.adem_algebra.Sq(2)
-            Sqb = self.adem_algebra.Sq(2)
+            Sqa = self.adem_algebra.Sq(a)
+            Sqb = self.adem_algebra.Sq(b)
             rel_str = "(%s) * %s  -  %s * (%s * %s) = %s" % (Sqa*Sqb, v, Sqa, Sqb, v, boundary)
             relation_strings += [rel_str]
         return relation_strings
+        
+    def validQ(self):
+        return self.validated and len(self.failed_relations) == 0
+        
 
-    @staticmethod
-    def tensor_product(M1, M2):
-        raise NotImplementedError()
-    
+    #@staticmethod
+    def tensor(*modules):
+        """
+            Can be used either as a static method "SteenrodModule.tensor(M, N, P)" or like "M.tensor(N)".
+            For "M.tensor(N)" we offer the syntactic sugar M*N. Pretty sweet =)
+        """
+        p = modules[0].p
+        generic = modules[0].generic
+        for M in modules:
+            if not M.validQ():
+                raise ValueError("We only tensor validated modules. Run M.validate() first.")
+            if M.p != p:
+                raise ValueError("We only tensor modules that share the same prime.")
+            if M.generic != generic:
+                raise ValueError("We only tensor modules that share the same genericness.")
+            
+        result = SteenrodModule(p = p, generic = generic)
+        for x in itertools.product(*[M.gens.items() for M in modules]):
+            (gens, dims) = zip(*x)
+            tensor = Vector.tensor_basis_elements(*gens)
+            dim = sum(dims)
+            result.add_basis_element(tensor, dim)
+        
+        for sq_input_output in itertools.product(*[M.sq_actions.items() for M in modules]):
+            (sq_input, outputs) = zip(*sq_input_output)
+            (sqs, inputs) = zip(*sq_input)
+            sq = sum(sqs)
+            if sq == 0:
+                continue
+            input = Vector.tensor_basis_elements(*inputs)
+            output = Vector.tensor(*outputs)
+            result.add_Sq_action(sq, input, output)
+        
+        result.validated = True
+        return result
             
     def dualize(self):
         raise NotImplementedError()
+        
+    def truncate(self, min_dim = -Infinity, max_dim = Infinity):
+        result = SteenrodModule(p = p, generic = generic)
+        #for(
     
     def __mul__(self, other):
-        return SteenrodModule.tensor_product(self,other)
+        return SteenrodModule.tensor(self,other)
     
     # This overloads ~
     def __invert__(self):
         return self.dualize()
-        
+    
+    def __repr__(self):
+        args = []
+        args += ["p = %s" % self.p]
+        if self.p == 2 and self.generic:
+            args += ["generic"]
+        args += [ "%s generators" % len(self.gens) ]
+        args = ", ".join(args)
+        result = ""
+        if self.name:
+            result += self.name + " : "
+        result += "SteenrodModule(%s)" % args
+        return result
+    
+    #
+    # Now serialization and deserialization.
+    #
+    
     @staticmethod
     def from_Bruner_str(str):
         lines = [s for s in module.split("\n") if s]
@@ -240,9 +314,7 @@ SteenrodModuleElement.adem_act = Vector.linearly_extend_map(SteenrodModule.adem_
 
 if __name__ == "__main__":
     M = SteenrodModule(p = 2)
-    M.add_generator("x0",0)
-    M.add_generator("x2",2)
-    M.add_generator("x4",4)
+    M.add_basis_element("x0",0)
+    M.add_basis_element("x2",2)
     M.add_Sq_action(2, "x0", M.getBasisElement("x2"))
-    M.add_Sq_action(2, "x2", M.getBasisElement("x4"))
-    M.verify()
+    M.validate()

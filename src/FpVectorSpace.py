@@ -1,5 +1,9 @@
 import itertools
 
+def implementedByAssignmentLaterInThisFile():
+    assert False, "We implement this by assignment from Vector.linearly_extend_map later in this file Steenrod.py"
+
+
 class Vector(dict):
     def __init__(self, p, d = None):
         self.p = p
@@ -30,7 +34,7 @@ class Vector(dict):
             
     def __add__(self, v):
         result = Vector(self.p, self)
-        result.add_vector(v)
+        result.add_in_place(v)
         return result
 
     def __sub__(self,v):
@@ -46,7 +50,7 @@ class Vector(dict):
     def sum(args):
         result = Vector(args[0].p)
         for v in args:
-            result.add_vector(v)
+            result.add_in_place(v)
         return result
 
     @staticmethod
@@ -69,6 +73,13 @@ class Vector(dict):
             return result
         return extension
         
+    @staticmethod
+    def tensor_basis_elements(*args):
+        return Vector.tensor_symbol.join(args)
+    
+    def tensor(self, w):
+        implementedByAssignmentLaterInThisFile()
+        
     def __eq__(self, other):
         raise NotImplementedError()
     
@@ -86,5 +97,8 @@ class Vector(dict):
             return "  +  ".join(result)
 
     def basis_elt_to_string(self, b):
-        return str(b)        
+        return str(b)  
+
+Vector.tensor_symbol = "*"
+Vector.tensor = Vector.linearly_extend_map(lambda *args, algebra = None : { Vector.tensor_basis_elements(*args) : 1 })      
             
