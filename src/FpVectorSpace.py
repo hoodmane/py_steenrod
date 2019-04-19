@@ -33,6 +33,12 @@ class Vector(dict):
         result.add_vector(v)
         return result
 
+    def __sub__(self,v):
+        result = Vector(self.p, v)
+        result.scale_in_place(-1)
+        result.add_in_place(self)
+        return result
+
     def new_zero_vector(self):
         return Vector(self.p)        
 

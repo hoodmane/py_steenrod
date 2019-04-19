@@ -1,4 +1,5 @@
 import math
+from functools import reduce
 
 import combinatorics
 from memoized import memoized
@@ -10,6 +11,22 @@ class MinimalAdemAlgebra:
             generic = p != 2  
         self.generic = generic
     
+    
+def adem_basis_elt_generic_map(*, P_fn, b, basis_elt):
+    Ps = [P_fn(P) for P in basis_elt[1::2]]
+    bs = [b if epsilon else None for epsilon in basis_elt[ ::2]]
+    result = [None] * len(basis_elt)
+    result[1::2] = Ps
+    result[ ::2] = bs
+    return [ x for x in result if x is not None ]
+    
+
+def adem_basis_elt_2_map(*, Sq_fn, basis_elt):
+    """
+        Not clear whether it's better to call this to make it look like the 
+        generic case or just inline this expression
+    """
+    return [ Sq_fn(Sq) for Sq in basis_elt ]
 
 
 ##@memoized
@@ -72,7 +89,6 @@ def adem_generic(a, b, c, *, p):
             elif coeff % p != 0 and j != 0:
                 result[(0,A+B-j,1,j,0)] = coeff
     return result
-
 
 def adem(a, b, c = None, *, algebra):
     r"""
@@ -263,7 +279,7 @@ def make_mono_admissible(mono, *, algebra):
 def product_2(m1, m2):
     return make_mono_admissible_2(m1 + m2)
 
-def product_generic(m1, m2, *, p):
+def product_generic(m1, m2, p):
     if m1[-1] == m2[0] == 1:
         return {}
     else:
@@ -271,9 +287,9 @@ def product_generic(m1, m2, *, p):
 
 def product(m1, m2, *, algebra):
     if algebra.generic:
-        product_generic(m1, m2, p=p)
+        return product_generic(m1, m2, algebra.p)
     else:
-        product_2(m1, m2)
+        return product_2(m1, m2)
 
 
 

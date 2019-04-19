@@ -183,7 +183,7 @@ def product_full_Qpart(m1, f, p):
     return result
 
 #@memoized
-def product_full(m1, m2, *, p):
+def product_full(m1, m2, p):
     r"""
     Product of Milnor basis elements defined by m1 and m2 at the prime p.
 
@@ -230,7 +230,7 @@ def product_full(m1, m2, *, p):
         for (e, r) in m1_times_f:
             coeff = m1_times_f[(e,r)]
             # Milnor multiplication for r and s
-            prod = product_even(r, s, p)
+            prod = product_even(r, s, p=p)
             for k in prod:
                 old_coeff = result[(e,k)] if (e, k) in result else 0
                 result[(e,k)] = (old_coeff + coeff*prod[k]) % p
