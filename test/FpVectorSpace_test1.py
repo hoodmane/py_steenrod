@@ -1,19 +1,10 @@
-import itertools
+import sys,os
+sys.path.append(os.path.join(os.path.dirname(__file__),os.pardir,"src"))
 
-def implementedByAssignmentLaterInThisFile():
-    assert False, "We implement this by assignment from Vector.linearly_extend_map later in this file Steenrod.py"
+from FpVectorSpace import *
+
 
 class Vector(dict):
-    """
-        Vector is an abstract class.
-        Subclasses should implement the abstract methods:
-            basis_degree
-            basis_elt_to_string -- default behavior is just to use Str
-        
-        Many 
-        
-    """
-
     def __init__(self, p, d = None):
         self.p = p
         d = d or {}
@@ -59,29 +50,28 @@ class Vector(dict):
         return result
 
     def __mul__(self, v):
+#        if type(v) == AdemElement:
+#            return self.multiply(v)
+#        elif callable(getattr(v, "adem_act", None)):
+#            return v.adem_act(self)
+#        elif type(v) == int:
         if type(v) == int:
             result = self.module.getElementFromDict(self)
             result.scale_in_place(v)
             return result
-        elif getattr(self, 'adem_element', False) and callable(getattr(v, "adem_act", None)):
-            return v.adem_act(self)
-        elif getattr(self, 'milnor_element', False) and callable(getattr(v, "milnor_act", None)):
-            return v.milnor_act(self)
         else:
             raise TypeError()
 
     def __rmul__(self, v):
-        """
-            We could add support here for distinct right and left actions if we want...
-        """
+#        if type(v) == AdemElement:
+#            return self.multiply(v)
+#        elif callable(getattr(v, "adem_act", None)):
+#            return v.adem_act(self)
+#        elif type(v) == int:
         if type(v) == int:
             result = self.module.getElement(self)
             result.scale_in_place(v)
             return result
-        elif getattr(self, 'adem_element', False) and callable(getattr(v, "adem_act", None)):
-            return v.adem_act(self)
-        elif getattr(self, 'milnor_element', False) and callable(getattr(v, "milnor_act", None)):
-            return v.milnor_act(self)
         else:
             raise TypeError()
 
@@ -129,10 +119,9 @@ class Vector(dict):
     def tensor(self, w):
         implementedByAssignmentLaterInThisFile()
         
-#    def __eq__(self, other):
-#        raise NotImplementedError()
+    def __eq__(self, other):
+        raise NotImplementedError()
     
-    # abstract method
     def basis_degree(self, b):
         """
             Get the degree of a basis vector.

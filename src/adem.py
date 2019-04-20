@@ -69,24 +69,30 @@ def adem_generic(a, b, c, *, p):
     elif A < p*B and bockstein == 0: # inadmissible 
         result = {}
         for j in range(1 + a//p):
-            coeff = (-1)**(A+j) * combinatorics.binomial_modp((B-j) * (p-1) - 1, A - p*j, p)
-            if coeff % p != 0 and j == 0:
+            coeff = combinatorics.binomial_modp((B-j) * (p-1) - 1, A - p*j, p)
+            coeff *= (-1)**(A+j)
+            coeff = coeff % p            
+            if coeff != 0 and j == 0:
                 result[(0,A+B,0)] = coeff
-            elif coeff % p != 0 and j != 0:
+            elif coeff != 0 and j != 0:
                 result[(0,A+B-j,0,j,0)] = coeff
     elif A < p*B and bockstein != 0:
         result = {}
         for j in range(1 + a//p):
-            coeff = (-1)**(A+j) * combinatorics.binomial_modp((B-j) * (p-1), A - p*j, p)
+            coeff = combinatorics.binomial_modp((B-j) * (p-1), A - p*j, p)
+            coeff *= (-1)**(A+j)
+            coeff = coeff % p
             if coeff % p != 0 and j == 0:
-                result[(1,A+B,0)] = coeff
+                result[(1,A+B,0)] = coeff 
             elif coeff % p != 0 and j != 0:
                 result[(1,A+B-j,0,j,0)] = coeff
         for j in range(1 + (a-1)//p):
-            coeff = (-1)**(A+j-1) * combinatorics.binomial_modp((B-j) * (p-1) - 1, A - p*j - 1, p)
-            if coeff % p != 0 and j == 0:
+            coeff = combinatorics.binomial_modp((B-j) * (p-1) - 1, A - p*j - 1, p)
+            coeff *= (-1)**(A+j-1)
+            coeff = coeff % p
+            if coeff != 0 and j == 0:
                 result[(0,A+B,1)] = coeff
-            elif coeff % p != 0 and j != 0:
+            if coeff != 0 and j != 0:
                 result[(0,A+B-j,1,j,0)] = coeff
     return result
 
@@ -103,47 +109,21 @@ def adem(a, b, c = None, *, algebra):
 
     OUTPUT:
 
-    a dictionary representing the mod `p` Adem relations
-    applied to `P^a P^b` or (if `c` present) to `P^a \beta^b P^c`.
+    a dictionary representing the mod p Adem relation
+    satisfied by P^a P^b or (if c present) P^a \beta^b P^c.
 
-    EXAMPLES:
+    If P^a P^b or P^a \beta^b P^c is admissible, then it is returned as is. 
+    Otherwise the right hand side of the Adem relation is returned.
+    
+    If the algebra is not generic, then c must be zero.
 
-    If two arguments (`a` and `b`) are given, then computations are
-    done mod 2.  If `a \geq 2b`, then the dictionary {(a,b): 1} is
-    returned.  Otherwise, the right side of the mod 2 Adem relation
-    for `\text{Sq}^a \text{Sq}^b` is returned.  For example, since
-    `\text{Sq}^2 \text{Sq}^2 = \text{Sq}^3 \text{Sq}^1`, we have::
-
-        sage: from sage.algebras.steenrod.steenrod_algebra_mult import adem
-        sage: adem(2,2) # indirect doctest
-        {(3, 1): 1}
-        sage: adem(4,2)
-        {(4, 2): 1}
-        sage: adem(4,4) == {(6, 2): 1, (7, 1): 1}
-        True
-
-    If `p` is given and is odd, then with two inputs `a` and `b`, the
+    If the algebra is generic, then with two inputs `a` and `b`, the
     Adem relation for `P^a P^b` is computed.  With three inputs `a`,
     `b`, `c`, the Adem relation for `P^a \beta^b P^c` is computed.
     In either case, the keys in the output are all tuples of odd length,
     with ``(i_1, i_2, ..., i_m)`` representing
 
-    .. MATH::
-
         \beta^{i_1} P^{i_2} \beta^{i_3} P^{i_4} ... \beta^{i_m}
-
-    For instance::
-
-        sage: adem(3,1, p=3)
-        {(0, 3, 0, 1, 0): 1}
-        sage: adem(3,0,1, p=3)
-        {(0, 3, 0, 1, 0): 1}
-        sage: adem(1,0,1, p=7)
-        {(0, 2, 0): 2}
-        sage: adem(1,1,1, p=5) == {(0, 2, 1): 1, (1, 2, 0): 1}
-        True
-        sage: adem(1,1,2, p=5) == {(0, 3, 1): 1, (1, 3, 0): 2}
-        True
     """
     if algebra.generic:
         return adem_generic(a, b, c, p = algebra.p)
@@ -212,9 +192,8 @@ def make_mono_admissible(mono, *, algebra):
     writing that product as a linear combination of admissible
     monomials.
 
-    When `p=2`, the sequence (and hence the corresponding monomial)
-    `(i_1, i_2, ...)` is admissible if `i_j \geq 2 i_{j+1}` for all
-    `j`.
+    When p = 2 and the algebra is not generic, the sequence 
+    `(i_1, i_2, ...)` is admissible if `i_j \geq 2 i_{j+1}` for all `j`.
 
     When `p` is odd, the sequence `(e_1, i_1, e_2, i_2, ...)` is
     admissible if `i_j \geq e_{j+1} + p i_{j+1}` for all `j`.
@@ -222,15 +201,13 @@ def make_mono_admissible(mono, *, algebra):
     INPUT:
 
     - ``mono`` - a tuple of non-negative integers
-    - `p` - prime number
-    - `generic` - whether to use the generic Steenrod algebra, (default: depends on prime)
+    - algebra  - a class with properies p and generic 
 
     OUTPUT:
 
-    Dictionary of terms of the form (tuple: coeff), where
-    'tuple' is an admissible tuple of non-negative integers and
-    'coeff' is its coefficient.  This corresponds to a linear
-    combination of admissible monomials.  When `p` is odd, each tuple
+    A linear combination of admissible monomials represented by a dictionary of 
+    terms of the form tuple: coeff, where 'tuple' is an admissible tuple of non-negative integers and
+    'coeff' is its coefficient.    When `p` is odd, each tuple
     must have an odd length: it should be of the form `(e_1, i_1, e_2,
     i_2, ..., e_k)` where each `e_j` is either 0 or 1 and each `i_j`
     is a positive integer: this corresponds to the admissible monomial
@@ -247,25 +224,6 @@ def make_mono_admissible(mono, *, algebra):
     and then apply this function recursively to each of the resulting
     tuples `(i_1, ..., i_{j-1}, NEW, i_{j+2}, ...)`, keeping track of
     the coefficients.
-
-    EXAMPLES::
-
-        sage: from sage.algebras.steenrod.steenrod_algebra_mult import make_mono_admissible
-        sage: make_mono_admissible((12,)) # already admissible, indirect doctest
-        {(12,): 1}
-        sage: make_mono_admissible((2,1)) # already admissible
-        {(2, 1): 1}
-        sage: make_mono_admissible((2,2))
-        {(3, 1): 1}
-        sage: make_mono_admissible((2, 2, 2))
-        {(5, 1): 1}
-        sage: make_mono_admissible((0, 2, 0, 1, 0), p=7)
-        {(0, 3, 0): 3}
-
-    Test the fix from :trac:`13796`::
-
-        sage: SteenrodAlgebra(p=2, basis='adem').Q(2) * (Sq(6) * Sq(2)) # indirect doctest
-        Sq^10 Sq^4 Sq^1 + Sq^10 Sq^5 + Sq^12 Sq^3 + Sq^13 Sq^2
     """
     if len(mono) == 1:
         return {mono: 1}
@@ -305,12 +263,12 @@ def basis_2(n, * , bound = 1):
     # elements from basis (n - last, bound=2 * last).
     # This means that 2 last <= n - last, or 3 last <= n.
     if n == 0:
-        return [[]]
-    result = [[n]]
+        return ((),)
+    result = [(n,)]
     for last in range(bound, 1 + n // 3):
         for vec in basis_2(n - last, bound = 2 * last):
-            result.append(vec + [last])
-    return result
+            result.append(vec + (last,))
+    return tuple(result)
     
 #@memoized
 def basis_generic(n, *, p, bound = 1):
@@ -351,22 +309,10 @@ def basis(n, *, algebra):
     Serre-Cartan basis in dimension `n`.
 
     INPUT:
-
     - ``n`` - non-negative integer
-    - ``bound`` - positive integer (optional)
-    - ``prime`` - positive prime number
+    - ``algebra`` - an object with properties p and generic
 
     OUTPUT: tuple of mod p Serre-Cartan basis elements in dimension n
-
-    EXAMPLES::
-
-        sage: from sage.algebras.steenrod.steenrod_algebra_bases import serre_cartan_basis
-        sage: serre_cartan_basis(7)
-        ((7,), (6, 1), (4, 2, 1), (5, 2))
-        sage: serre_cartan_basis(13,3)
-        ((1, 3, 0), (0, 3, 1))
-        sage: serre_cartan_basis(50,5)
-        ((1, 5, 0, 1, 1), (1, 6, 1))
     """
     if algebra.generic: 
         return basis_generic(n, p)

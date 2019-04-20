@@ -14,32 +14,15 @@ class AdemElement(Vector):
     def __init__(self, dictionary, *,  algebra):
         self.algebra = algebra
         self.module = algebra
+        self.adem_element = True
         super(AdemElement, self).__init__(algebra.p, dictionary)
     
-    def __mul__(self, v):
-        if type(v) == AdemElement:
-            return self.multiply(v)
-        elif callable(getattr(v, "adem_act", None)):
-            return v.adem_act(self)
-        elif type(v) == int:
-            result = self.algebra.getElement(self)
-            result.scale_in_place(v)
-            return result
-        else:
+    def adem_act(self,v):
+        if type(v) != AdemElement:
             raise TypeError()
-    
-    def __rmul__(self, v):
-#        if type(v) == AdemElement:
-#            return self.multiply(v)
-#        elif callable(getattr(v, "adem_act", None)):
-#            return v.adem_act(self)
-#        elif type(v) == int:
-        if type(v) == int:
-            result = self.algebra.getElement(self)
-            result.scale_in_place(v)
-            return result
-        else:
+        if v.algebra.p != self.algebra.p or v.algebra.generic != self.algebra.generic:
             raise TypeError()
+        return v.multiply(self)
     
     def multiply(self, v):
         implementedByAssignmentLaterInThisFile()
@@ -48,7 +31,7 @@ class AdemElement(Vector):
         implementedByAssignmentLaterInThisFile()
         
     def basis_degree(self, b):
-        if self.generic:
+        if self.module.generic:
             result  = 2*(self.p - 1) * sum(b[1::2])
             result += sum(b[::2])
         else:
@@ -58,42 +41,25 @@ class AdemElement(Vector):
     def basis_elt_to_string(self, basis_elt):
         if(self.algebra.generic):
             result = adem.adem_basis_elt_generic_map(P_fn = lambda P : " P%s" % P, b = " b", basis_elt = basis_elt)
-            return "".join(result)[1:]
+            result = "".join(result)[1:]
         else:
-            return " ".join(["Sq%s" % s for s in basis_elt]) # This is adem.adem_2_map inlined
-
+            result =  " ".join(["Sq%s" % s for s in basis_elt]) # This is adem.adem_2_map inlined
+        return result or "1"
 AdemElement.multiply = Vector.linearly_extend_map(adem.product, kw_param = "algebra")
 
 class MilnorElement(Vector):
-    def __init__(self, algebra, dictionary):
+    def __init__(self, dictionary, *, algebra):
         self.algebra = algebra
         self.module = algebra
+        self.milnor_element = True
         super(MilnorElement, self).__init__(algebra.p, dictionary)
         
-    def __mul__(self, v):
-        if type(v) == MilnorElement:
-            return self.multiply(v)
-        elif callable(getattr(v, "milnor_act", None)):
-            return v.milnor_act(self)
-        elif type(v) == int:
-            result = self.algebra.getElement(self)
-            result.scale_in_place(v)
-            return result
-        else:
+    def milnor_act(self,v):
+        if type(v) != MilnorElement:
             raise TypeError()
-            
-    def __rmul__(self, v):
-#        if type(v) == AdemElement:
-#            return self.multiply(v)
-#        elif callable(getattr(v, "adem_act", None)):
-#            return v.adem_act(self)
-#        elif type(v) == int:
-        if type(v) == int:
-            result = self.algebra.getElement(self)
-            result.scale_in_place(v)
-            return result
-        else:
-            raise TypeError()
+        if v.p != self.p or v.algebra.generic != self.algebra.generic:
+            raise TypeError()    
+        return v.multiply(self)
                         
     def basis_degree(self, b):
         raise NotImplementedError()
@@ -115,6 +81,7 @@ class MilnorElement(Vector):
             Sqs = ""
             if len(basis_elt) > 0:
                 Sqs = "Sq(%s)" % ", ".join([str(s) for s in basis_elt])
+    
             return Sqs or '1'
             
 MilnorElement.multiply = Vector.linearly_extend_map(milnor.product, kw_param = "algebra")
@@ -140,13 +107,13 @@ class AdemAlgebra:
         return AdemAlgebra.getInstance(algebra.p, algebra.generic)
     
     def getElement(self, d):
-        return AdemElement(d, module = self)
+        return AdemElement(d, algebra = self)
         
     def getBasisElement(self, b):
         return AdemElement({b : 1}, algebra = self)
     
     def basis(self, n):
-        adem.basis(n, algebra = self)
+        return [AdemElement({b:1}, algebra = self) for b in adem.basis(n, algebra = self)]
     
     def zero(self):
         return AdemElement({}, algebra = self)
@@ -163,31 +130,38 @@ class AdemAlgebra:
         else:
             return self.unit()
     
-    def Sq(self, n):
+    def Sq(self, *n):
         if self.generic:
-            return AdemElement({(n % 2, n//2, 0) : 1}, algebra = self)
-        else:
-            return AdemElement({(n,) : 1}, algebra = self)
+            raise TypeError("Only use A.Sq if p = 2 and A is not generic.")
+        # Sq(0) is the unit
+        if len(n) == 1 and n[0] == 0:
+            n = ()
+        return AdemElement({n : 1}, algebra = self)
     
-    def P(self, n):
-        if self.generic:
-            return AdemElement({(0, n, 0) : 1}, algebra = self)
-        else:
-            return AdemElement({(2*n,) : 1}, algebra = self)
+    def P(self, *n):
+        if not self.generic:
+            raise TypeError("Only use A.P if A is generic.")
+        # P(0) is the unit
+        if len(n) == 1 and n[0] == 0:
+            n = []        
+        l = [0] * (2*len(n) + 1)
+        l[1::2] = n            
+        return AdemElement({tuple(l) : 1}, algebra = self)        
     
-    def bP(self, n):
-        if self.generic:
-            return AdemElement({(1, n, 0) : 1}, algebra = self)
-        else:
-            return AdemElement({(2*n + 1,) : 1}, algebra = self)
-        
+    def bP(self, *n):
+        if not self.generic:
+            raise TypeError("Only use A.bP if A is generic.")
+        l = [0] * (2*len(n) + 1)
+        l[1::2] = n
+        l[0] = 1
+        return AdemElement({tuple(l) : 1}, algebra = self)   
+    
 AdemAlgebra.instance_dict = {}
     
     
 class MilnorAlgebra(milnor.MinimalMilnorAlgebra):
     def __init__(self, p, generic = None, profile = None, truncation = None):
         super(MilnorAlgebra, self).__init__(p, generic, profile, truncation)
-        print(str(self.generic))
         self.unit_monomial = ((),()) if generic else ()
     
     @staticmethod
@@ -210,6 +184,9 @@ class MilnorAlgebra(milnor.MinimalMilnorAlgebra):
         
     def basis(self, n):
         return [MilnorElement({b:1}, algebra = self) for b in milnor.basis(n, algebra = self)]
+
+    def basis_even(self, n):
+        return [MilnorElement({((), b):1}, algebra = self) for b in milnor.basis_even(n, self.p, self.profile)]
     
     def zero(self):
         return MilnorElement({}, algebra = self)
@@ -249,17 +226,20 @@ def adem_to_milnor_on_basis_2(b):
 def adem_to_milnor_on_basis_generic(basis_elt, p):
     A = MilnorAlgebra.getInstance(p)
     unit = A.unit()
-    sqs = adem.adem.adem_basis_elt_generic_map(P_fn = A.P, b = Q0, basis_elt = basis_elt)
+    sqs = adem.adem_basis_elt_generic_map(P_fn = A.P, b = A.Q(0), basis_elt = basis_elt)
     return reduce(lambda a,b : a*b, sqs, unit)
     
-def adem_to_milnor_on_basis(b, *, p, generic):
-    if generic:
-        return adem_to_milnor_on_basis_generic(b, p)
+def adem_to_milnor_on_basis(b, *, algebra):
+    if algebra.generic:
+        return adem_to_milnor_on_basis_generic(b, algebra.p)
     else:
         return adem_to_milnor_on_basis_2(b)
 
 #@memoized
 def milnor_to_adem_on_basis_2(b):
+    adem_alg = AdemAlgebra.getInstance( p = 2, generic = False )
+    if len(b) == 0:
+        return adem_alg.unit()
     t = [0] * len(b)
     t[-1] = b[-1]
     for i in range(len(b) - 2, -1, -1):
@@ -267,60 +247,77 @@ def milnor_to_adem_on_basis_2(b):
     t = tuple(t)
     x = adem_to_milnor_on_basis_2(t)
     x.pop(b)
-    result = x.to_adem()
+    result = x.to_adem(output_module = adem_alg)
     result[t] = 1
     return result
 
 #@memoized
 def milnor_to_adem_on_basis_generic(b, *, p):
-    e = b[0]
-    s = b[1]
-    pad_length = max(*e)
+    (e, s) = b
+    adem_alg = AdemAlgebra.getInstance( p = p, generic = True )
+    if len(e) == 0 and len(s) == 0:
+        return adem_alg.unit()
+    if e  == (0,) and len(s) == 0:
+        return adem_alg.b()
+    pad_length = max(e) if e else 0
     s += (0,) * (pad_length - len(s)) 
-    t = [0,] * (2*len + 1)
+    t = [0,] * (2*len(s) + 1)
     
     for i in e:
         t[2*i] = 1
             
     t[-2] = s[-1] + t[-1]
-    for i in range(2, s.length + 1):
+    for i in range(2, len(s) + 1):
         t[-2*i] = t[-2*i + 1] + s[-i] + p * t[-2*i + 2]
     t = tuple(t)
     x = adem_to_milnor_on_basis_generic(t, p)
     x.pop(b)
     x.scale_in_place(-1)
-    result = x.to_adem()
+    result = x.to_adem(output_module = adem_alg)
     result[t] = 1
     return result
 
 def milnor_to_adem_on_basis(b, *, algebra):
     if algebra.generic:
-        return milnor_to_adem_on_basis_generic(b, p)
+        return milnor_to_adem_on_basis_generic(b, p = algebra.p)
     else:
         return milnor_to_adem_on_basis_2(b)
 
-AdemElement.to_milnor = Vector.linearly_extend_map(adem_to_milnor_on_basis, kw_param = "algebra")
-MilnorElement.to_adem = Vector.linearly_extend_map(milnor_to_adem_on_basis, kw_param = "algebra")
-
-
+AdemElement.to_milnor = Vector.linearly_extend_map(adem_to_milnor_on_basis, kw_param = "algebra", 
+                                get_output_module = lambda alg : MilnorAlgebra.getInstance(alg.p, generic = alg.generic))
+MilnorElement.to_adem = Vector.linearly_extend_map(milnor_to_adem_on_basis, kw_param = "algebra",
+                                get_output_module = lambda alg : AdemAlgebra.getInstance(alg.p, generic = alg.generic))
 
 def adem_antipode_on_basis(basis_elt, *, algebra):
     antipode = algebra.unit()
-    milnor_alg = MilnorAlgebra.getInstance(algebra.p, algebra.generic)
-    if not algebra.generic:
-        for n in basis_elt:
-            antipode = self(sum(milnor_alg.basis(n))) * antipode
+    p = algebra.p
+    generic = algebra.generic
+    milnor_alg = MilnorAlgebra.getInstance(p, generic)
+    if not generic:
+        elts = [ Vector.sum(milnor_alg.basis(n)) for n in basis_elt ]
     else:
-        adem.adem_basis_elt_generic_map(P_fn = lambda P : P, b = -algebra.Q(0), basis_elt = basis_elt)
-        # ... not sure what happens here
-        Ps = b[1::2]
-        bs = b[0::2]
-        [-algebra.Q(0) for i in bs if i != 0]
+        def P_fn(P):
+            return (-1)**P * Vector.sum( milnor_alg.basis_even( P ) )
+        
+        elts = adem.adem_basis_elt_generic_map(
+            P_fn = P_fn,
+            b = (-1) * milnor_alg.Q(0), 
+            basis_elt = basis_elt
+        )
+    # Multiply in the reverse order because antipode is an antihomomorphism
+    milnor_antipode = reduce( lambda a, b: b * a, elts, milnor_alg.unit() )
+    return milnor_antipode.to_adem()
+
+AdemElement.antipode = Vector.linearly_extend_map( adem_antipode_on_basis, kw_param = "algebra")
+
+
+if __name__ == "__main__":
+    A   = AdemAlgebra(p = 2)
+    A3  = AdemAlgebra(p = 3)
+    Am  = MilnorAlgebra(p = 2)
+    A3m = MilnorAlgebra(p = 3) 
     
-        B = milnor_alg.basis(n * 2 * (p-1))
-        s = self(0)
-        for b in B:
-            if len(b.leading_support()[0]) == 0:
-                s += self(b)
-        antipode = (-1)**n * s * antipode
-    return antipode
+    print(type(A.Sq(2).to_milnor) == MilnorElement) 
+    print(type(Am.Sq(2).to_adem) == AdemElement)
+    print(type(A3.P(2).to_milnor) == MilnorElement) 
+    print(type(A3m.P(2).to_adem) == AdemElement)

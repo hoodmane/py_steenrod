@@ -60,14 +60,14 @@ def binomial_modp(n, k, p):
     return multinomial_odd([n-k, k], p)
 
 
-def multinomial(l, p = 2):
+def multinomial(l, p):
     if p == 2:
         return multinomial_mod_2(l)
     else:
         return multinomial_odd(l, p)
 
 
-def binomial_gen(n, k, p = 2):
+def binomial_gen(n, k, p):
     if n<k or k<0:
         return 0
     if p == 2:
@@ -102,7 +102,7 @@ def restricted_partitions(n, l, no_repeats = False):
             old_i = i
         return results
 
-def xi_degrees(n, p=2, reverse = True):
+def xi_degrees(n,*, p, reverse = True):
     """
             sage: sage.algebras.steenrod.steenrod_algebra_bases.xi_degrees(17)
             [15, 7, 3, 1]
@@ -116,7 +116,7 @@ def xi_degrees(n, p=2, reverse = True):
     if n <= 0:
         return []
     N = n*(p-1) + 1
-    xi_max = 1
+    xi_max = 0
     while N > 0:
         N = N//p
         xi_max += 1
@@ -180,6 +180,4 @@ def WeightedIntegerVectors(n, l):
         else:
             k += 1
             cur.append(rem // l[k] + 1)
-            rem -= cur[- 1] * l[k]
-
-# fle.log(Array.from(WeightedIntegerVectors(3, [2,1,1])))
+            rem -= cur[-1] * l[k]

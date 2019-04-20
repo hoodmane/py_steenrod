@@ -120,6 +120,7 @@ def remove_trailing_zeroes(l):
     for i in range(len(l) - 1 , -1, -1):
         if l[i] != 0:
             return l[ : i+1] 
+    return []
 
 #@memoized
 def product_even(r, s, p):
@@ -252,7 +253,7 @@ def basis_even(n, p, profile):
     if n == 0:
         return [[]]
     result = []
-    for mono in combinatorics.WeightedIntegerVectors(n, combinatorics.xi_degrees(n, p, reverse = False)):
+    for mono in combinatorics.WeightedIntegerVectors(n, combinatorics.xi_degrees(n, p = p, reverse = False)):
         exponents = list(mono)
         while len(exponents) > 0 and exponents[-1] == 0: 
             exponents.pop()
@@ -267,7 +268,7 @@ def basis_even(n, p, profile):
     return tuple(result)  
 
 def basis_generic_Q_part(q_deg, p, profile):
-    q_degrees = combinatorics.xi_degrees((q_deg - 1)//(2*(p-1)), p)
+    q_degrees = combinatorics.xi_degrees((q_deg - 1)//(2*(p-1)), p = p)
     q_degrees = [ 1+2*(p-1)*d for d in q_degrees ]
     q_degrees.append(1)
     q_degrees_decrease = list(q_degrees)
@@ -278,7 +279,7 @@ def basis_generic_Q_part(q_deg, p, profile):
         q_mono = [idx for (idx, q_deg) in enumerate(q_degrees) if q_deg in sigma]
         # check profile:
         okay = True
-        if profile.odd_restricted:
+        if profile.restricted:
             for i in q_mono:
                 if profile[i] <= 1:
                     okay = False
