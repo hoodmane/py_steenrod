@@ -280,7 +280,11 @@ def product_2(m1, m2):
     return make_mono_admissible_2(m1 + m2)
 
 def product_generic(m1, m2, p):
-    if m1[-1] == m2[0] == 1:
+    if len(m1) == 0:
+        return { m2 : 1 }
+    elif len(m2) == 0:
+        return { m1 : 1 }
+    elif m1[-1] == m2[0] == 1:
         return {}
     else:
         return make_mono_admissible_generic(m1[:-1] + ( m1[-1] + m2[0], ) + m2[1:], p)

@@ -13,6 +13,7 @@ def implementedByAssignmentLaterInThisFile():
 class AdemElement(Vector):
     def __init__(self, dictionary, *,  algebra):
         self.algebra = algebra
+        self.module = algebra
         super(AdemElement, self).__init__(algebra.p, dictionary)
     
     def __mul__(self, v):
@@ -21,15 +22,38 @@ class AdemElement(Vector):
         elif callable(getattr(v, "adem_act", None)):
             return v.adem_act(self)
         elif type(v) == int:
-            raise NotImplementedError()
+            result = self.algebra.getElement(self)
+            result.scale_in_place(v)
+            return result
         else:
             raise TypeError()
-        
+    
+    def __rmul__(self, v):
+#        if type(v) == AdemElement:
+#            return self.multiply(v)
+#        elif callable(getattr(v, "adem_act", None)):
+#            return v.adem_act(self)
+#        elif type(v) == int:
+        if type(v) == int:
+            result = self.algebra.getElement(self)
+            result.scale_in_place(v)
+            return result
+        else:
+            raise TypeError()
+    
     def multiply(self, v):
         implementedByAssignmentLaterInThisFile()
        
     def to_milnor(self):
         implementedByAssignmentLaterInThisFile()
+        
+    def basis_degree(self, b):
+        if self.generic:
+            result  = 2*(self.p - 1) * sum(b[1::2])
+            result += sum(b[::2])
+        else:
+            result = sum(b)
+        return result
         
     def basis_elt_to_string(self, basis_elt):
         if(self.algebra.generic):
@@ -38,11 +62,12 @@ class AdemElement(Vector):
         else:
             return " ".join(["Sq%s" % s for s in basis_elt]) # This is adem.adem_2_map inlined
 
-AdemElement.multiply = Vector.linearly_extend_map(adem.product)
+AdemElement.multiply = Vector.linearly_extend_map(adem.product, kw_param = "algebra")
 
 class MilnorElement(Vector):
     def __init__(self, algebra, dictionary):
         self.algebra = algebra
+        self.module = algebra
         super(MilnorElement, self).__init__(algebra.p, dictionary)
         
     def __mul__(self, v):
@@ -51,10 +76,28 @@ class MilnorElement(Vector):
         elif callable(getattr(v, "milnor_act", None)):
             return v.milnor_act(self)
         elif type(v) == int:
-            raise NotImplementedError()
+            result = self.algebra.getElement(self)
+            result.scale_in_place(v)
+            return result
         else:
             raise TypeError()
-        
+            
+    def __rmul__(self, v):
+#        if type(v) == AdemElement:
+#            return self.multiply(v)
+#        elif callable(getattr(v, "adem_act", None)):
+#            return v.adem_act(self)
+#        elif type(v) == int:
+        if type(v) == int:
+            result = self.algebra.getElement(self)
+            result.scale_in_place(v)
+            return result
+        else:
+            raise TypeError()
+                        
+    def basis_degree(self, b):
+        raise NotImplementedError()
+    
     def multiply(self, v):        
         implementedByAssignmentLaterInThisFile()
             
@@ -74,7 +117,7 @@ class MilnorElement(Vector):
                 Sqs = "Sq(%s)" % ", ".join([str(s) for s in basis_elt])
             return Sqs or '1'
             
-MilnorElement.multiply = Vector.linearly_extend_map(milnor.product)
+MilnorElement.multiply = Vector.linearly_extend_map(milnor.product, kw_param = "algebra")
        
 
 class AdemAlgebra:
@@ -96,8 +139,8 @@ class AdemAlgebra:
     def getInstanceFromAlgebra(algebra):
         return AdemAlgebra.getInstance(algebra.p, algebra.generic)
     
-    def getElementFromDict(self, d):
-        implementedByAssignmentLaterInThisFile()
+    def getElement(self, d):
+        return AdemElement(d, module = self)
         
     def getBasisElement(self, b):
         return AdemElement({b : 1}, algebra = self)
@@ -113,6 +156,12 @@ class AdemAlgebra:
     
     def b(self):
         return AdemElement({(1,) : 1}, algebra = self)
+        
+    def b_or_unit(self, epsilon):
+        if self.generic and epsilon:
+            return self.b()
+        else:
+            return self.unit()
     
     def Sq(self, n):
         if self.generic:
@@ -133,7 +182,6 @@ class AdemAlgebra:
             return AdemElement({(2*n + 1,) : 1}, algebra = self)
         
 AdemAlgebra.instance_dict = {}
-AdemAlgebra.getElementFromDict = AdemElement
     
     
 class MilnorAlgebra(milnor.MinimalMilnorAlgebra):
@@ -154,8 +202,8 @@ class MilnorAlgebra(milnor.MinimalMilnorAlgebra):
     def getInstanceFromAlgebra(algebra):
         return MilnorAlgebra.getInstance(algebra.p, algebra.generic, algebra.getattr("profile", None), algebra.getattr("truncation", None))
     
-    def getElementFromDict(self, d):
-        implementedByAssignmentLaterInThisFile()
+    def getElement(self, d):
+        return MilnorElement(d, algebra = self)
 
     def getBasisElement(self, b):
         return MilnorElement({b : 1}, algebra = self)        
@@ -188,8 +236,6 @@ class MilnorAlgebra(milnor.MinimalMilnorAlgebra):
             return MilnorElement({tuple(2 * i for i in l) : 1}, algebra = self)
 
 MilnorAlgebra.instance_dict = {}
-MilnorAlgebra.getElementFromDict = MilnorElement
-
 
 
 #@memoized
@@ -253,8 +299,8 @@ def milnor_to_adem_on_basis(b, *, algebra):
     else:
         return milnor_to_adem_on_basis_2(b)
 
-AdemElement.to_milnor = Vector.linearly_extend_map(adem_to_milnor_on_basis)
-MilnorElement.to_adem = Vector.linearly_extend_map(milnor_to_adem_on_basis)
+AdemElement.to_milnor = Vector.linearly_extend_map(adem_to_milnor_on_basis, kw_param = "algebra")
+MilnorElement.to_adem = Vector.linearly_extend_map(milnor_to_adem_on_basis, kw_param = "algebra")
 
 
 
