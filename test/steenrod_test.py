@@ -114,6 +114,8 @@ def test_adem_antipode():
         P(6, 2),
         2*P(7,2) + P(8,1) + 2*P(9),
     ]
+    
+    assert beta.antipode() = 2*beta
 
     
     for n, x in enumerate(antipodes_of_Sqn):

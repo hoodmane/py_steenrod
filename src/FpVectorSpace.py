@@ -32,13 +32,13 @@ class Vector(dict):
             return
         super(Vector,self).__setitem__(idx, value % self.p)
     
-    def add_in_place(self, v, scale = 1):
+    def add_in_place(self, v, coefficient = 1):
         """
             Addition in Fp vector space.
             Add v2 to v1 in place, and reduce resulting keys mod p.
         """
         for b in v:
-            self[b] += scale * v[b]
+            self[b] += coefficient * v[b]
         return None
         
     def scale_in_place(self, c):

@@ -81,6 +81,8 @@ class SteenrodModule:
     #
     
     def getBasisElement(self, b):
+        if b not in self.gens:
+            raise ValueError("%s is not the name of a basis element" % b)
         return SteenrodModuleElement({b : 1}, module = self)
         
     def getElement(self, dict):
@@ -208,6 +210,9 @@ class SteenrodModule:
             raise ValueError("Invalid relation: degree of output vector should be %s but instead is %s" 
                 % (operator_degree + input_degree, output_degree))
     
+    def get_adem_action(self):
+        return [ {"operation" : sq, "input" : input, "output" : output } for ((sq, input), output) in self.sq_actions.items() if sq != 0 ]
+    
     def sq_action_strs(self):
         result = []
         for ((sq, input), output) in [ x for x in self.sq_actions.items() if x[0][0] != 0 ]:
@@ -225,11 +230,11 @@ class SteenrodModule:
     def validate_generic(self):
         self.failed_relations = {}
         self.validated = True
-        max_deg = max(self.gens.values())
+        max_degree = max(self.gens.values())
         p = self.p
         q = 2*(p - 1) 
-        for gen, gen_deg in self.gens.items():
-            for relation_dim in range(2, (max_deg - gen_deg)//q + 1):
+        for gen, gen_degree in self.gens.items():
+            for relation_dim in range(2, (max_degree - gen_degree)//q + 1):
                 for epsilon in [0, 1]:
                     # We want Pi*b*Pj inadmissible so that means i < p * j + epsilon.
                     # relation_dim = i + j so j = relation_dim - i
@@ -312,7 +317,13 @@ class SteenrodModule:
     
     def validQ(self):
         return self.validated and len(self.failed_relations) == 0
-     
+    
+    def ensure_valid(self):
+        if not self.validated:
+            self.validate()
+        if len(self.failed_relations) > 0:
+            raise ValueError("Failing relations in module " + str(self)) 
+    
     #
     # Making new modules
     #   
@@ -326,8 +337,7 @@ class SteenrodModule:
         p = modules[0].p
         generic = modules[0].generic
         for M in modules:
-            if not M.validQ():
-                raise ValueError("We only tensor validated modules. Run M.validate() first.")
+            M.ensure_valid()
             if M.p != p:
                 raise ValueError("We only tensor modules that share the same prime.")
             if M.generic != generic:
@@ -372,13 +382,69 @@ class SteenrodModule:
         
         result.validated = True
         return result
-            
+    
+    def getBasisInDegree(self, n):
+        return [ v for (v, deg) in self.gens.items() if deg == n]
+    
+    def getAdemActionMatrix(self, *, operation, input_degree):
+        matrix = Vector(self.p)
+        for v in self.getBasisInDegree(input_degree):
+            for (w, c) in self.getBasisElement(v).adem_act(operation).items():
+                matrix[(v,w)] = c
+        return matrix 
+    
+    def get_transpose_matrix_column(self, matrix, *,  output_vec, input_degree, dual_module):
+        row = dual_module.zero()
+        for w in self.getBasisInDegree(input_degree):
+            if (w, output_vec) in matrix:
+                w_dual = dual_module.getBasisElement(SteenrodModule.get_dual_vector_name(w))
+                row.add_in_place(w_dual, coefficient = matrix[(w, output_vec)] )
+        return row
+    
+    @staticmethod
+    def get_dual_vector_name(v):
+        if v[-1] != "^":
+            return v + "^"
+        else:
+            return v[:-1]
+    
     def dualize(self):
-        raise NotImplementedError()
-        result = SteenrodModule(p = p, generic = generic)
+        self.ensure_valid()
+        p = self.p
+        generic = self.generic
+        result = SteenrodModule( p = p, generic = generic )
+        q = 2*(p - 1) if generic else 1
+        max_degree = max(self.gens.values())
+        P = self.adem_algebra.P if generic else self.adem_algebra.Sq
+        add_action = result.add_P_action if generic else result.add_Sq_action
+        dual_vec = SteenrodModule.get_dual_vector_name
+        
+        for (v, deg) in self.gens.items():
+            result.add_basis_element( dual_vec(v),  -deg)
+        
+        for input_degree in range(max_degree):
+            operator_degree_pairs = [ (P(n), q * n) for n in range(1, (max_degree - input_degree)//q + 1)]
+            if generic:
+                operator_degree_pairs += [(self.adem_algebra.b(), 1)]
+            for (operator, operator_degree) in operator_degree_pairs:
+                output_degree = input_degree + operator_degree
+                antipode = operator.antipode()
+                antipode_action = self.getAdemActionMatrix(operation = antipode, input_degree = input_degree)
+                for v in self.getBasisInDegree(output_degree):
+                    op_action_on_v_dual = self.get_transpose_matrix_column( 
+                        antipode_action, 
+                        output_vec = v, 
+                        input_degree = input_degree, 
+                        dual_module = result
+                    )
+                    
+                    if op_action_on_v_dual != result.zero():
+                        add_action(operator_degree, dual_vec(v), op_action_on_v_dual)
+        result.validated = True
         return result        
         
     def truncate(self, min_dim = -Infinity, max_dim = Infinity):
+        self.ensure_valid()
         if min_dim is None:
             min_dim = -Infinity
         if max_dim is None:
@@ -435,49 +501,55 @@ class SteenrodModule:
     #
     
     @staticmethod
-    def from_Bruner_str(str):
-        lines = [s for s in module.split("\n") if s]
+    def from_Bruner_str(module_string, p = 2):
+        result = SteenrodModule(p = p)
+        lines = [s for s in module_string.split("\n") if s]
         num_gens = int(lines[0])
         gens =  [int(s) for s in lines[1].split(" ") if s]
-        gens_dict = {}
-        idx = 0
-        for g in gens:
-            gens_dict[str(idx)] = g
-            idx += 1
+        dim_to_variable_name = {}
+        gen_idx_to_name = {}
+        for (idx, dim) in enumerate(gens):
+            letter = dim_to_variable_name.get(dim, "a") 
+            name = letter + str(dim)
+            gen_idx_to_name[idx] = name
+            dim_to_variable_name[dim] = chr(ord(letter) + 1) # Use next letter to name it next time
+            result.add_basis_element(name, dim)
+            
         actions = []
         for l in lines[2:]:
             l = [int(s) for s in l.split(" ") if s]
-            act = {"Sq" : l[1], "input" : str(l[0]), "output" : []}
+            operation = l[1]
+            input = gen_idx_to_name[l[0]]
+            output = result.zero()
             for e in l[3:]:
-                act["output"].append([1, str(e)])
-            actions.append(act)
-        return {"generators" : gens_dict, "actions" : actions }
+                output.add_in_place(result.getBasisElement(gen_idx_to_name[e]))
+            result.add_Sq_action(operation, input, output)
+        return result
         
     def to_Bruner_str(self):
-        gens = self.generators
-        actions = self.sq_actions
-        num_gens = str(len(gens))
-        gen_degrees = " ".join([str(x) for x in gens.values()])
+        gens = self.gens
+        num_gens = len(gens)
+        gen_degrees = " ".join([str(x) for x in self.gens.values()])
         # We need a map (index in generator list) --> (generator name) because Bruner modules only refer to elts by their index.
         l = [(gens[k], k) for k in gens]
         l.sort()
-        gen_name_to_idx = { str(ind) : x[1] for ind, x in enumerate(l)}
-        output_lines = [num_gens]
+        gen_name_to_idx = { x[1] : str(idx)  for idx, x in enumerate(l)}
+        output_lines = [str(num_gens)]
         output_lines += [gen_degrees]
-        for act in actions:
-            input_idx = gen_name_to_idx[act["input"]]
-            sq = str(act["Sq"])
-            output_length = str(len(act["output"]))
-            if generic:
-                output_list = act["output"]
+        for action in self.get_adem_action():
+            input_idx = gen_name_to_idx[action["input"]]
+            operation = str(action["operation"])
+            output_length = str(len(action["output"]))
+            if self.generic:
+                output_list = action["output"]
                 coeffs        = [str(x[0]) for x in output_list]
-                basis_indices = [str(gen_name_to_idx[x[1]]) for x in output_list]
+                basis_indices = [gen_name_to_idx[x[1]] for x in output_list]
                 output_vector = [None] * (2*len(output_list))
                 output_vector[::2] = coeffs
                 output_vector[1::2] = basis_indices 
             else:
-                output_vector = [ str(gen_name_to_idx[x[1]]) for x in act["output"] ]
-            action_list   = [input_idx, sq, output_length ] 
+                output_vector = [ gen_name_to_idx[x] for (x, _) in action["output"].items() ]
+            action_list   = [input_idx, operation, output_length ] 
             action_list  += output_vector            
             output_lines += [ " ".join(action_list) ]
         return "\n".join(output_lines)
@@ -490,9 +562,9 @@ class SteenrodModule:
         raise NotImplementedError()        
 
     @staticmethod
-    def from_Bruner_file(file):    
+    def from_Bruner_file(file, p = 2):    
         file_contents = read_file(file)
-        return SteenrodModule.from_Bruner_str(file_contents)
+        return SteenrodModule.from_Bruner_str(file_contents, p)
 
     def to_Bruner_file(self, file):
         write_file(file, self.to_Bruner_str())
