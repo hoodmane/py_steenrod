@@ -112,6 +112,22 @@ class AdemAlgebra:
     def getBasisElement(self, b):
         return AdemElement({b : 1}, algebra = self)
     
+    def getInadmissiblePairs(self, max_degree):
+        P = self.P if generic else self.Sq
+        for relation_dim in range(2, max_degree):
+            # We want Sqi*Sqj inadmissible so that means i < 2 * j.
+            # relation_dim = i + j so j = relation_dim - i
+            # so i < 2 * (relation_dim - i) so i < 2 * relation_dim / 3. 
+            # We need to round up so that Python includes the last integer 
+            # if 2 * relation_dim / 3 is not an integer
+            for i in range(1, int(math.ceil((p * relation_dim) / (p+1)))):
+                j = relation_dim - i
+                yield (relation_dim, P([i]), P([relation_dim - i]))
+            if generic:
+                for i in range(1, int(math.ceil((p * relation_dim + 1) / (p+1)))):
+                    j = relation_dim - i - 1
+                    yield (relation_dim, P([i]), self.bP([relation_dim - i]))                
+    
     def basis(self, n):
         return [AdemElement({b:1}, algebra = self) for b in adem.basis(n, algebra = self)]
     

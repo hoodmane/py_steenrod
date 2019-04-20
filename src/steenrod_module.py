@@ -227,57 +227,16 @@ class SteenrodModule:
         self.validated = False
         self.failed_relations = {}
     
-    def validate_generic(self):
-        self.failed_relations = {}
-        self.validated = True
-        max_degree = max(self.gens.values())
-        p = self.p
-        q = 2*(p - 1) 
-        for gen, gen_degree in self.gens.items():
-            for relation_dim in range(2, (max_degree - gen_degree)//q + 1):
-                for epsilon in [0, 1]:
-                    # We want Pi*b*Pj inadmissible so that means i < p * j + epsilon.
-                    # relation_dim = i + j so j = relation_dim - i
-                    # so i < p * (relation_dim - i) + epsilon so i < (p * relation_dim + epsilon) / ( p + 1)
-                    # We need to round up so that Python includes the last integer 
-                    # if 2 * relation_dim / 3 is not an integer
-                    for i in range(1, int(math.ceil((p * relation_dim + epsilon) / ( p + 1)))):
-                        j = relation_dim - i
-                        Pi = self.adem_algebra.P(i)
-                        Pj = self.adem_algebra.P(j)
-                        b = self.adem_algebra.b_or_unit(epsilon)
-                        v = self.getBasisElement( gen )
-                        boundary = (Pi * b * Pj) * v - Pi * (b * Pj * v)
-                        if str(boundary) != '0':
-                            self.failed_relations[(i, epsilon, j, gen)] = boundary
-        return self
-    
-    def validate_2(self):
-        self.failed_relations = {}
-        self.validated = True
-        max_dim = max(self.gens.values())
-        for gen, degree in self.gens.items():
-            for relation_dim in range(2, max_dim - degree + 1):
-                # We want Sqi*Sqj inadmissible so that means i < 2 * j.
-                # relation_dim = i + j so j = relation_dim - i
-                # so i < 2 * (relation_dim - i) so i < 2 * relation_dim / 3. 
-                # We need to round up so that Python includes the last integer 
-                # if 2 * relation_dim / 3 is not an integer
-                for i in range(1, int(math.ceil((2 * relation_dim) / 3))):
-                    j = relation_dim - i
-                    Sqi = self.adem_algebra.Sq(i)
-                    Sqj = self.adem_algebra.Sq(j)
-                    v = self.getBasisElement( gen )
-                    boundary = (Sqi * Sqj) * v - Sqi * (Sqj * v)
-                    if str(boundary) != '0':
-                        self.failed_relations[(i, j, gen)] = boundary
-        return self
-        
     def validate(self):
-        if self.generic:
-            self.validate_generic()
-        else:
-            self.validate_2()
+        self.failed_relations = {}
+        self.validated = True
+        max_degree = max(self.gens.values()) - min(self.gens.values())
+        for (relation_degree, A, B) in self.adem_algebra.getInadmissiblePairs(max_degree):
+            for gen in [gen for (gen, gen_degree) in self.gens.items() if relation_degree + gen_degree <= max_degree]
+                v = self.getBasisElement(gen)
+                boundary = (A * B) * v - A * (B * v)
+                if str(boundary) != '0':
+                    self.failed_relations[(i, epsilon, j, gen)] = boundary
         return self
                         
     def getFailedRelationStrings_generic(self):
@@ -310,10 +269,15 @@ class SteenrodModule:
         return relation_strings
     
     def getFailedRelationStrings(self):
+        if not self.validated:
+            self.validate()
         if self.generic:
             return self.getFailedRelationStrings_generic()
         else:
             return self.getFailedRelationStrings_2()
+            
+    def getFailedRelations(self):
+        return self.getFailedRelationStrings()
     
     def validQ(self):
         return self.validated and len(self.failed_relations) == 0
