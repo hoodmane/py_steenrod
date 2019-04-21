@@ -1,7 +1,51 @@
 import itertools
+import functools
 
 def implementedByAssignmentLaterInThisFile():
     assert False, "We implement this by assignment from Vector.linearly_extend_map later in this file Steenrod.py"
+
+class linearextension_change_target(object):
+   '''Decorator. Linearly extends a function.'''
+   def __init__(self, get_output_module):
+      self.get_output_module = get_output_module
+      
+   def __call__(self, f):
+        return extension(self.get_output_module, f)
+         
+linearextension = linearextension_change_target(None)         
+   
+class extension(object):
+    def __init__(self, get_output_module, func):
+        self.get_output_module = get_output_module
+        self.func = func
+        functools.update_wrapper(self, func)
+    
+    def __call__(self, *vecs, output_module = None):
+        if output_module is None:
+            output_module = vecs[0].module
+            if self.get_output_module:
+                output_module = self.get_output_module(output_module)                    
+        if output_module is None:
+            raise ValueError()
+                
+        result = output_module.zero()                
+        
+        for l in itertools.product(*vecs):
+            coeff = 1
+            for (v, basis_elt) in zip(vecs, l):
+                coeff *= v[basis_elt]
+            w = self.func(*l, module=output_module)
+            w = Vector(output_module.p, w)
+            result.add_in_place(w, coeff)
+        return result   
+        
+    def __repr__(self):
+        '''Return the function's docstring.'''
+        return self.func.__doc__
+    def __get__(self, obj, objtype):
+        '''Support instance methods.'''
+        return functools.partial(self.__call__, obj)        
+
 
 class Vector(dict):
     """
@@ -60,7 +104,7 @@ class Vector(dict):
 
     def __mul__(self, v):
         if type(v) == int:
-            result = self.module.getElementFromDict(self)
+            result = self.module.get_element(self)
             result.scale_in_place(v)
             return result
         elif getattr(self, 'adem_element', False) and callable(getattr(v, "adem_act", None)):
@@ -75,7 +119,7 @@ class Vector(dict):
             We could add support here for distinct right and left actions if we want...
         """
         if type(v) == int:
-            result = self.module.getElement(self)
+            result = self.module.get_element(self)
             result.scale_in_place(v)
             return result
         elif getattr(self, 'adem_element', False) and callable(getattr(v, "adem_act", None)):
@@ -94,40 +138,14 @@ class Vector(dict):
         for v in args:
             result.add_in_place(v)
         return result
-
-    @staticmethod
-    def linearly_extend_map(f, kw_param = "module", get_output_module = None):
-        """
-            V is an Fp vector space with basis B, extend a map f: B1 x ... x Bn -> W to a multilinear map V1 x ... x Vn  -> W.
-        """    
-        def extension(*vecs, output_module = None):
-            if output_module is None:
-                output_module = vecs[0].module
-                if get_output_module:
-                    output_module = get_output_module(output_module)                    
-            if output_module is None:
-                raise ValueError()
-                
-            module_arg = { kw_param : output_module }
-                    
-            result = output_module.zero()                
-            
-            for l in itertools.product(*vecs):
-                coeff = 1
-                for (v, basis_elt) in zip(vecs, l):
-                    coeff *= v[basis_elt]
-                w = f(*l, **module_arg)
-                w = Vector(output_module.p, w)
-                result.add_in_place(w, coeff)
-            return result
-        return extension
         
     @staticmethod
     def tensor_basis_elements(*args):
         return Vector.tensor_symbol.join(args)
     
-    def tensor(self, w):
-        implementedByAssignmentLaterInThisFile()
+    @linearextension
+    def tensor(*args, module = None):
+        return Vector.tensor_symbol.join(args)
         
 #    def __eq__(self, other):
 #        raise NotImplementedError()
@@ -163,12 +181,17 @@ class Vector(dict):
         else:
             return "  +  ".join(result)
 
-    def basis_elt_to_string(self, b):
+    def basis_elt_to_string(self, basis_elt):
         """
             This is overloaded by subclasses
         """
-        return str(b)  
+        return str(basis_elt)  
 
 Vector.tensor_symbol = "*"
-Vector.tensor = Vector.linearly_extend_map(lambda *args, module = None : { Vector.tensor_basis_elements(*args) : 1 })      
-            
+
+
+
+
+
+
+

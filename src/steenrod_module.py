@@ -1,10 +1,9 @@
 import json
 import itertools
-import math
 from functools import reduce
 
 from infinity import Infinity
-from FpVectorSpace import Vector
+from FpVectorSpace import Vector, linearextension
 import adem
 import steenrod
 
@@ -24,11 +23,13 @@ class SteenrodModuleElement(Vector):
         self.module = module
         super(SteenrodModuleElement, self).__init__(module.p, dictionary)
         
-    def adem_act(self, adem_elt):
-        steenrod.implementedByAssignmentLaterInThisFile()
+    @linearextension
+    def adem_act(module_basis_elt, adem_basis_elt, *, module):
+        return SteenrodModule.adem_basis_act(module_basis_elt, adem_basis_elt, module=module)
 
-    def milnor_act(self, adem_elt):
-        steenrod.implementedByAssignmentLaterInThisFile()
+    @linearextension
+    def milnor_act(module_basis_elt, adem_basis_elt):
+        return SteenrodModule.milnor_basis_act(module_basis_elt, adem_basis_elt, module=module)
         
     def basis_degree(self, b):
         return self.module.gens[b]
@@ -54,7 +55,7 @@ class SteenrodModule:
             else:
                 raise ValueError()
         self.validated = True
-        self.failed_relations = {} 
+        self.failed_relations = []
         self.milnor_actions = sq_actions or []
     
     def __repr__(self):
@@ -80,12 +81,12 @@ class SteenrodModule:
     # Some elements 
     #
     
-    def getBasisElement(self, b):
+    def get_basis_element(self, b):
         if b not in self.gens:
             raise ValueError("%s is not the name of a basis element" % b)
         return SteenrodModuleElement({b : 1}, module = self)
         
-    def getElement(self, dict):
+    def get_element(self, dict):
         return SteenrodModuleElement(dict, module = self)
         
     def zero(self):
@@ -100,7 +101,7 @@ class SteenrodModule:
             Used for adem_basis_act which is extended to the general action
         """
         if sq == 0:
-            return self.module.getBasisElement( module_basis_elt )
+            return self.module.get_basis_element( module_basis_elt )
         actions = self.sq_actions
         key = (sq, module_basis_elt)
         return actions[key] if key in actions else {}
@@ -129,7 +130,7 @@ class SteenrodModule:
         if module.generic:
             sqs = adem.adem_basis_elt_generic_map(P_fn = lambda P : P, b = 'b', basis_elt = adem_basis_elt)
         sqs = sqs[::-1] # Reverse
-        module_vector = module.getBasisElement(module_basis_elt)
+        module_vector = module.get_basis_element(module_basis_elt)
         result = reduce(module.sq_act_on_vector, sqs, module_vector)
         return result
         
@@ -156,50 +157,21 @@ class SteenrodModule:
         
     def add_basis_element(self, name, degree):
         self.gens[name] = degree
-        elt = self.getBasisElement(name)
+        elt = self.get_basis_element(name)
         self.sq_actions[(0, name)] = elt
         return elt
         
-    def add_Sq_action(self, Sq, input_gen, output_vec):
-        input_deg = self.gens[input_gen]
-        self.check_degree(Sq, input_gen, output_vec)
+    def get_name_from_basis_vector_or_string(self, command_name, input_basis_vector):
+        type_error_str = "Argument input_gen of %s should be the name of a basis vector or a basis vector SteenrodModuleElement." 
+        type_error_str =  type_error_str % command_name
+        if type(input_basis_vector) == SteenrodModuleElement and len(input_basis_vector) != 1:
+            raise TypeError(type_error_str)
+        elif type(input_basis_vector) == SteenrodModuleElement and len(input_basis_vector) == 1:
+            input_basis_vector = next(iter(input_basis_vector))
+        if type(input_basis_vector) != str:
+            raise ValueError(type_error_str)
         
-        if self.validated:
-            self.clear_validation()
-        key = (Sq, input_gen)
-        if key in self.sq_actions:
-            output_vec += self.sq_actions[key]
-        output_vec = self.getElement(output_vec)            
-        self.sq_actions[key] = output_vec
-        
-    def add_P_action(self, P, input_gen, output_vec):
-        if P == 'b':
-            self.add_b_action(input_gen, output_vec)
-            return 
-        self.check_degree(2*(self.p-1)*P, input_gen, output_vec)
-        if self.validated:
-            self.clear_validation()
-        key = (P, input_gen)
-        if key in self.sq_actions:
-            output_vec += self.sq_actions[key]
-        output_vec = self.getElement(output_vec)             
-        self.sq_actions[key] = output_vec
-    
-    def add_b_action(self, input_gen, output_vec):
-        self.check_degree(1, input_gen, output_vec)
-        if self.validated:
-            self.clear_validation()
-        key = ('b', input_gen)
-        if key in self.sq_actions:
-            output_vec += self.sq_actions[key]
-        output_vec = self.getElement(output_vec)             
-        self.sq_actions[key] = output_vec
-        
-    def add_milnor_Q_action(self, Q, input_gen, output_vec):
-        raise NotImplementedError()
-    
-    def add_milnor_P_action(self, Q, input_gen, output_vec):
-        raise NotImplementedError()
+        return input_basis_vector
         
     def check_degree(self, operator_degree, input_gen, output_vec):
         input_degree  = self.gens[input_gen]
@@ -208,7 +180,51 @@ class SteenrodModule:
             raise ValueError("Output vector %s is not homogenous" % output_vec)
         if operator_degree + input_degree != output_degree:
             raise ValueError("Invalid relation: degree of output vector should be %s but instead is %s" 
-                % (operator_degree + input_degree, output_degree))
+                % (operator_degree + input_degree, output_degree))        
+        
+    def add_Sq_action(self, Sq, input_gen, output_vec):
+        input_gen = self.get_name_from_basis_vector_or_string("add_Sq_action", input_gen)
+        input_deg = self.gens[input_gen]
+        self.check_degree(Sq, input_gen, output_vec)
+        
+        if self.validated:
+            self.clear_validation()
+        key = (Sq, input_gen)
+        if key in self.sq_actions:
+            output_vec += self.sq_actions[key]
+        output_vec = self.get_element(output_vec)            
+        self.sq_actions[key] = output_vec
+        
+    def add_P_action(self, P, input_gen, output_vec):
+        if P == 'b':
+            self.add_b_action(input_gen, output_vec)
+            return 
+        input_gen = self.get_name_from_basis_vector_or_string("add_P_action", input_gen)            
+        self.check_degree(2*(self.p-1)*P, input_gen, output_vec)
+        if self.validated:
+            self.clear_validation()
+        key = (P, input_gen)
+        if key in self.sq_actions:
+            output_vec += self.sq_actions[key]
+        output_vec = self.get_element(output_vec)             
+        self.sq_actions[key] = output_vec
+    
+    def add_b_action(self, input_gen, output_vec):
+        input_gen = self.get_name_from_basis_vector_or_string("add_b_action", input_gen)
+        self.check_degree(1, input_gen, output_vec)
+        if self.validated:
+            self.clear_validation()
+        key = ('b', input_gen)
+        if key in self.sq_actions:
+            output_vec += self.sq_actions[key]
+        output_vec = self.get_element(output_vec)             
+        self.sq_actions[key] = output_vec
+        
+    def add_milnor_Q_action(self, Q, input_gen, output_vec):
+        raise NotImplementedError()
+    
+    def add_milnor_P_action(self, Q, input_gen, output_vec):
+        raise NotImplementedError()
     
     def get_adem_action(self):
         return [ {"operation" : sq, "input" : input, "output" : output } for ((sq, input), output) in self.sq_actions.items() if sq != 0 ]
@@ -225,56 +241,27 @@ class SteenrodModule:
         
     def clear_validation(self):
         self.validated = False
-        self.failed_relations = {}
+        self.failed_relations = []
     
     def validate(self):
-        self.failed_relations = {}
+        self.failed_relations = []
         self.validated = True
         max_degree = max(self.gens.values()) - min(self.gens.values())
         for (relation_degree, A, B) in self.adem_algebra.getInadmissiblePairs(max_degree):
-            for gen in [gen for (gen, gen_degree) in self.gens.items() if relation_degree + gen_degree <= max_degree]
-                v = self.getBasisElement(gen)
+            for gen in [gen for (gen, gen_degree) in self.gens.items() if relation_degree + gen_degree <= max_degree]:
+                v = self.get_basis_element(gen)
                 boundary = (A * B) * v - A * (B * v)
                 if str(boundary) != '0':
-                    self.failed_relations[(i, epsilon, j, gen)] = boundary
+                    self.failed_relations.append((A, B, gen, boundary))
         return self
-                        
-    def getFailedRelationStrings_generic(self):
-        relation_strings = []
-        for reln, boundary in self.failed_relations.items():
-            i = reln[0]
-            epsilon = reln[1]
-            j = reln[2]
-            v = reln[3]
-            Pi = self.adem_algebra.P(i)
-            Pj = self.adem_algebra.P(j)
-            b_or_unit = self.adem_algebra.b_or_unit(epsilon)
-            relation = Pi * b_or_unit * Pj
-            Pj_or_bPj_str  = "b " if epsilon else ""
-            Pj_or_bPj_str += str(Pj)
-            rel_str = "(%s) * %s  -  %s * (%s * %s) = %s" % (relation, v,      Pi, Pj_or_bPj_str, v,  boundary)
-            relation_strings += [rel_str]
-        return relation_strings                        
-                        
-    def getFailedRelationStrings_2(self):
-        relation_strings = []
-        for reln, boundary in self.failed_relations.items():
-            i = reln[0]
-            j = reln[1]
-            v = reln[2]
-            Sqi = self.adem_algebra.Sq(i)
-            Sqj = self.adem_algebra.Sq(j)
-            rel_str = "(%s) * %s  -  %s * (%s * %s) = %s" % (Sqi * Sqj, v, Sqi, Sqj, v, boundary)
-            relation_strings += [rel_str]
-        return relation_strings
     
     def getFailedRelationStrings(self):
         if not self.validated:
             self.validate()
-        if self.generic:
-            return self.getFailedRelationStrings_generic()
-        else:
-            return self.getFailedRelationStrings_2()
+        result = []
+        for (A,B,gen, boundary) in self.failed_relations:
+            result+= ["(%s) * %s  -  %s * (%s * %s) = %s" % (A*B, gen, A, B, gen, boundary)]
+        return result
             
     def getFailedRelations(self):
         return self.getFailedRelationStrings()
@@ -335,8 +322,8 @@ class SteenrodModule:
                 pre = modules[:i]
                 M = modules[i]
                 post = modules[i+1:]
-                pre_elts  = [[(b,result.getBasisElement(b)) for b in N.gens] for N in pre]
-                post_elts = [[(b,result.getBasisElement(b)) for b in N.gens] for N in post]
+                pre_elts  = [[(b,result.get_basis_element(b)) for b in N.gens] for N in pre]
+                post_elts = [[(b,result.get_basis_element(b)) for b in N.gens] for N in post]
                 act = [(input,v) for ((sq, input),v) in M.sq_actions.items() if sq == 'b']
                 for input_output in itertools.product(*pre_elts, act, *post_elts):
                     (inputs, outputs) = zip(*input_output)
@@ -353,7 +340,7 @@ class SteenrodModule:
     def getAdemActionMatrix(self, *, operation, input_degree):
         matrix = Vector(self.p)
         for v in self.getBasisInDegree(input_degree):
-            for (w, c) in self.getBasisElement(v).adem_act(operation).items():
+            for (w, c) in self.get_basis_element(v).adem_act(operation).items():
                 matrix[(v,w)] = c
         return matrix 
     
@@ -361,7 +348,7 @@ class SteenrodModule:
         row = dual_module.zero()
         for w in self.getBasisInDegree(input_degree):
             if (w, output_vec) in matrix:
-                w_dual = dual_module.getBasisElement(SteenrodModule.get_dual_vector_name(w))
+                w_dual = dual_module.get_basis_element(SteenrodModule.get_dual_vector_name(w))
                 row.add_in_place(w_dual, coefficient = matrix[(w, output_vec)] )
         return row
     
@@ -458,7 +445,7 @@ class SteenrodModule:
         if isinstance( key, slice ) :
             return self.truncate(key.start, key.stop)
         else:
-            raise ValueError("You must give a slice M[min::max]")
+            raise ValueError("You must give a slice M[min:max]")
 
     #
     # Serialization and deserialization.
@@ -486,7 +473,7 @@ class SteenrodModule:
             input = gen_idx_to_name[l[0]]
             output = result.zero()
             for e in l[3:]:
-                output.add_in_place(result.getBasisElement(gen_idx_to_name[e]))
+                output.add_in_place(result.get_basis_element(gen_idx_to_name[e]))
             result.add_Sq_action(operation, input, output)
         return result
         
@@ -544,9 +531,6 @@ class SteenrodModule:
         write_file(file, json_str)
 
 
-SteenrodModuleElement.adem_act = Vector.linearly_extend_map(SteenrodModule.adem_basis_act)
-
-
 if __name__ == "__main__":
     A   = steenrod.AdemAlgebra(p = 2)
     A3  = steenrod.AdemAlgebra(p = 3)
@@ -562,12 +546,12 @@ if __name__ == "__main__":
     x2 = M.add_basis_element("x2",2)
     x3 = M.add_basis_element("x3",3)
     x4 = M.add_basis_element("x4",4)
-    M.add_Sq_action(2, "x0", x2)
+    M.add_Sq_action(2, x0, x2)
     M.add_Sq_action(2, "x2", x4)
     M.add_Sq_action(1, "x0", x1)
     M.add_Sq_action(2, "x1", x3)
     M.add_Sq_action(1, "x3", x4)
-    M.add_Sq_action(3, "x1", x4)  
+    #M.add_Sq_action(3, "x1", x4)  
     M.validate()
     M3 = SteenrodModule(p = 3)
     P1 = A3.P(1)
