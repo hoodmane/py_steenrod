@@ -42,9 +42,13 @@ class extension(object):
     def __repr__(self):
         '''Return the function's docstring.'''
         return self.func.__doc__
+        
     def __get__(self, obj, objtype):
         '''Support instance methods.'''
-        return functools.partial(self.__call__, obj)        
+        if obj is not None:
+            return functools.partial(self.__call__, obj)        
+        else:
+            return self.__call__
 
 
 class Vector(dict):
@@ -145,7 +149,7 @@ class Vector(dict):
     
     @linearextension
     def tensor(*args, module = None):
-        return Vector.tensor_symbol.join(args)
+        return module.get_basis_element(Vector.tensor_symbol.join(args))
         
 #    def __eq__(self, other):
 #        raise NotImplementedError()

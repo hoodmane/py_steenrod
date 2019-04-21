@@ -1,11 +1,27 @@
+"""
+    File: milnor.py
+    Author: Hood Chatham
+
+    Defines the basic operations on Milnor algebras. No object oriented code,
+    all functions take basis vectors as inputs and output dictionaries representing
+    Fp-linear combinations of basis vectors. The relevant calls will be wrapped
+    by methods of the MilnorAlgebra and MilnorElement classes in steenrod.py.
+    They are systemtically extended over vector inputs using the
+    @linearextension decorator.
+
+    The algorithms here are all copied from Sage, in particular from the two
+    files steenrod_algebra_mult.py and (the basis code from) steenrod_algebra_basis.py
+    I have made significant improvements in code legibility and removed all references to Sage code.
+"""
+
 import itertools
 
 import combinatorics
-from memoized import memoized
+#from memoized import memoized
 from infinity import Infinity
 
 class FullProfile:
-    def __init__(self, even_part = None, odd_part = None, truncation = None):
+    def __init__(self, even_part=None, odd_part=None, truncation=None):
         self.even_restricted = not (even_part is None and truncation is None)
         self.odd_restricted = not (odd_part is None and truncation is None)
         self.restricted = self.even_restricted or self.odd_restricted
@@ -16,15 +32,15 @@ class FullProfile:
             self.truncation = 0
         elif truncation is None:
             self.truncation = Infinity
-    
+
     def getEvenPart(self):
         return Profile(self.even_part, self.truncation)
-    
+
     def getOddPart(self):
         return Profile(self.odd_part, self.truncation)
 
 class Profile:
-    def __init__(self, profile = None, truncation = None):
+    def __init__(self, profile=None, truncation=None):
         self.even_restricted = not (profile is None and truncation is None)
         self.restricted = self.even_restricted
         self.profile = profile or []
@@ -32,66 +48,71 @@ class Profile:
         if truncation is None and profile:
             self.truncation = 0
         elif truncation is None:
-            self.truncation = Infinity        
+            self.truncation = Infinity
 
-    def __getitem__(self,index):
+    def __getitem__(self, index):
         if callable(self.profile):
             return self.profile(index)
         if index < len(self.profile):
             return self.profile[index]
         else:
             return self.truncation
-    
+
     def exponent(self, i, p):
         res = self[i]
         if res < Infinity:
-            res = p ** res    
-        return res    
+            res = p ** res
+        return res
 
 class MinimalMilnorAlgebra:
-    def __init__(self, p, generic = None, profile = None, truncation_type = None):
+    def __init__(self, p, generic=None, profile=None, truncation_type=None):
         self.p = p
         if generic is None:
             generic = p != 2
         self.generic = generic
         if generic:
-            self.profile = FullProfile(profile and profile[0], profile and profile[1], truncation_type)
-        else:  
-            self.profile = Profile(profile, truncation_type)    
-    
+            self.profile = FullProfile(
+                profile and profile[0],
+                profile and profile[1],
+                truncation_type
+            )
+        else:
+            self.profile = Profile(profile, truncation_type)
+
 def initialize_milnor_matrix(r, s):
     rows = len(r) + 1
     cols = len(s) + 1
     M = [[0 for _ in range(cols)] for _ in range(rows)]
-    for j in range(1,cols):
+    for j in range(1, cols):
         M[0][j] = s[j-1]
-    for i in range(1,rows):
+    for i in range(1, rows):
         M[i][0] = r[i-1]
     return M
 
 def step_milnor_matrix(M, r, s, i, j, x):
     """
         This seems to move an i x j block of M back to the first row and column.
-        To be honest, I don't really know what the point is, but the milnor_matrices 
+        To be honest, I don't really know what the point is, but the milnor_matrices
         function was a little long and this seemed like a decent chunk to extract.
     """
     cols = len(s) + 1
-    for row in range(1,i):
+    for row in range(1, i):
         M[row][0] = r[row-1]
-        for col in range(1,cols):
+        for col in range(1, cols):
             M[0][col] += M[row][col]
             M[row][col] = 0
-    for col in range(1,j):
+    for col in range(1, j):
         M[0][col] += M[i][col]
         M[i][col] = 0
     M[0][j] -= 1
     M[i][j] += 1
-    M[i][0] = x 
+    M[i][0] = x
 
 def milnor_matrices(r, s, p):
     r"""
         Generator for Milnor matrices. milnor_product_even iterates over this.
-        Uses the same algorithm Monks does in his Maple package to iterate through the possible matrices: see
+        Uses the same algorithm Monks does in his Maple package to iterate through 
+        the possible matrices: see
         https://monks.scranton.edu/files/software/Steenrod/steen.html
     """
     rows = len(r) + 1
@@ -101,13 +122,14 @@ def milnor_matrices(r, s, p):
     found = True
     while found:
         found = False
-        for i in range(1,rows):
+        for i in range(1, rows):
             if found:
                 break
             total = M[i][0]
             for j in range(1, cols):
                 p_to_the_j = p ** j
-                # check to see if column index j is small enough or there's nothing above the column to add to it
+                # check to see if column index j is small enough or 
+                # there's nothing above the column to add to it
                 if total < p_to_the_j or all([M[k][j] == 0 for k in range(i)]):
                     total += M[i][j] * p_to_the_j
                 else:
@@ -117,9 +139,9 @@ def milnor_matrices(r, s, p):
                     break
 
 def remove_trailing_zeroes(l):
-    for i in range(len(l) - 1 , -1, -1):
+    for i in range(len(l) - 1, -1, -1):
         if l[i] != 0:
-            return l[ : i+1] 
+            return l[ : i+1]
     return []
 
 #@memoized
@@ -137,7 +159,7 @@ def product_even(r, s, p):
         coeff = 1
         diagonal_sums = [0] * diags
         for n in range(1, diags + 1):
-            nth_diagonal = [M[i][n-i] for i in range(max(0,n-cols+1), min(1+n,rows))]
+            nth_diagonal = [M[i][n-i] for i in range(max(0, n-cols+1), min(1+n, rows))]
             coeff *= combinatorics.multinomial(nth_diagonal, p)
             coeff = coeff % p
             if coeff == 0:
@@ -161,16 +183,16 @@ def product_full_Qpart(m1, f, p):
         result = {}
         p_to_the_k = p**k
         for mono in old_result:
-            for i in range(0,1+len(mono[1])):
+            for i in range(0, 1+len(mono[1])):
                 if (k+i not in mono[0]) and (i == 0 or p_to_the_k <= mono[1][i-1]):
                     q_mono = set(mono[0])
-                    ind = len([ x for x in q_mono if x >= k+i ])
+                    ind = len([x for x in q_mono if x >= k+i])
                     coeff = (-1)**ind * old_result[mono]
                     lst = list(mono[0])
                     if ind == 0:
                         lst.append(k+i)
                     else:
-                        lst.insert(-ind,k+i)
+                        lst.insert(-ind, k+i)
                     q_mono = tuple(lst)
                     p_mono = list(mono[1])
                     if i > 0:
@@ -178,7 +200,7 @@ def product_full_Qpart(m1, f, p):
                     # The next two lines were added so that p_mono won't
                     # have trailing zeros. This makes p_mono uniquely
                     # determined by P(*p_mono).
-                    while len(p_mono) > 0 and p_mono[-1] == 0:
+                    while p_mono and p_mono[-1] == 0:
                         p_mono.pop()
                     result[(q_mono, tuple(p_mono))] = coeff % p
     return result
@@ -213,13 +235,15 @@ def product_full(m1, m2, p):
         milnor.product_generic(((0,2,4),()), ((1,5),()), 7)
         {((0, 1, 2, 4, 5), ()): 1}
         sorted(milnor.product_generic(((),(6,)), ((),(2,)), 3).items())
-        [(((), (0, 2)), 1), (((), (4, 1)), 1), (((), (8,)), 1)]    Associativity once failed because of a sign error::
+        [(((), (0, 2)), 1), (((), (4, 1)), 1), (((), (8,)), 1)]
+
+        Associativity once failed because of a sign error:
 
         sage: a,b,c = A.Q_exp(0,1), A.P(3), A.Q_exp(1,1)
         sage: (a*b)*c == a*(b*c)
         True
     """
-    (f,s) = m2
+    (f, s) = m2
     m1_times_f = product_full_Qpart(m1, f, p)
     # Now for the Milnor matrices.  For each entry '(e,r): coeff' in answer,
     # multiply r with s.  Record coefficient for matrix and multiply by coeff.
@@ -229,12 +253,12 @@ def product_full(m1, m2, p):
     else:
         result = {}
         for (e, r) in m1_times_f:
-            coeff = m1_times_f[(e,r)]
+            coeff = m1_times_f[(e, r)]
             # Milnor multiplication for r and s
             prod = product_even(r, s, p=p)
             for k in prod:
-                old_coeff = result[(e,k)] if (e, k) in result else 0
-                result[(e,k)] = (old_coeff + coeff*prod[k]) % p
+                old_coeff = result[(e, k)] if (e, k) in result else 0
+                result[(e, k)] = (old_coeff + coeff*prod[k]) % p
     return result
 
 def product_2(r, s):
@@ -247,29 +271,29 @@ def product(r, s, *, algebra):
         return product_full(r, s, algebra.p)
     else:
         return product_even(r, s, algebra.p)
-            
+
 
 def basis_even(n, p, profile):
     if n == 0:
         return [[]]
     result = []
-    for mono in combinatorics.WeightedIntegerVectors(n, combinatorics.xi_degrees(n, p = p, reverse = False)):
+    for mono in combinatorics.WeightedIntegerVectors(n, combinatorics.xi_degrees(n, p=p, reverse=False)):
         exponents = list(mono)
-        while len(exponents) > 0 and exponents[-1] == 0: 
+        while len(exponents) > 0 and exponents[-1] == 0:
             exponents.pop()
         okay = True
         if profile.even_restricted:
-            for i in range(len(exponents)):
-                if exponents[i] >= profile.exponent(i, p):
+            for (i, exp) in enumerate(exponents):
+                if exp >= profile.exponent(i, p):
                     okay = False
                     break
         if okay:
-            result.append(tuple(exponents)) 
-    return tuple(result)  
+            result.append(tuple(exponents))
+    return tuple(result)
 
 def basis_generic_Q_part(q_deg, p, profile):
-    q_degrees = combinatorics.xi_degrees((q_deg - 1)//(2*(p-1)), p = p)
-    q_degrees = [ 1+2*(p-1)*d for d in q_degrees ]
+    q_degrees = combinatorics.xi_degrees((q_deg - 1)//(2*(p-1)), p=p)
+    q_degrees = [1+2*(p-1)*d for d in q_degrees]
     q_degrees.append(1)
     q_degrees_decrease = list(q_degrees)
     q_degrees.reverse()
@@ -290,25 +314,25 @@ def basis_generic_Q_part(q_deg, p, profile):
 
 def basis_generic(n, p, profile):
     if n == 0:
-        return (((),()))
+        return (((), ()),)
     result = []
     # p_deg records the desired degree of the P part of the basis element.
     # Since p-parts are always divisible by 2p-2, we divide by this first.
     min_q_deg = (-1 + p ** ((n % (2 * (p - 1))) - 1)) // (p-1)
     for p_deg in range(n//(2*(p-1)) + 1):
         q_deg = n - 2 * p_deg * (p - 1)
-        
+
         # if this inequality holds, no way to have a partition
         # with distinct parts.
         if q_deg < min_q_deg:
             break
-        
+
         P_parts = basis_even(p_deg, p, profile.getEvenPart())
         Q_parts = basis_generic_Q_part(q_deg, p, profile.getOddPart())
         for (p_mono, q_mono) in itertools.product(P_parts, Q_parts):
             result.append((tuple(q_mono), tuple(p_mono)))
     return tuple(result)
-    
+
 
 def basis(n, *, algebra):
     r"""
@@ -377,8 +401,5 @@ def basis(n, *, algebra):
     """
     if algebra.generic:
         return basis_generic(n, algebra.p, algebra.profile)
-    else:  
+    else:
         return basis_even(n, 2, algebra.profile)
-        
-
-
