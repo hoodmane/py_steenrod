@@ -21,7 +21,7 @@
 from functools import reduce
 import math
 
-#from memoized import memoized
+from memoized import memoized
 
 import combinatorics
 import adem
@@ -55,12 +55,12 @@ class AdemElement(Vector):
     @linearextension_change_target(lambda alg: MilnorAlgebra.getInstanceFromAlgebra(alg))
     def to_milnor(basis_elt, *, module):
         """Convert self to the Milnor basis."""
-        return milnor_to_adem_on_basis(basis_elt, algebra=module)
+        return adem_to_milnor_on_basis(basis_elt, p=module.p, generic=module.generic)
 
     @linearextension
     def antipode(basis_elt, *, module):
         """Compute the antipode of self."""
-        return adem_antipode_on_basis(basis_elt, algebra=module)
+        return adem_antipode_on_basis(basis_elt, p=module.p, generic=module.generic)
 
     def coproduct(self):
         """Compute the coproduct of self."""
@@ -119,7 +119,7 @@ class MilnorElement(Vector):
     @linearextension_change_target(lambda alg: AdemAlgebra.getInstanceFromAlgebra(alg))
     def to_adem(basis_elt, *, module):
         """Convert self to the Adem basis"""
-        return milnor_to_adem_on_basis(basis_elt, algebra=module)
+        return milnor_to_adem_on_basis(basis_elt, p=module.p, generic=module.generic)
 
     def basis_elt_to_string(self, basis_elt):
         """Get string representation of basis vector. Overrides method in Vector."""
@@ -269,8 +269,8 @@ class MilnorAlgebra(milnor.MinimalMilnorAlgebra):
         return MilnorAlgebra.getInstance(
             algebra.p,
             algebra.generic,
-            algebra.getattr("profile", None),
-            algebra.getattr("truncation", None)
+            getattr(algebra,"profile", None),
+            getattr(algebra,"truncation", None)
         )
 
     def get_element(self, d):
@@ -337,22 +337,22 @@ class MilnorAlgebra(milnor.MinimalMilnorAlgebra):
 
 MilnorAlgebra.instance_dict = {}
 
-#@memoized
-def adem_to_milnor_on_basis(b, *, algebra):
+@memoized
+def adem_to_milnor_on_basis(basis_elt, *, p, generic):
     """Convert an Adem basis element to the Milnor basis.
        This is easy because Sqi is a Milnor basis element and Adem basis elements
        are products of Sqi's so we just move over the Sqi's and then multiply
        in the MilnorAlgebra.
     """
-    A = MilnorAlgebra.getInstanceFromAlgebra(algebra)
+    A = MilnorAlgebra.getInstance(p=p, generic=generic)
     unit = A.unit()
-    if algebra.generic:
-        sqs = [A.Sq(i) for i in b]
-    else:
+    if generic:
         sqs = adem.adem_basis_elt_generic_map(P_fn=A.P, b=A.Q(0), basis_elt=basis_elt)
+    else:
+        sqs = [A.Sq(i) for i in basis_elt]
     return reduce(lambda a, b: a*b, sqs, unit)
 
-#@memoized
+@memoized
 def milnor_to_adem_on_basis_2(b):
     """Convert a Milnor basis element to the Adem basis when p=2.
        See milnor_to_adem_on_basis for some info about the algorithm.
@@ -365,13 +365,13 @@ def milnor_to_adem_on_basis_2(b):
     for i in range(len(b) - 2, -1, -1):
         t[i] = b[i] + 2 * t[i + 1]
     t = tuple(t)
-    x = adem_to_milnor_on_basis_2(t)
+    x = adem_to_milnor_on_basis(t, p=2, generic=False)
     x.pop(b)
     result = x.to_adem(output_module=adem_alg)
     result[t] = 1
     return result
 
-#@memoized
+@memoized
 def milnor_to_adem_on_basis_generic(b, *, p):
     """Convert a Milnor basis element to the Adem basis when p=2.
        See milnor_to_adem_on_basis for some info about the algorithm.
@@ -393,14 +393,14 @@ def milnor_to_adem_on_basis_generic(b, *, p):
     for i in range(2, len(s) + 1):
         t[-2*i] = t[-2*i + 1] + s[-i] + p * t[-2*i + 2]
     t = tuple(t)
-    x = adem_to_milnor_on_basis_generic(t, p)
+    x = adem_to_milnor_on_basis(t, p=p, generic=True)
     x.pop(b)
     x.scale_in_place(-1)
     result = x.to_adem(output_module=adem_alg)
     result[t] = 1
     return result
 
-def milnor_to_adem_on_basis(b, *, algebra):
+def milnor_to_adem_on_basis(b, *, p, generic):
     """This is the algorithm for inverting a filtered isomorphism (AKA triangular matrix)
        given an ordering on the basis and a function from one basis to the other.
 
@@ -412,12 +412,12 @@ def milnor_to_adem_on_basis(b, *, algebra):
        Monk's paper only treats the case p = 2, I worked out the straightforward
        generalization to the generic case.
     """
-    if algebra.generic:
-        return milnor_to_adem_on_basis_generic(b, p=algebra.p)
+    if generic:
+        return milnor_to_adem_on_basis_generic(b, p=p)
     else:
         return milnor_to_adem_on_basis_2(b)
 
-def adem_antipode_on_basis(basis_elt, *, algebra):
+def adem_antipode_on_basis(basis_elt, *, p, generic):
     """Compute the antipode on an Adem basis element.
 
        Stolen from Sage with some neatening. Here's the Sage documentation:
@@ -430,8 +430,6 @@ def adem_antipode_on_basis(basis_elt, *, algebra):
        elements in dimension n*2(p-1), multiplied by `(-1)^n`, and the antipode
        of \beta = Q_0 is -Q_0.
     """
-    p = algebra.p
-    generic = algebra.generic
     milnor_alg = MilnorAlgebra.getInstance(p, generic)
     if not generic:
         elts = [Vector.sum(milnor_alg.basis(n)) for n in basis_elt]

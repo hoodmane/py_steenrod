@@ -9,17 +9,21 @@ class memoized(object):
    def __init__(self, func):
       self.func = func
       self.cache = {}
-   def __call__(self, *args):
+      functools.update_wrapper(self, func)
+      
+   def __call__(self, *args, **kw_args):
+      key = args + tuple(kw_args.items())
       try:
-         args in self.cache
+         key in self.cache
       except TypeError:
-         print(args)
-         return self.func(*args)
-      if args in self.cache:
-         return self.cache[args]
+         return self.func(*args, **kw_args)
+      if key in self.cache:
+         print("hit ", key)
+         return self.cache[key]
       else:
-         value = self.func(*args)
-         self.cache[args] = value
+         print("miss ", key)
+         value = self.func(*args, **kw_args)
+         self.cache[key] = value
          return value
    def __repr__(self):
       '''Return the function's docstring.'''

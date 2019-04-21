@@ -17,7 +17,7 @@
 import itertools
 
 import combinatorics
-#from memoized import memoized
+from memoized import memoized
 from infinity import Infinity
 
 class FullProfile:
@@ -144,7 +144,7 @@ def remove_trailing_zeroes(l):
             return l[ : i+1]
     return []
 
-#@memoized
+@memoized
 def product_even(r, s, p):
     r"""
         Handles the multiplication in the even subalgebra of the Steenrod algebra P.
@@ -205,7 +205,7 @@ def product_full_Qpart(m1, f, p):
                     result[(q_mono, tuple(p_mono))] = coeff % p
     return result
 
-#@memoized
+@memoized
 def product_full(m1, m2, p):
     r"""
     Product of Milnor basis elements defined by m1 and m2 at the prime p.

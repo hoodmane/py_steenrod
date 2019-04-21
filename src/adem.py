@@ -18,7 +18,7 @@
 import math
 
 import combinatorics
-#from memoized import memoized
+from memoized import memoized
 
 class MinimalAdemAlgebra:
     """A record object with fields p and generic
@@ -54,7 +54,7 @@ def adem_basis_elt_2_map(*, Sq_fn, basis_elt):
     return [Sq_fn(Sq) for Sq in basis_elt]
 
 
-##@memoized
+@memoized
 def adem_2(a, b):
     """Return the adem relation Sqa * Sqb when p=2"""
     if b == 0:
@@ -72,7 +72,7 @@ def adem_2(a, b):
                 result[(a+b-j, j)] = 1
     return result
 
-#@memoized
+@memoized
 def adem_generic(A, bockstein, B, *, p):
     """Return the generic adem relation for P(A)*P(B) or P(A) * beta * P(B)"""
     if A == 0:
@@ -151,7 +151,7 @@ def adem(a, b, c=None, *, algebra):
             raise ValueError("When p = 2, c should be None")
         return adem_2(a, b)
 
-#@memoized
+@memoized
 def make_mono_admissible_2(mono):
     """Reduce a monomial into a linear combination of admissible monomials when p = 2"""
     if len(mono) == 1:
@@ -177,7 +177,7 @@ def make_mono_admissible_2(mono):
                 ans[m] = y[x] * new[m]
     return ans
 
-#@memoized
+@memoized
 def make_mono_admissible_generic(mono, p):
     """Reduce a monomial into a linear combination of admissible monomials for the generic Steenrod algebra"""
     # check to see if admissible:
@@ -185,7 +185,7 @@ def make_mono_admissible_generic(mono, p):
         j for j in range(1, len(mono) - 2, 2)
         if mono[j] < mono[j+1] + p * mono[j+2]
     ]
-    if nonadmissible_indices == 0:
+    if not nonadmissible_indices:
         return {mono: 1}
     j = nonadmissible_indices[0]
     ans = {}
@@ -256,7 +256,7 @@ def make_mono_admissible(mono, *, algebra):
     if len(mono) == 1:
         return {mono: 1}
     if not algebra.generic and len(mono) == 2:
-        return adem_2(*mono, algebra=algebra)
+        return adem_2(*mono)
     if algebra.generic:
         return make_mono_admissible_generic(mono, algebra.p)
     else:
@@ -289,7 +289,7 @@ def product(m1, m2, *, algebra):
 
 
 
-#@memoized
+@memoized
 def basis_2(n, *, bound=1):
     """Get the basis for the n dimensional part of the Steenrod algebra.
        Build basis recursively.  last = last term.
@@ -305,7 +305,7 @@ def basis_2(n, *, bound=1):
             result.append(vec + (last,))
     return tuple(result)
 
-#@memoized
+@memoized
 def basis_generic(n, *, p, bound=1):
     """Get the basis for the n dimensional part of the Steenrod algebra."""
     if n == 0:
