@@ -5,7 +5,16 @@ def implementedByAssignmentLaterInThisFile():
     assert False, "We implement this by assignment from Vector.linearly_extend_map later in this file Steenrod.py"
 
 class linearextension_change_target(object):
-   '''Decorator. Linearly extends a function.'''
+   """Decorator. Linearly extends a function.
+      This version takes an argument which determines the target vector space / module.
+      We define the decorator @linearextension to use the vector space that the first argument lives in.
+      
+      The decorator @linearextension_change_target takes an argument get_output_module.
+      The argument get_output_module is a function that takes in the vector space 
+      of the first vector and returns the actual target space. I guess the fully 
+      general thing would be to get the output vector space as a function of the 
+      spaces of all the input vectors but for our applications so far this is sufficient.
+   """
    def __init__(self, get_output_module):
       self.get_output_module = get_output_module
       

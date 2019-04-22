@@ -21,6 +21,9 @@ from memoized import memoized
 from infinity import Infinity
 
 class FullProfile:
+    """A "Full" profile is the generic case. It has an "even" Profile and an "odd" Profile.
+       The "even" profile restricts the P's and the "odd" part restricts the Q's.
+    """
     def __init__(self, even_part=None, odd_part=None, truncation=None):
         self.even_restricted = not (even_part is None and truncation is None)
         self.odd_restricted = not (odd_part is None and truncation is None)
@@ -33,13 +36,19 @@ class FullProfile:
         elif truncation is None:
             self.truncation = Infinity
 
-    def getEvenPart(self):
+    def get_even_part(self):
         return Profile(self.even_part, self.truncation)
 
-    def getOddPart(self):
+    def get_odd_part(self):
         return Profile(self.odd_part, self.truncation)
 
 class Profile:
+    """ Encodes a Profile function.
+        profile[i] returns the ith element of the profile list if present,
+        otherwise it returns the truncation. This little class allows us to remove
+        a large amount of conditional nonsense when checking whether a basis element
+        is in the subalgebra.
+    """
     def __init__(self, profile=None, truncation=None):
         self.even_restricted = not (profile is None and truncation is None)
         self.restricted = self.even_restricted
@@ -59,6 +68,10 @@ class Profile:
             return self.truncation
 
     def exponent(self, i, p):
+        """Get p ^ profile[i].
+           The reason we have this function is that we would prefer not to calculate
+           p ^ infinity.
+        """
         res = self[i]
         if res < Infinity:
             res = p ** res
@@ -80,6 +93,9 @@ class MinimalMilnorAlgebra:
             self.profile = Profile(profile, truncation_type)
 
 def initialize_milnor_matrix(r, s):
+    """Initializes an len(r)+1 by len(s)+1 matrix
+       Puts r along the first column and s along the first row and zeroes everywhere else.
+    """
     rows = len(r) + 1
     cols = len(s) + 1
     M = [[0 for _ in range(cols)] for _ in range(rows)]
@@ -94,6 +110,7 @@ def step_milnor_matrix(M, r, s, i, j, x):
         This seems to move an i x j block of M back to the first row and column.
         To be honest, I don't really know what the point is, but the milnor_matrices
         function was a little long and this seemed like a decent chunk to extract.
+        At least it contains all of the steps that modify M so that seems like a good thing.
     """
     cols = len(s) + 1
     for row in range(1, i):
@@ -109,9 +126,9 @@ def step_milnor_matrix(M, r, s, i, j, x):
     M[i][0] = x
 
 def milnor_matrices(r, s, p):
-    r"""
+    """
         Generator for Milnor matrices. milnor_product_even iterates over this.
-        Uses the same algorithm Monks does in his Maple package to iterate through 
+        Uses the same algorithm Monks does in his Maple package to iterate through
         the possible matrices: see
         https://monks.scranton.edu/files/software/Steenrod/steen.html
     """
@@ -128,7 +145,7 @@ def milnor_matrices(r, s, p):
             total = M[i][0]
             for j in range(1, cols):
                 p_to_the_j = p ** j
-                # check to see if column index j is small enough or 
+                # check to see if column index j is small enough or
                 # there's nothing above the column to add to it
                 if total < p_to_the_j or all([M[k][j] == 0 for k in range(i)]):
                     total += M[i][j] * p_to_the_j
@@ -139,16 +156,17 @@ def milnor_matrices(r, s, p):
                     break
 
 def remove_trailing_zeroes(l):
+    """Remove trailing zeroes from the list l."""
     for i in range(len(l) - 1, -1, -1):
         if l[i] != 0:
-            return l[ : i+1]
-    return []
+            return None
+        else:
+            l.pop()
 
 @memoized
 def product_even(r, s, p):
-    r"""
-        Handles the multiplication in the even subalgebra of the Steenrod algebra P.
-        When p = 2, this is isomorphic to the whole Steenrod algebra so this method does everything.
+    """Handles the multiplication in the even subalgebra of the Steenrod algebra P.
+       When p = 2, this is isomorphic to the whole Steenrod algebra so this method does everything.
     """
     result = {}
     rows = len(r) + 1
@@ -166,16 +184,16 @@ def product_even(r, s, p):
                 break
             diagonal_sums[n-1] = sum(nth_diagonal)
         if coeff != 0:
-            t = tuple(remove_trailing_zeroes(diagonal_sums))
+            remove_trailing_zeroes(diagonal_sums)
+            t = tuple(diagonal_sums)
             old_coeff = result[t] if (t in result) else 0
             result[t] = (coeff + old_coeff) % p
     return result
 
-
+@memoized
 def product_full_Qpart(m1, f, p):
-    """
-        Reduce m1 * f = (Q_e0 Q_e1 ... P(r1, r2, ...)) * (Q_f0 Q_f1 ...) into the form Q's * P's
-        Result is represented as dictionary of pairs of tuples.
+    """Reduce m1 * f = (Q_e0 Q_e1 ... P(r1, r2, ...)) * (Q_f0 Q_f1 ...) into the form Sum of Q's * P's
+       Result is represented as dictionary of pairs of tuples.
     """
     result = {m1: 1}
     for k in f:
@@ -183,26 +201,20 @@ def product_full_Qpart(m1, f, p):
         result = {}
         p_to_the_k = p**k
         for mono in old_result:
-            for i in range(0, 1+len(mono[1])):
-                if (k+i not in mono[0]) and (i == 0 or p_to_the_k <= mono[1][i-1]):
-                    q_mono = set(mono[0])
-                    ind = len([x for x in q_mono if x >= k+i])
-                    coeff = (-1)**ind * old_result[mono]
-                    lst = list(mono[0])
-                    if ind == 0:
-                        lst.append(k+i)
-                    else:
-                        lst.insert(-ind, k+i)
-                    q_mono = tuple(lst)
-                    p_mono = list(mono[1])
-                    if i > 0:
-                        p_mono[i-1] = p_mono[i-1] - p_to_the_k
-                    # The next two lines were added so that p_mono won't
-                    # have trailing zeros. This makes p_mono uniquely
-                    # determined by P(*p_mono).
-                    while p_mono and p_mono[-1] == 0:
-                        p_mono.pop()
-                    result[(q_mono, tuple(p_mono))] = coeff % p
+            for i in range(0, 1 + len(mono[1])):
+                if (k + i in mono[0]) or (i > 0 and p_to_the_k > mono[1][i - 1]):
+                    continue
+                q_mono = set(mono[0])
+                ind = len([x for x in q_mono if x >= k+i])
+                coeff = (-1)**ind * old_result[mono]
+                lst = list(mono[0])
+                lst.insert(len(lst) - ind, k + i) # if ind is 0 we want to insert at end
+                q_mono = tuple(lst)
+                p_mono = list(mono[1])
+                if i > 0:
+                    p_mono[i - 1] -= p_to_the_k
+                remove_trailing_zeroes(p_mono)
+                result[(q_mono, tuple(p_mono))] = coeff % p
     return result
 
 @memoized
@@ -262,11 +274,16 @@ def product_full(m1, m2, p):
     return result
 
 def product_2(r, s):
+    """Multiplication of Milnor basis elements in the non generic case."""
     return product_even(r, s, 2)
 
 product_generic = product_full
 
 def product(r, s, *, algebra):
+    """Multiply r and s in the Milnor algebra determined by algebra.
+       Note that since profile functions determine subalgebras, the product
+       doesn't need to care about the profile function at all.
+    """
     if algebra.generic: # Should also be not generic...
         return product_full(r, s, algebra.p)
     else:
@@ -274,13 +291,16 @@ def product(r, s, *, algebra):
 
 
 def basis_even(n, p, profile):
+    """Return the even part of the basis in degree n * 2*(p-1).
+       In the nongeneric case, this actually just gets the whole degree n basis.
+       Note the factor of two difference between 2*(2-1) and 1.
+    """
     if n == 0:
-        return [[]]
+        return [()]
     result = []
     for mono in combinatorics.WeightedIntegerVectors(n, combinatorics.xi_degrees(n, p=p, reverse=False)):
         exponents = list(mono)
-        while len(exponents) > 0 and exponents[-1] == 0:
-            exponents.pop()
+        remove_trailing_zeroes(exponents)
         okay = True
         if profile.even_restricted:
             for (i, exp) in enumerate(exponents):
@@ -292,6 +312,11 @@ def basis_even(n, p, profile):
     return tuple(result)
 
 def basis_generic_Q_part(q_deg, p, profile):
+    """Returns the "Q-part" of the basis in degree q_deg.
+       This means return the set of monomials Q(i_1) * ... * Q(i_k) where i_1 < ... < i_k
+       and the product is in q_deg. Basically it's just an issue of finding partitions of
+       q_deg into parts of size |Q(i_j)|, and then there's a profile condition.
+    """
     q_degrees = combinatorics.xi_degrees((q_deg - 1)//(2*(p-1)), p=p)
     q_degrees = [1+2*(p-1)*d for d in q_degrees]
     q_degrees.append(1)
@@ -309,17 +334,20 @@ def basis_generic_Q_part(q_deg, p, profile):
                     okay = False
                     break
         if okay:
-            result.append(q_mono)
+            result.append(tuple(q_mono))
     return result
 
 def basis_generic(n, p, profile):
+    """Get the basis in degree n for the generic steenrod algebra at the prime p.
+       Basically we just put together the "even part" of the basis and the "Q part".
+    """
     if n == 0:
         return (((), ()),)
     result = []
     # p_deg records the desired degree of the P part of the basis element.
     # Since p-parts are always divisible by 2p-2, we divide by this first.
-    min_q_deg = (-1 + p ** ((n % (2 * (p - 1))) - 1)) // (p-1)
-    for p_deg in range(n//(2*(p-1)) + 1):
+    min_q_deg = (-1 + p ** ((n % (2 * (p - 1))) - 1)) // (p - 1)
+    for p_deg in range(n // (2 * (p - 1)) + 1):
         q_deg = n - 2 * p_deg * (p - 1)
 
         # if this inequality holds, no way to have a partition
@@ -327,10 +355,10 @@ def basis_generic(n, p, profile):
         if q_deg < min_q_deg:
             break
 
-        P_parts = basis_even(p_deg, p, profile.getEvenPart())
-        Q_parts = basis_generic_Q_part(q_deg, p, profile.getOddPart())
-        for (p_mono, q_mono) in itertools.product(P_parts, Q_parts):
-            result.append((tuple(q_mono), tuple(p_mono)))
+        Q_parts = basis_generic_Q_part(q_deg, p, profile.get_odd_part())
+        P_parts = basis_even(p_deg, p, profile.get_even_part())
+        for q_p_pair in itertools.product(Q_parts, P_parts):
+            result.append(q_p_pair)
     return tuple(result)
 
 

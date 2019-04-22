@@ -63,13 +63,17 @@ def test_milnor_matrices():
         
 
 def test_remove_trailing_zeroes():
-    remove_trailing_zeroes([1,0,0,1,0,0,1]) == [1,0,0,1,0,0,1]
-    remove_trailing_zeroes([1,0,0,1,0,0,0]) == [1,0,0,1]
-    remove_trailing_zeroes([1,0,0,0,0,0,0]) == [1]
-    remove_trailing_zeroes([0,0,0,0,0,0,0]) == []
-    remove_trailing_zeroes([]) == []
+    l = [1,0,0,1,0,0,1]; remove_trailing_zeroes(l)
+    assert l == [1,0,0,1,0,0,1]
+    l = [1,0,0,1,0,0,0]; remove_trailing_zeroes(l)
+    assert l == [1,0,0,1]
+    l = [1,0,0,0,0,0,0]; remove_trailing_zeroes(l)
+    assert l == [1]
+    l = [0,0,0,0,0,0,0]; remove_trailing_zeroes(l)
+    assert l == []
+    l = []; remove_trailing_zeroes(l)
+    assert l == []
 
-#@memoized
 def test_product_even():
     r"""
         Handles the multiplication in the even subalgebra of the Steenrod algebra P.
@@ -111,7 +115,6 @@ def product_full_Qpart(m1, f, p):
                     result[(q_mono, tuple(p_mono))] = coeff % p
     return result
 
-#@memoized
 def test_product_full():
     r"""
     
