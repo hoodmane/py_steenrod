@@ -447,8 +447,20 @@ def adem_antipode_on_basis(basis_elt, *, p, generic):
     return milnor_antipode.to_adem()
 
 
+def nilpotence_order(op):
+    x = op
+    i = 1
+    while x:
+        x *= op
+        i += 1
+    return i
+
 if __name__ == "__main__":
     A = AdemAlgebra(p=2)
     A3 = AdemAlgebra(p=3)
     Am = MilnorAlgebra(p=2)
     A3m = MilnorAlgebra(p=3)
+    
+    P2 = Am.P(0,2)
+    print(nilpotence_order(P2))
+    

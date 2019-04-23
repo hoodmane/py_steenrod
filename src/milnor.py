@@ -317,13 +317,13 @@ def basis_generic_Q_part(q_deg, p, profile):
        and the product is in q_deg. Basically it's just an issue of finding partitions of
        q_deg into parts of size |Q(i_j)|, and then there's a profile condition.
     """
-    q_degrees = combinatorics.xi_degrees((q_deg - 1)//(2*(p-1)), p=p)
+    q_degrees = combinatorics.xi_degrees((q_deg - 1)//(2*(p-1)), p=p, reverse=True)
     q_degrees = [1+2*(p-1)*d for d in q_degrees]
     q_degrees.append(1)
     q_degrees_decrease = list(q_degrees)
     q_degrees.reverse()
     result = []
-    for sigma in combinatorics.restricted_partitions(q_deg, q_degrees_decrease, True):
+    for sigma in combinatorics.restricted_partitions(q_deg, q_degrees_decrease):
         # q_mono is the list of indices ocurring in the partition
         q_mono = [idx for (idx, q_deg) in enumerate(q_degrees) if q_deg in sigma]
         # check profile:

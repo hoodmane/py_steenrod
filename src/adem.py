@@ -65,7 +65,7 @@ def adem_2(a, b):
         return {(a, b) : 1}
     result = {}
     for j in range(1 + a//2):
-        if combinatorics.binomial_mod2(b-j-1, a-2*j) == 1:
+        if combinatorics.binomial_2(b-j-1, a-2*j) == 1:
             if j == 0:
                 result[(a+b,)] = 1
             else:
@@ -86,7 +86,7 @@ def adem_generic(A, bockstein, B, *, p):
     elif A < p*B and bockstein == 0: # inadmissible
         result = {}
         for j in range(1 + A//p):
-            coeff = combinatorics.binomial_modp((B-j) * (p-1) - 1, A - p*j, p)
+            coeff = combinatorics.binomial_odd((B-j) * (p-1) - 1, A - p*j, p)
             coeff *= (-1)**(A+j)
             coeff = coeff % p
             if coeff != 0 and j == 0:
@@ -96,7 +96,7 @@ def adem_generic(A, bockstein, B, *, p):
     elif A < p*B and bockstein != 0:
         result = {}
         for j in range(1 + A//p):
-            coeff = combinatorics.binomial_modp((B-j) * (p-1), A - p*j, p)
+            coeff = combinatorics.binomial_odd((B-j) * (p-1), A - p*j, p)
             coeff *= (-1)**(A+j)
             coeff = coeff % p
             if coeff % p != 0 and j == 0:
@@ -104,7 +104,7 @@ def adem_generic(A, bockstein, B, *, p):
             elif coeff % p != 0 and j != 0:
                 result[(1, A+B-j, 0, j, 0)] = coeff
         for j in range(1 + (A-1)//p):
-            coeff = combinatorics.binomial_modp((B-j) * (p-1) - 1, A - p*j - 1, p)
+            coeff = combinatorics.binomial_odd((B-j) * (p-1) - 1, A - p*j - 1, p)
             coeff *= (-1)**(A+j-1)
             coeff = coeff % p
             if coeff != 0 and j == 0:
