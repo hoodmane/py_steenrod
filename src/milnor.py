@@ -24,7 +24,7 @@ class FullProfile:
     """A "Full" profile is the generic case. It has an "even" Profile and an "odd" Profile.
        The "even" profile restricts the P's and the "odd" part restricts the Q's.
     """
-    def __init__(self, even_part=None, odd_part=None, truncation=None):
+    def __init__(self, odd_part=None, even_part=None, truncation=None):
         self.even_restricted = not (even_part is None and truncation is None)
         self.odd_restricted = not (odd_part is None and truncation is None)
         self.restricted = self.even_restricted or self.odd_restricted
@@ -200,21 +200,27 @@ def product_full_Qpart(m1, f, p):
         old_result = result
         result = {}
         p_to_the_k = p**k
-        for mono in old_result:
+        for mono in old_result:     
             for i in range(0, 1 + len(mono[1])):
-                if (k + i in mono[0]) or (i > 0 and p_to_the_k > mono[1][i - 1]):
+                q_mono = mono[0]
+                p_mono = mono[1]
+                if (k + i in q_mono):
                     continue
-                q_mono = set(mono[0])
-                ind = len([x for x in q_mono if x >= k+i])
-                coeff = (-1)**ind * old_result[mono]
-                lst = list(mono[0])
-                lst.insert(len(lst) - ind, k + i) # if ind is 0 we want to insert at end
-                q_mono = tuple(lst)
-                p_mono = list(mono[1])
+                if (i > 0 and p_mono[i - 1] < p_to_the_k):
+                    continue
+
                 if i > 0:
+                    p_mono = list(p_mono)
                     p_mono[i - 1] -= p_to_the_k
-                remove_trailing_zeroes(p_mono)
-                result[(q_mono, tuple(p_mono))] = coeff % p
+                    remove_trailing_zeroes(p_mono)
+                    p_mono = tuple(p_mono)                
+
+                ind = len([x for x in q_mono if x >= k+i])                
+                q_mono = q_mono[:len(q_mono) - ind] + (k+i,) + q_mono[len(q_mono) - ind:]
+                
+                coeff = (-1)**ind * old_result[mono]
+                
+                result[(q_mono, p_mono)] = coeff % p
     return result
 
 @memoized
@@ -261,16 +267,14 @@ def product_full(m1, m2, p):
     # multiply r with s.  Record coefficient for matrix and multiply by coeff.
     # Store in 'result'.
     if not s:
-        result = m1_times_f
-    else:
-        result = {}
-        for (e, r) in m1_times_f:
-            coeff = m1_times_f[(e, r)]
-            # Milnor multiplication for r and s
-            prod = product_even(r, s, p=p)
-            for k in prod:
-                old_coeff = result[(e, k)] if (e, k) in result else 0
-                result[(e, k)] = (old_coeff + coeff*prod[k]) % p
+        return m1_times_f
+    result = {}
+    for (e, r) in m1_times_f:
+        coeff = m1_times_f[(e, r)]
+        prod = product_even(r, s, p=p)
+        for k in prod:
+            old_coeff = result[(e, k)] if (e, k) in result else 0
+            result[(e, k)] = (old_coeff + coeff*prod[k]) % p
     return result
 
 def product_2(r, s):

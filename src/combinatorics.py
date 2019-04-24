@@ -64,7 +64,6 @@ def multinomial_odd(l, p):
                 return 0
             multi *= direct_binomial(partial_sum, exp[index], p)
         answer = (answer * multi) % p
-    print(l,p, answer)
     return answer
 
 def binomial_odd(n, k, p):

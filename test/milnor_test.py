@@ -116,9 +116,7 @@ def product_full_Qpart(m1, f, p):
     return result
 
 def test_product_full():
-    r"""
-    
-    """
+    assert product_full(((),(1,)),((0,),()), 3) == {((0,),(1,)) : 1, ((1,),()): 1}
     assert product_full(((0,2),(5,)), ((1,),(1,)), 5)== {((0, 1, 2), (0, 1)) :  4, ((0, 1, 2), (6,)): 4 }
     assert product_full(((0,2,4),()), ((1,3),()), 7) == {((0, 1, 2, 3, 4), ()): 6}
     assert product_full(((0,2,4),()), ((1,5),()), 7) == {((0, 1, 2, 4, 5), ()): 1}
@@ -158,8 +156,8 @@ def test_basis_generic():
     assert len(basis_generic(100, 3, FullProfile())) == 13
     assert len(basis_generic(200, 7, FullProfile())) == 0
     assert len(basis_generic(240, 7, FullProfile())) == 3
-    assert len(basis_generic(240, 7, FullProfile(even_part = (), odd_part = (), truncation = Infinity))) == 3
-    assert len(basis_generic(240, 7, FullProfile(even_part = (), odd_part = (), truncation = 0))) == 0    
+    assert len(basis_generic(240, 7, FullProfile(odd_part = (), even_part = (), truncation = Infinity))) == 3
+    assert len(basis_generic(240, 7, FullProfile(odd_part = (), even_part = (), truncation = 0))) == 0    
 
 def test_basis():
     """

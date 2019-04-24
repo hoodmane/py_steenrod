@@ -128,7 +128,7 @@ def test_basis_2():
     
 #@memoized
 def test_basis_generic():
-    assert set(basis_generic(0, p = 3)) == set([()])
+    assert set(basis_generic(0, p = 3)) == set([(0,)])
     assert set(basis_generic(1, p = 3)) == set([(1,)])
     assert set(basis_generic(2, p = 3)) == set([])
     assert set(basis_generic(4, p = 3)) == set([(0,1,0)])

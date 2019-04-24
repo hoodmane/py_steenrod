@@ -286,7 +286,7 @@ class SteenrodModule:
             result += ["(%s) * %s  -  %s * (%s * %s) = %s" % (A*B, gen, A, B, gen, boundary)]
         return result
 
-    def getFailedRelations(self):
+    def get_failed_relations(self):
         return self.getFailedRelationStrings()
 
     #

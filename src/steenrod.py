@@ -147,6 +147,7 @@ class AdemAlgebra:
         if generic is None:
             generic = p != 2
         self.generic = generic
+        self.unit_monomial = (0,) if generic else ()
 
     @staticmethod
     def getInstance(p, generic=None):
@@ -197,7 +198,7 @@ class AdemAlgebra:
 
     def unit(self):
         """Returns the unit of the algebra."""
-        return AdemElement({() : 1}, algebra=self)
+        return AdemElement({self.unit_monomial : 1}, algebra=self)
 
     def b(self):
         """Returns the Bockstein. Works if generic or not."""

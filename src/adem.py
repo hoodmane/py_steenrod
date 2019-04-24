@@ -77,32 +77,24 @@ def adem_generic(A, bockstein, B, *, p):
     """Return the generic adem relation for P(A)*P(B) or P(A) * beta * P(B)"""
     if A == 0:
         return {(bockstein, B, 0) : 1}
+    
     if B == 0:
         return {(0, A, bockstein) : 1}
-    if A >= p*B and bockstein == 0: # admissible
-        result = {(0, A, 0, B, 0) : 1}
-    elif A >= p*B + 1 and bockstein != 0: # admissible
-        result = {(0, A, 1, B, 0) : 1}
-    elif A < p*B and bockstein == 0: # inadmissible
-        result = {}
-        for j in range(1 + A//p):
-            coeff = combinatorics.binomial_odd((B-j) * (p-1) - 1, A - p*j, p)
-            coeff *= (-1)**(A+j)
-            coeff = coeff % p
-            if coeff != 0 and j == 0:
-                result[(0, A+B, 0)] = coeff
-            elif coeff != 0 and j != 0:
-                result[(0, A+B-j, 0, j, 0)] = coeff
-    elif A < p*B and bockstein != 0:
-        result = {}
-        for j in range(1 + A//p):
-            coeff = combinatorics.binomial_odd((B-j) * (p-1), A - p*j, p)
-            coeff *= (-1)**(A+j)
-            coeff = coeff % p
-            if coeff % p != 0 and j == 0:
-                result[(1, A+B, 0)] = coeff
-            elif coeff % p != 0 and j != 0:
-                result[(1, A+B-j, 0, j, 0)] = coeff
+    
+    if A >= p*B + bockstein: # admissible
+        return {(0, A, bockstein, B, 0) : 1}
+    
+    result = {}
+    for j in range(1 + A//p):
+        coeff = combinatorics.binomial_odd((B-j) * (p-1) - 1 + bockstein, A - p*j, p)
+        coeff *= (-1)**(A+j)
+        coeff = coeff % p
+        if coeff != 0 and j == 0:
+            result[(bockstein, A+B, 0)] = coeff
+        elif coeff != 0 and j != 0:
+            result[(bockstein, A+B-j, 0, j, 0)] = coeff
+
+    if bockstein == 1:
         for j in range(1 + (A-1)//p):
             coeff = combinatorics.binomial_odd((B-j) * (p-1) - 1, A - p*j - 1, p)
             coeff *= (-1)**(A+j-1)
@@ -162,20 +154,20 @@ def make_mono_admissible_2(mono):
     nonadmissible_indices = [j for j in range(len(mono) - 1) if mono[j] < 2*mono[j+1]]
     if not nonadmissible_indices:
         return {mono: 1}
-    ans = {}
+    result = {}
     j = nonadmissible_indices[0]
     y = adem_2(mono[j], mono[j+1])
     for x in y:
         new = mono[:j] + x + mono[j+2:]
         new = make_mono_admissible_2(new)
         for m in new:
-            if m in ans:
-                ans[m] = ans[m] + y[x] * new[m]
-                if ans[m] % 2 == 0:
-                    del ans[m]
-            else:
-                ans[m] = y[x] * new[m]
-    return ans
+            if m not in result:
+                result[m] = 0
+            result[m] += y[x] * new[m]
+            result[m] = result[m] % 2
+            if result[m] == 0:
+                del result[m]
+    return result
 
 @memoized
 def make_mono_admissible_generic(mono, p):
@@ -268,11 +260,7 @@ def product_2(m1, m2):
 
 def product_generic(m1, m2, p):
     """Multiply monomials m1 and m2 and write the result in the Adem basis in the generic case."""
-    if not m1:
-        return {m2 : 1}
-    elif not m2:
-        return {m1 : 1}
-    elif m1[-1] == m2[0] == 1:
+    if m1[-1] == m2[0] == 1:
         return {}
     else:
         return make_mono_admissible_generic(m1[:-1] + (m1[-1] + m2[0],) + m2[1:], p)
@@ -309,35 +297,22 @@ def basis_2(n, *, bound=1):
 def basis_generic(n, *, p, bound=1):
     """Get the basis for the n dimensional part of the Steenrod algebra."""
     if n == 0:
-        return ((),)
-    elif n % (2 * (p-1)) == 0 and n // (2 * (p-1)) >= bound:
-        result = [(0, n // (2 * (p-1)), 0)]
-    elif n == 1:
-        result = [(1,)]
-    else:
-        result = []
-    # 2 cases: append P^{last}, or append P^{last} beta
-    # case 1: append P^{last}
-    # We do decimal division and take ceiling so if (2*(p - 1)) divides n evenly, we get one fewer iteration.
-    # Annoying that range cannot take floating endpoints.
-    for last in range(bound, int(math.ceil(n / (2*(p - 1))))):
-        remaining_degree = n - 2*(p-1)*last
-        basis_in_remaining_degree = basis_generic(remaining_degree, p=p, bound=p * last)
-        for vec in basis_in_remaining_degree:
-            result.append(vec + (last, 0))
-
-    # case 2: append P^{last} beta
-    if bound == 1:
-        bound = 0
-    # Note that in this loop we do integer division so we don't have the
-    # "it divides evenly" edge case that we had in the other one
-    for last in range(bound + 1, 1 + (n // (2*(p - 1)))):
-        remaining_degree = n - 2 * (p - 1) * last - 1
-        basis_in_remaining_degree = basis_generic(remaining_degree, p=p, bound=p * last)
-        for vec in basis_in_remaining_degree:
-            if not vec:
-                vec = (0,)
-            result.append(vec + (last, 1))
+        return ((0,),)
+    if n == 1:
+        return ((1,),)
+    
+    result = []
+        
+    # append P^{last} beta^{epsilon}
+    for epsilon in [0,1]:
+        # Without this lower bound edge case we lose the element (0, 1, 1) in degree 5.
+        # I don't have a good explanation for what it means yet.
+        lower_bound = bound + epsilon if bound > 1 else 1
+        for last in range(lower_bound, 1 + (n // (2*(p - 1)))):
+            remaining_degree = n - 2*(p-1)*last - epsilon
+            basis_in_remaining_degree = basis_generic(remaining_degree, p=p, bound=p * last)
+            for vec in basis_in_remaining_degree:
+                result.append(vec + (last, epsilon))
     return tuple(result)
 
 def basis(n, *, algebra):
