@@ -99,7 +99,7 @@ class Vector(dict):
         return None
         
     def scale_in_place(self, c):
-        for b in self:
+        for b in tuple(self.keys()):
             self[b] *= c
         return None
             
