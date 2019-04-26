@@ -11,17 +11,8 @@ def test_profile():
     # TODO: fill me in
     pass  
 
-class MinimalMilnorAlgebra:
-    def __init__(self, p, generic = None, profile = None, truncation_type = None):
-        self.p = p
-        if generic is None:
-            generic = p != 2
-        self.generic = generic
-        if generic:
-            self.profile = FullProfile(profile and profile[0], profile and profile[1], truncation_type)
-        else:  
-            self.profile = Profile(profile, truncation_type)    
-    
+#class MinimalMilnorAlgebra:
+   
 def test_initialize_milnor_matrix():
     M = initialize_milnor_matrix([4,5,6],["a","b","c", "d", "e"])
     assert len(M) == 4
@@ -79,41 +70,15 @@ def test_product_even():
         Handles the multiplication in the even subalgebra of the Steenrod algebra P.
         When p = 2, this is isomorphic to the whole Steenrod algebra so this method does everything.
     """
+    assert product_even((1,),(1,), 3) == {(2,) : 2}
+    assert product_even((1,),(0, 1,), 3) == {(1,1) : 1}
+    assert product_even((0,2), (1,),2) == {(1, 2): 1, (0, 0, 1): 1}
+    assert product_even((0,3), (1,),3) == {(1, 3): 1, (0, 0, 1): 1}
+    assert product_even((0,9), (1,1),3) == {(1, 10): 1, (0, 7, 1): 1, (1, 0, 0, 1): 1}
+
+def test_product_full_Qpart():
+    assert product_full_Qpart(((),(1,)),(0,), 3) == {((0,),(1,)) : 1, ((1,),()): 1}
     
-
-
-def product_full_Qpart(m1, f, p):
-    """
-        Reduce m1 * f = (Q_e0 Q_e1 ... P(r1, r2, ...)) * (Q_f0 Q_f1 ...) into the form Q's * P's
-        Result is represented as dictionary of pairs of tuples.
-    """
-    result = {m1: 1}
-    for k in f:
-        old_result = result
-        result = {}
-        p_to_the_k = p**k
-        for mono in old_result:
-            for i in range(0,1+len(mono[1])):
-                if (k+i not in mono[0]) and (i == 0 or p_to_the_k <= mono[1][i-1]):
-                    q_mono = set(mono[0])
-                    ind = len([ x for x in q_mono if x >= k+i ])
-                    coeff = (-1)**ind * old_result[mono]
-                    lst = list(mono[0])
-                    if ind == 0:
-                        lst.append(k+i)
-                    else:
-                        lst.insert(-ind,k+i)
-                    q_mono = tuple(lst)
-                    p_mono = list(mono[1])
-                    if i > 0:
-                        p_mono[i-1] = p_mono[i-1] - p_to_the_k
-                    # The next two lines were added so that p_mono won't
-                    # have trailing zeros. This makes p_mono uniquely
-                    # determined by P(*p_mono).
-                    while len(p_mono) > 0 and p_mono[-1] == 0:
-                        p_mono.pop()
-                    result[(q_mono, tuple(p_mono))] = coeff % p
-    return result
 
 def test_product_full():
     assert product_full(((),(1,)),((0,),()), 3) == {((0,),(1,)) : 1, ((1,),()): 1}
@@ -134,11 +99,14 @@ def test_basis_even():
     """
         n, p, profile
     """
-    assert set(basis_even(7, 2, Profile())) == set([(0, 0, 1), (1, 2), (4, 1), (7,)])
+    assert set(basis_even(2, 2, Profile())) == set([(2,)])
+    assert set(basis_even(3, 2, Profile())) == set([(0, 1), (3,)])
     assert set(basis_even(4, 2, Profile())) == set([(1, 1), (4,)])
     assert set(basis_even(4, 2, Profile(profile=[2,1]))) == set([(1, 1)])
     assert set(basis_even(4, 2, Profile(profile=(), truncation=0))) == set([])
     assert set(basis_even(4, 2, Profile(profile=(), truncation=Infinity))) == set([(1, 1), (4,)])
+    assert set(basis_even(7, 2, Profile())) == set([(0, 0, 1), (1, 2), (4, 1), (7,)])
+
 
 def test_basis_generic_Q_part():
     """
@@ -150,6 +118,7 @@ def test_basis_generic():
     """
         n, p, profile
     """
+    assert set(basis_generic(1, 3, FullProfile())) == set([((0,), ())])
     assert set(basis_generic(9, 3, FullProfile())) == set([((1,), (1,)), ((0,), (2,))])
     assert set(basis_generic(17, 3, FullProfile())) == set([((2,), ()), ((1,), (3,)), ((0,), (0, 1)), ((0,), (4,))])
     assert set(basis_generic(48, 5, FullProfile())) == set([((), (0, 1)), ((), (6,))])

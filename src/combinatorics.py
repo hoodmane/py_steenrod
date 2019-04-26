@@ -1,6 +1,7 @@
 from memoized import memoized
 
 def base_p_expansion(n, p, padlength = 0):
+    """Return the base p expansion of n as a list [d_0, d_1, d_2, ...] so that sum(d_i p^i) = n"""
     result = []
     while n != 0:
         result.append(n % p)
@@ -12,6 +13,7 @@ def base_p_expansion(n, p, padlength = 0):
 binomial_table = {}
 
 def direct_binomial_initialize_table(p):
+    """Produce the table with n choose k mod p for n, k < p"""
     table_p = [[0] * p for _ in range(p)]
     for n in range(p):
         entry = 1
@@ -23,15 +25,15 @@ def direct_binomial_initialize_table(p):
     binomial_table[p] = table_p
 
 def direct_binomial(n, k, p):
-    """direct binomial coefficient, used for n, k < p"""
+    """Direct binomial coefficient, used for n, k < p"""
     if p not in binomial_table:
         direct_binomial_initialize_table(p)
-    table = binomial_table[p]
-    return table[n][k]
+    return binomial_table[p][n][k]
 
 # Mod 2 multinomial coefficient
 #@memoized # No point in memoizing unless we're passing it tuples
 def multinomial_2(l):
+    """The mod 2 multinomial coefficient. Implemented as Sum(l) = BitOr(l)."""
     bit_or = 0
     sum = 0
     for v in l:
@@ -43,6 +45,7 @@ def multinomial_2(l):
 
 @memoized
 def binomial_2(n,k):
+    """The mod 2 binomial coefficient. If n - k and k have no common 1's in binary, return 1 else return 0"""
     if n < k:
         return 0
     else:
@@ -50,6 +53,7 @@ def binomial_2(n,k):
 
 
 def multinomial_odd(l, p):
+    """The multinomial coefficient of l at an odd prime."""
     n = sum(l)
     answer = 1
     n_expansion = base_p_expansion(n, p)
@@ -67,12 +71,14 @@ def multinomial_odd(l, p):
     return answer
 
 def binomial_odd(n, k, p):
+    """Binomial odd: just use multinomial_odd on [n-k, k]."""
     if n < k:
         return 0
     return multinomial_odd([n-k, k], p)
 
 
-def multinomial(l, p):
+def multinomial(l, p): 
+    """Dispatch to multinomial_2 or multinomial_odd."""
     if p == 2:
         return multinomial_2(l)
     else:
@@ -80,6 +86,7 @@ def multinomial(l, p):
 
 
 def binomial(n, k, p):
+    """Dispatch to binomial_2 or binomial_odd."""  
     if n<k or k<0:
         return 0
     if p == 2:
@@ -88,16 +95,11 @@ def binomial(n, k, p):
         return binomial_odd(n,k,p)
 
 
-def xi_degrees(n,*, p, reverse):
-    """
-            sage: sage.algebras.steenrod.steenrod_algebra_bases.xi_degrees(17)
-            [15, 7, 3, 1]
-            sage: sage.algebras.steenrod.steenrod_algebra_bases.xi_degrees(17, reverse=False)
-            [1, 3, 7, 15]
-            sage: sage.algebras.steenrod.steenrod_algebra_bases.xi_degrees(17,p=3)
-            [13, 4, 1]
-            sage: sage.algebras.steenrod.steenrod_algebra_bases.xi_degrees(400,p=17)
-            [307, 18, 1]
+def xi_degrees(n, *, p):
+    """Return the degrees of the xi_i's in dimension <= n in increasing order.
+       xi_degrees(17, p=2) --> [1, 3, 7, 15]
+       xi_degrees(17, p=3) --> [1, 4, 13]
+       xi_degrees(400, p=17) --> [1, 18, 307]
     """
     if n <= 0:
         return []
@@ -113,12 +115,22 @@ def xi_degrees(n,*, p, reverse):
         entry += p_to_the_d
         p_to_the_d *= p    
         result[i] = entry
-    if(reverse):
-        result.reverse()
     return result
-
+    
+def tau_degrees(n, *, p):
+    """Return the degrees of tau_i's in dimension <= n in increasing order.
+       If p == 2, this has the same output as xi_degrees.
+    """
+    xi_degs = [0] + xi_degrees((n - 1)//(2*(p-1)), p=p)
+    return [1+2*(p-1)*d for d in xi_degs]
 
 def min_if_b_not_zero_else_a(a, b):
+    """This is a helper function for WeightedIntegerVectors. 
+       Since weights must be positive, we use 0 for max_weight to denote no max weight.
+       Thus, we need a min function that's a no-op when the second argument is 0.
+       It also returns True if the result is equal to the first argument, False if not
+    """
+    
     if a <= b or b == 0:
         return (a, True)
     return (b, False)
@@ -126,24 +138,24 @@ def min_if_b_not_zero_else_a(a, b):
 def WeightedIntegerVectors(n, l, max_weight = 0):
     """
     Iterate over all ``l`` weighted integer vectors with total weight ``n``.
+    Warning: it does this in place.
 
     INPUT:
 
     - ``n`` -- an integer
-    - ``l`` -- the weights in weakly decreasing order
+    - ``l`` -- the weights in weakly increasing order
 
     EXAMPLES::
 
-        sage: from sage.combinat.integer_vector_weighted import iterator_fast
-        sage: list(iterator_fast(3, [2,1,1]))
-        [[1, 1, 0], [1, 0, 1], [0, 3, 0], [0, 2, 1], [0, 1, 2], [0, 0, 3]]
-        sage: list(iterator_fast(2, [2]))
-        [[1]]
-
-    Test that :trac:`20491` is fixed::
-
-        sage: type(list(iterator_fast(2, [2]))[0][0])
-        <type 'sage.rings.integer.Integer'&gt
+          list(WeightedIntegerVectors(3, [1, 1,  2]))
+          --> [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]] 
+        
+        Oops! Let's try again....
+        
+          [tuple(x) for x in WeightedIntegerVectors(3, [1, 1, 2])]
+          --> [(0, 1, 1), (1, 0, 1), (0, 3, 0), (1, 2, 0), (2, 1, 0), (3, 0, 0)]
+        
+        That's more like it.
     """
     if n < 0:
         return
@@ -156,36 +168,40 @@ def WeightedIntegerVectors(n, l, max_weight = 0):
     # We might be in case 3 below right away. Cover it separately up here.
     if len(l) == 1:
         rem = n
-        if rem % l[-1] == 0:
-            _, ratio_leq_max_weight = min_if_b_not_zero_else_a(rem // l[-1], max_weight)
+        if rem % l[0] == 0:
+            ratio, ratio_leq_max_weight = min_if_b_not_zero_else_a(rem // l[0], max_weight)
             if ratio_leq_max_weight:
-                yield [rem // l[-1]]
+                yield [ratio]
         return
 
-    k = 0
+    cur = [0] * len(l)
+    k = len(l) - 1
     # Now we're definitely in "case 4"
     rem = n
     ratio, _ = min_if_b_not_zero_else_a( rem // l[k], max_weight)
-    cur = [ ratio + 1 ]
-    rem -= cur[ -1 ] * l[k] # Amount remaining
-    while len(cur) > 0:
-        cur[-1] -= 1
+    cur[k] = ratio + 1
+    rem -= cur[ k ] * l[k] # Amount remaining
+    while k < len(cur):
+        cur[k] -= 1
         rem += l[k]
         if rem == 0:
-            yield cur + [0 for _ in range(len(l) - len(cur))]
-        elif cur[- 1] < 0 or rem < 0 :
-            rem += cur.pop() * l[k]
-            k -= 1
-        elif len(l) == len(cur) + 1:
-            if rem % l[-1] == 0:
-                ratio, ratio_leq_max_weight = min_if_b_not_zero_else_a(rem // l[-1], max_weight)
-                if ratio_leq_max_weight:
-                    yield cur + [ratio]
-        else:
+            yield cur
+        elif cur[k] < 0 or rem < 0 :
+            rem += cur[k] * l[k]
+            cur[k] = 0
             k += 1
+        elif k == 1:
+            if rem % l[0] == 0:
+                ratio, ratio_leq_max_weight = min_if_b_not_zero_else_a(rem // l[0], max_weight)
+                if ratio_leq_max_weight:
+                    cur[0] = ratio
+                    yield cur
+                    cur[0] = 0
+        else:
+            k -= 1
             ratio, _ = min_if_b_not_zero_else_a(rem // l[k], max_weight)
-            cur.append(ratio + 1)
-            rem -= cur[-1] * l[k]
+            cur[k] = ratio + 1
+            rem -= cur[k] * l[k]
 
 
 def restricted_partitions(n, l):
@@ -197,10 +213,5 @@ def restricted_partitions(n, l):
             restricted_partitions(10, [6,4,4,4,2,2,2,2,2,2])
             [[6, 4], [6, 2, 2], [4, 4, 2], [4, 2, 2, 2], [2, 2, 2, 2, 2]]
     """
-    for weights in WeightedIntegerVectors(n, l, 1):
-        result = []
-        for idx, i in enumerate(weights):
-            if i == 1:
-                result.append(l[idx])
-        yield result
+    return WeightedIntegerVectors(n, l, 1)
         

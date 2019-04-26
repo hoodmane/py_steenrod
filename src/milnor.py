@@ -200,7 +200,7 @@ def product_full_Qpart(m1, f, p):
         old_result = result
         result = {}
         p_to_the_k = p**k
-        for mono in old_result:     
+        for mono in old_result: 
             for i in range(0, 1 + len(mono[1])):
                 q_mono = mono[0]
                 p_mono = mono[1]
@@ -219,7 +219,6 @@ def product_full_Qpart(m1, f, p):
                 q_mono = q_mono[:len(q_mono) - ind] + (k+i,) + q_mono[len(q_mono) - ind:]
                 
                 coeff = (-1)**ind * old_result[mono]
-                
                 result[(q_mono, p_mono)] = coeff % p
     return result
 
@@ -288,11 +287,27 @@ def product(r, s, *, algebra):
        Note that since profile functions determine subalgebras, the product
        doesn't need to care about the profile function at all.
     """
-    if algebra.generic: # Should also be not generic...
+    if algebra.generic: 
         return product_full(r, s, algebra.p)
     else:
         return product_even(r, s, algebra.p)
 
+
+def check_even_profile(p, profile, exponents):
+    if not profile.even_restricted:
+        return True
+    for (i, exp) in enumerate(exponents):
+        if exp >= profile.exponent(i, p):
+            return False
+    return True
+    
+def check_odd_profile(profile, q_mono):
+    if not profile.restricted:
+        return True
+    for i in q_mono:
+        if profile[i] <= 1:
+            return False
+    return True
 
 def basis_even(n, p, profile):
     """Return the even part of the basis in degree n * 2*(p-1).
@@ -302,16 +317,10 @@ def basis_even(n, p, profile):
     if n == 0:
         return [()]
     result = []
-    for mono in combinatorics.WeightedIntegerVectors(n, combinatorics.xi_degrees(n, p=p, reverse=False)):
+    for mono in combinatorics.WeightedIntegerVectors(n, combinatorics.xi_degrees(n, p=p)):
         exponents = list(mono)
         remove_trailing_zeroes(exponents)
-        okay = True
-        if profile.even_restricted:
-            for (i, exp) in enumerate(exponents):
-                if exp >= profile.exponent(i, p):
-                    okay = False
-                    break
-        if okay:
+        if check_even_profile(p, profile, exponents):
             result.append(tuple(exponents))
     return tuple(result)
 
@@ -321,23 +330,12 @@ def basis_generic_Q_part(q_deg, p, profile):
        and the product is in q_deg. Basically it's just an issue of finding partitions of
        q_deg into parts of size |Q(i_j)|, and then there's a profile condition.
     """
-    q_degrees = combinatorics.xi_degrees((q_deg - 1)//(2*(p-1)), p=p, reverse=True)
-    q_degrees = [1+2*(p-1)*d for d in q_degrees]
-    q_degrees.append(1)
-    q_degrees_decrease = list(q_degrees)
-    q_degrees.reverse()
+    q_degrees = combinatorics.tau_degrees(q_deg, p=p)
     result = []
-    for sigma in combinatorics.restricted_partitions(q_deg, q_degrees_decrease):
+    for sigma in combinatorics.restricted_partitions(q_deg, q_degrees):
         # q_mono is the list of indices ocurring in the partition
-        q_mono = [idx for (idx, q_deg) in enumerate(q_degrees) if q_deg in sigma]
-        # check profile:
-        okay = True
-        if profile.restricted:
-            for i in q_mono:
-                if profile[i] <= 1:
-                    okay = False
-                    break
-        if okay:
+        q_mono = [idx for idx in range(len(sigma)) if sigma[idx] == 1]
+        if check_odd_profile(profile, q_mono):
             result.append(tuple(q_mono))
     return result
 
@@ -350,7 +348,8 @@ def basis_generic(n, p, profile):
     result = []
     # p_deg records the desired degree of the P part of the basis element.
     # Since p-parts are always divisible by 2p-2, we divide by this first.
-    min_q_deg = (-1 + p ** ((n % (2 * (p - 1))) - 1)) // (p - 1)
+    q = 2*(p-1)
+    min_q_deg = (-1 + p ** (n % q - 1)) // (p - 1)
     for p_deg in range(n // (2 * (p - 1)) + 1):
         q_deg = n - 2 * p_deg * (p - 1)
 

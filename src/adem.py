@@ -300,7 +300,6 @@ def basis_generic(n, *, p, bound=1):
         return ((0,),)
     if n == 1:
         return ((1,),)
-    
     result = []
         
     # append P^{last} beta^{epsilon}
@@ -328,3 +327,10 @@ def basis(n, *, algebra):
         return basis_generic(n, p=algebra.p)
     else:
         return basis_2(n)
+
+
+if __name__ == "__main__":
+    dim = 0
+    for x in basis_2(500):
+        dim+=1
+    print(dim)

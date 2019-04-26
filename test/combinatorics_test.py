@@ -48,10 +48,14 @@ def test_binomial_p():
     pass
 
 def test_xi_degrees():
-    assert xi_degrees(17, p=2, reverse=True) == [15, 7, 3, 1]
-    assert xi_degrees(17, p=2, reverse=False) == [1, 3, 7, 15]
-    assert xi_degrees(17, p=3, reverse=True) == [13, 4, 1]
-    assert xi_degrees(400, p=17, reverse=True) == [307, 18, 1]
+    assert xi_degrees(17, p=2) == [1, 3, 7, 15]
+    assert xi_degrees(17, p=3) == [1, 4, 13]
+    assert xi_degrees(400, p=17) == [1, 18, 307]
+
+def test_q_degrees():
+    assert tau_degrees(17, p=2) == [1, 3, 7, 15]
+    assert tau_degrees(17, p=3) == [1, 5, 17]
+    assert tau_degrees(600, p=17) == [1, 33, 577]
 
 
 def to_set_of_tuples(l):
@@ -87,6 +91,6 @@ def test_WeightedIntegerVectors():
 
 def test_restricted_partitions():
     assert to_set_of_tuples(restricted_partitions(8, [1])) == to_set_of_tuples([])
-    assert to_set_of_tuples(restricted_partitions(10, [6,4,2])) == to_set_of_tuples([[6,4]])
-    assert to_set_of_tuples(restricted_partitions(10, [6,4,2,2])) == to_set_of_tuples([[6,4], [6, 2, 2]])
+    assert to_set_of_tuples(restricted_partitions(10, [6,4,2])) == to_set_of_tuples([[1,1,0]])
+    assert to_set_of_tuples(restricted_partitions(10, [6,4,2,2])) == to_set_of_tuples([[1,1,0,0], [1, 0, 1, 1]])
     
