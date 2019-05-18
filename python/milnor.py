@@ -220,6 +220,7 @@ def product_full_Qpart(m1, f, p):
                 
                 coeff = (-1)**ind * old_result[mono]
                 result[(q_mono, p_mono)] = coeff % p
+        print(result)
     return result
 
 @memoized

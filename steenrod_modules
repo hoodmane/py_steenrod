@@ -1,2 +1,2 @@
 #!/bin/bash
-python3 -i src/main.py
+python3 -i python/main.py

@@ -29,7 +29,7 @@ class extension(object):
         self.func = func
         functools.update_wrapper(self, func)
     
-    def __call__(self, *vecs, output_module = None):
+    def __call__(self, *vecs, output_module = None, **extra_args):
         if output_module is None:
             output_module = vecs[0].module
             if self.get_output_module:
@@ -43,7 +43,7 @@ class extension(object):
             coeff = 1
             for (v, basis_elt) in zip(vecs, l):
                 coeff *= v[basis_elt]
-            w = self.func(*l, module=output_module)
+            w = self.func(*l, module=output_module, **extra_args)
             w = Vector(output_module.p, w)
             result.add_in_place(w, coeff)
         return result   
@@ -129,7 +129,7 @@ class Vector(dict):
 
     def __rmul__(self, v):
         """
-            We could add support here for distinct right and left actions if we want...
+            We could add support here for distinct right and left actions if we want?
         """
         if type(v) == int:
             result = self.module.get_element(self)
@@ -193,6 +193,15 @@ class Vector(dict):
             return "0";
         else:
             return "  +  ".join(result)
+            
+    def __hash__(self):
+        return hash(str(self))
+        
+    def __eq__(self, other):
+        """
+            Improve this and hash later.
+        """
+        return str(self) == str(other)
 
     def basis_elt_to_string(self, basis_elt):
         """

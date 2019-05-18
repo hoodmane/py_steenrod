@@ -109,7 +109,22 @@ class MilnorElement(Vector):
 
     def basis_degree(self, b):
         """Get degree of a basis vector. Implements abstract method of Vector."""
-        raise NotImplementedError()
+        xi_degrees = combinatorics.xi_degrees(10000, p = self.p);
+        if self.algebra.generic:
+            tau_degrees = combinatorics.tau_degrees(10000, p = self.p);
+            Qs = b[0]
+            Ps = b[1]
+            result = 0            
+            for i, exponent in enumerate(Qs):
+                result += tau_degrees[i] * exponent
+            for i, exponent in enumerate(Ps):
+                result += xi_degrees[i] * exponent * 2 * (self.p - 1)                
+            return result
+        else:
+            for i, exponent in enumerate(Ps):
+                result += xi_degrees[i] * exponent
+            return result
+            
 
     @linearextension
     def multiply(basis_element_1, basis_element_2, *, module):
