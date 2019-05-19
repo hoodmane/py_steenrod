@@ -23,6 +23,7 @@ import math
 
 from memoized import memoized
 
+import CWrappers
 import combinatorics
 import adem
 import milnor
@@ -106,24 +107,6 @@ class MilnorElement(Vector):
         if v.p != self.p or v.algebra.generic != self.algebra.generic:
             raise TypeError()
         return v.multiply(self)
-
-    def basis_degree(self, b):
-        """Get degree of a basis vector. Implements abstract method of Vector."""
-        xi_degrees = combinatorics.xi_degrees(10000, p = self.p);
-        if self.algebra.generic:
-            tau_degrees = combinatorics.tau_degrees(10000, p = self.p);
-            Qs = b[0]
-            Ps = b[1]
-            result = 0            
-            for i, exponent in enumerate(Qs):
-                result += tau_degrees[i] * exponent
-            for i, exponent in enumerate(Ps):
-                result += xi_degrees[i] * exponent * 2 * (self.p - 1)                
-            return result
-        else:
-            for i, exponent in enumerate(Ps):
-                result += xi_degrees[i] * exponent
-            return result
             
 
     @linearextension
@@ -289,6 +272,45 @@ class MilnorAlgebra(milnor.MinimalMilnorAlgebra):
             getattr(algebra,"truncation", None)
         )
 
+    def basis_q_degree(self,b):
+        if not self.generic:
+            return 0
+        tau_degrees = combinatorics.tau_degrees(10000, p = self.p);
+        Qs = b[0]
+        result = 0            
+        for i in Qs:
+            result += tau_degrees[i]                
+        return result    
+        
+    def basis_p_degree(self, b):
+        if self.generic:    
+            Ps = b[1]
+        else:
+            Ps = b
+        xi_degrees = combinatorics.xi_degrees(10000, p = self.p);            
+        result = 0               
+        for i, exponent in enumerate(Ps):
+            result += xi_degrees[i] * exponent * 2 * (self.p - 1)                
+        return result    
+
+    def basis_degree(self, b):
+        """Get degree of a basis vector. Implements abstract method of Vector."""
+        xi_degrees = combinatorics.xi_degrees(10000, p = self.p);
+        if self.generic:
+            tau_degrees = combinatorics.tau_degrees(10000, p = self.p);
+            Qs = b[0]
+            Ps = b[1]
+            result = 0            
+            for i in Qs:
+                result += tau_degrees[i]
+            for i, exponent in enumerate(Ps):
+                result += xi_degrees[i] * exponent * 2 * (self.p - 1)                
+            return result
+        else:
+            for i, exponent in enumerate(Ps):
+                result += xi_degrees[i] * exponent
+            return result
+
     def get_element(self, d):
         """Makes a MilnorElement from a dictionary.
            No checking to determine if this is a valid element...
@@ -350,6 +372,7 @@ class MilnorAlgebra(milnor.MinimalMilnorAlgebra):
             return MilnorElement({((), l) : 1}, algebra=self)
         else:
             return MilnorElement({tuple(2 * i for i in l) : 1}, algebra=self)
+
 
 MilnorAlgebra.instance_dict = {}
 

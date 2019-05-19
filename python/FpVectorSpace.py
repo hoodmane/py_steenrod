@@ -175,7 +175,13 @@ class Vector(dict):
             Returns the degree of an element, or None if the element isn't homogenous.
             Uses basis_degree to compute the degree of basis elements, which is overloaded in subclasses.
         """
-        degree_set = set([ self.basis_degree(b) for b in self])
+        if hasattr(self.module, "basis_degree"):
+            basis_degree = self.module.basis_degree
+        elif hasattr(self, "basis_degree"):
+            basis_degree = self.basis_degree            
+        else:
+            raise NotImplementedError("Cannot find implementation of degree on basis.")
+        degree_set = set([ basis_degree(b) for b in self])
         if len(degree_set) > 1:
             return None
         else:

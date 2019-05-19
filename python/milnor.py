@@ -190,7 +190,7 @@ def product_even(r, s, p):
             result[t] = (coeff + old_coeff) % p
     return result
 
-@memoized
+#@memoized
 def product_full_Qpart(m1, f, p):
     """Reduce m1 * f = (Q_e0 Q_e1 ... P(r1, r2, ...)) * (Q_f0 Q_f1 ...) into the form Sum of Q's * P's
        Result is represented as dictionary of pairs of tuples.
@@ -198,6 +198,7 @@ def product_full_Qpart(m1, f, p):
     result = {m1: 1}
     for k in f:
         old_result = result
+        print(old_result)
         result = {}
         p_to_the_k = p**k
         for mono in old_result: 
@@ -220,10 +221,9 @@ def product_full_Qpart(m1, f, p):
                 
                 coeff = (-1)**ind * old_result[mono]
                 result[(q_mono, p_mono)] = coeff % p
-        print(result)
     return result
 
-@memoized
+#@memoized
 def product_full(m1, m2, p):
     r"""
     Product of Milnor basis elements defined by m1 and m2 at the prime p.

@@ -50,10 +50,6 @@ class FiniteSteenrodModuleElement(Vector):
     def milnor_act(module_basis_elt, adem_basis_elt, *, module):
         return FiniteSteenrodModule.milnor_basis_act(module_basis_elt, adem_basis_elt, module=module)
 
-    def basis_degree(self, b):
-        return self.module.gens[b]
-
-
 
 class FiniteSteenrodModule:
     def __init__(self, *, p, name=None, generic=None):
@@ -654,6 +650,10 @@ class FreeSteenrodModule:
         self.adem_algebra = steenrod.AdemAlgebra.getInstanceFromAlgebra(self)
         self.milnor_algebra = steenrod.MilnorAlgebra.getInstanceFromAlgebra(self)
         self.gens = {}
+    
+    
+    def basis_degree(self, b):
+        return self.gens[b]
     
     def add_generator(self, name, degree):
         self.gens[name] = degree

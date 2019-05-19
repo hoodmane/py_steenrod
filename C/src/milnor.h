@@ -20,9 +20,9 @@ void GenerateMilnorBasisGeneric(MilnorAlgebra * algebra, unsigned long old_n, un
 MilnorBasisElement GetMilnorBasisElementFromIndex(MilnorAlgebra *algebra, MonomialIndex idx);
 MonomialIndex GetIndexFromMilnorBasisElement(MilnorAlgebra *algebra,  MilnorBasisElement b);
 
-MilnorElement * MilnorProductEven(MilnorAlgebra * algebra, MilnorBasisElement r_elt, MilnorBasisElement s_elt);
-MilnorElement * MilnorProductFullQpart(MilnorAlgebra * algebra , MilnorBasisElement m1, unsigned long f);
-MilnorElement *  MilnorProduct(MilnorAlgebra * algebra, MilnorBasisElement r, MilnorBasisElement s);
+void MilnorProductEven(MilnorAlgebra * algebra, MilnorElement * result, MilnorBasisElement r_elt, MilnorBasisElement s_elt);
+void MilnorProductFullQpart(MilnorAlgebra * algebra, MilnorElement * result, MilnorBasisElement m1, unsigned long f);
+void MilnorProduct(MilnorAlgebra * algebra, MilnorElement * result, MilnorBasisElement r, MilnorBasisElement s);
 
 unsigned long** initialize_milnor_matrix(P_part r, P_part s);
 bool step_milnor_matrix(unsigned long  p, unsigned long ** M, P_part r, P_part s);

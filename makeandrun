@@ -1,0 +1,12 @@
+#\bin\bash
+cd C;
+if make; then
+    gcc -g -o test src/*.c
+    cd ..
+    python3 -i python/CWrappers/csteenrod.py
+else
+    cd ..        
+    echo "Build failed"
+fi
+
+

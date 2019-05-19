@@ -19,7 +19,7 @@ typedef struct {
     unsigned long* p_part;
 } Profile;
 
-string profile_to_string(Profile P);
+void generate_profile_name(Profile P);
 unsigned long getProfileIndex(Profile P, unsigned long index);
 unsigned long getProfileExponent(Profile P, unsigned long p, unsigned long index);
 
@@ -92,12 +92,13 @@ typedef struct {
 
 void milnor_algebra_generate_name(MilnorAlgebra *A);
 
-string array_to_string(unsigned long* A, unsigned long length);
-string milnor_basis_element_to_string(MilnorBasisElement *b);
-MilnorBasisElement milnor_basis_element_from_string(MilnorAlgebra * algebra, char* elt_string);
-string milnor_element_to_string(MilnorAlgebra * algebra, MilnorElement * m);
-string milnor_matrix_to_string(unsigned long** M, unsigned long rows, unsigned long cols);
+void constructMilnorAlgebra(MilnorAlgebra * A);
 
+int array_to_string(string buffer, unsigned long* A, unsigned long length);
+int milnor_basis_element_to_string(string buffer, MilnorBasisElement *b);
+MilnorBasisElement milnor_basis_element_from_string(MilnorAlgebra * algebra, char* elt_string);
+int milnor_element_to_string(string buffer, MilnorAlgebra * algebra, MilnorElement * m);
+int milnor_matrix_to_string(string buffer, unsigned long** M, unsigned long rows, unsigned long cols);
 
 MilnorElement * allocateMilnorElement(MilnorAlgebra * algebra, unsigned long degree);
 void freeMilnorElement(MilnorElement * elt);
