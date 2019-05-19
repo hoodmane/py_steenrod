@@ -97,6 +97,7 @@ void addBasisElementToMilnorElement(MilnorElement * elt, MonomialIndex idx, long
     elt->vector[idx.index] += coeff;
     elt->vector[idx.index] = ModPositive(elt->vector[idx.index], elt->algebra->p);
 }
+
 void addMilnorElement(MilnorElement * target, MilnorElement * source){
     for(long i = 0; i < target->algebra_dimension; i++){
         target->vector[i] += source->vector[i];
@@ -213,6 +214,9 @@ MilnorBasisElement milnor_basis_element_from_string(MilnorAlgebra * algebra, cha
         }
         *Q_or_P_len = len;
     }
+    free(tofree);
+    tofree = NULL;
+    string = NULL;
     unsigned long* tau_degrees = getTauDegrees(p);
     unsigned long* xi_degrees = getXiDegrees(p);
     unsigned long Q_bit_string = 0;
@@ -240,7 +244,8 @@ int milnor_element_to_string(string buffer, MilnorAlgebra * algebra, MilnorEleme
     unsigned long len = 0;
     MonomialIndex idx;
     idx.degree = m->degree;
-    for(long i = 0; i < m->algebra_dimension; i ++){
+    for(unsigned long i = 0; i < m->algebra_dimension; i ++){
+        printf("vector(%ld): %ld\n", i, m->vector[i]);
         if(m->vector[i] == 0){
             continue;
         }

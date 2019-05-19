@@ -88,6 +88,7 @@ class AdemElement(Vector):
         else:
             result = " ".join(["Sq%s" % s for s in basis_elt]) # This is adem.adem_2_map inlined
         return result or "1"
+        
 
 class MilnorElement(Vector):
     """An element of the MilnorAlgebra.
@@ -147,6 +148,9 @@ class AdemAlgebra:
         self.generic = generic
         self.unit_monomial = (0,) if generic else ()
 
+    def __repr__(self):
+        return "AdemAlgebra(p=%s, generic=%s)" % self.p, self.generic
+        
     @staticmethod
     def getInstance(p, generic=None):
         """Gets an instance of AdemAlgebra. Same arguments leads to same instance."""
@@ -251,6 +255,9 @@ class MilnorAlgebra(milnor.MinimalMilnorAlgebra):
     def __init__(self, p, generic=None, profile=None, truncation=None):
         super(MilnorAlgebra, self).__init__(p, generic, profile, truncation)
         self.unit_monomial = ((), ()) if generic else ()
+    def __repr__(self):
+        return "MilnorAlgebra(p=%s, generic=%s)" % (self.p, self.generic)
+        
 
     @staticmethod
     def getInstance(p, generic=None, profile=None, truncation=None):
@@ -285,12 +292,14 @@ class MilnorAlgebra(milnor.MinimalMilnorAlgebra):
     def basis_p_degree(self, b):
         if self.generic:    
             Ps = b[1]
+            q = 2 * (self.p - 1)
         else:
             Ps = b
+            q = 1
         xi_degrees = combinatorics.xi_degrees(10000, p = self.p);            
         result = 0               
         for i, exponent in enumerate(Ps):
-            result += xi_degrees[i] * exponent * 2 * (self.p - 1)                
+            result += xi_degrees[i] * exponent * q
         return result    
 
     def basis_degree(self, b):
@@ -300,14 +309,15 @@ class MilnorAlgebra(milnor.MinimalMilnorAlgebra):
             tau_degrees = combinatorics.tau_degrees(10000, p = self.p);
             Qs = b[0]
             Ps = b[1]
-            result = 0            
+            result = 0
             for i in Qs:
                 result += tau_degrees[i]
             for i, exponent in enumerate(Ps):
                 result += xi_degrees[i] * exponent * 2 * (self.p - 1)                
             return result
         else:
-            for i, exponent in enumerate(Ps):
+            result = 0
+            for i, exponent in enumerate(b):
                 result += xi_degrees[i] * exponent
             return result
 

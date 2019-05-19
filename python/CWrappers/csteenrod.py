@@ -31,19 +31,24 @@ def milnor_basis_elt_to_C(algebra, b):
     return result
 
 
-def milnor_basis_elt_from_C(b):
+def milnor_basis_elt_from_C(algebra, b):
     bitstring = b.q_part
     q_part = ()
     i = 0
-    while b.q_part != 0:
-        if b.q_part & 1 != 0:
+    bitstring = b.q_part
+    while bitstring != 0:
+        if bitstring & 1 != 0:
             q_part += (i,)
         i += 1
-        b.q_part >>= 1
+        bitstring >>= 1
     p_part = [0] * b.p_length
     for i in range(b.p_length):
         p_part[i] = b.p_part[i]
-    return (q_part, tuple(p_part))    
+    if algebra.generic:
+        b = (q_part, tuple(p_part))
+    else:
+        b = tuple(p_part)
+    return b
 
 def milnor_elt_from_C(algebra, m):
     idx = c_MonomialIndex()
@@ -54,10 +59,19 @@ def milnor_elt_from_C(algebra, m):
             continue
         idx.index = i
         b = CSteenrod.GetMilnorBasisElementFromIndex(algebra.c_algebra, idx)
-        result[milnor_basis_elt_from_C(b)] = m.contents.vector[i]
-    return steenrod.MilnorElement(result, algebra=algebra)
+        result[milnor_basis_elt_from_C(algebra, b)] = m.contents.vector[i]
+    return algebra.get_element(result)
 
-    
+
+def C_basis(algebra, dim):
+    A = algebra.c_algebra
+    c_basisElementList = A.basis_table[dim]
+    result = [None] * int(c_basisElementList.length)
+    for i in range(c_basisElementList.length):
+        b = c_basisElementList.list[i]
+        result[i] = algebra.get_basis_element(milnor_basis_elt_from_C(algebra, b))
+    return result
+
 def C_product(m1, m2):
     A = m1.algebra
     ret = CSteenrod.allocateMilnorElement(A.c_algebra, m1.degree() + m2.degree())
@@ -67,19 +81,30 @@ def C_product(m1, m2):
     nc = milnor_basis_elt_to_C(A, b2)
     CSteenrod.MilnorProduct(A.c_algebra, ret, mc, nc)
     x = milnor_elt_from_C(A, ret)
+    CSteenrod.freeMilnorElement(ret)
     return x
-    
-def test_C_product():
-    A = steenrod.MilnorAlgebra.getInstance(p=3)
-    P = A.P
-    Q = A.Q
+
+def makeAlgebra(*, p, generic=None, profile = None, dim = 0):
+    A = steenrod.MilnorAlgebra.getInstance(p=p, generic=generic, profile=profile)
     construct_c_algebra(A)
-    CSteenrod.GenerateMilnorBasis(A.c_algebra, 200)
+    CSteenrod.GenerateMilnorBasis(A.c_algebra, dim)
+    return A
+
+def test_C_product():
+    A2 = makeAlgebra(p=2, dim=100)
+    A2gen = makeAlgebra(p=2, generic=True, dim=100)
+    A3 = makeAlgebra(p=3, dim=200)
     tests = [
-#        (P(1),Q(0)),
-#        (P(1,1,1), P(1,1,1)),
-#        (P(3,3,1), P(1,1,1)),
-        (P(3,3), Q(0,1))
+        (A2.Sq(1), A2.Sq(1)),
+        (A2.Sq(2), A2.Sq(2)),
+        (A2.Sq(1,8), A2.Sq(1,1)),
+        (A2gen.P(1), A2gen.P(1)),
+        (A2gen.P(2), A2gen.P(1)),
+        (A2gen.Q(0)*A2gen.P(4), A2gen.Q(0,1)),
+        (A3.P(1),A3.Q(0)),
+        (A3.P(1,1,1), A3.P(1,1,1)),
+        (A3.P(3,3,1), A3.P(1,1,1)),
+        (A3.P(3,3), A3.Q(0,1)),
     ]
 
     for (m1, m2) in tests:
@@ -90,17 +115,23 @@ def test_C_product():
             print("   c_prod : ", c_prod)
             print("   py_prod : ", py_prod)
 
+def test_C_basis():
+    A2 = makeAlgebra(p=2, dim=50)
+    A2gen = makeAlgebra(p=2, generic=True, dim=50)
+    A3 = makeAlgebra(p=3, dim=50)
+    
+    for alg in (A2, A2gen, A3):
+        for dim in range(50):
+            c_basis = C_basis(alg, dim)
+            py_basis = alg.basis(dim)
+            py_basis.reverse()
+            if c_basis != py_basis:
+                print("Discrepency for algebra %s in dimension %s." % (alg, dim))
+                print("  c_basis:", c_basis)
+                print("  py_basis:", py_basis)
+            
+
 if __name__ == "__main__":
-    A = steenrod.MilnorAlgebra(p=3)
-    P = A.P
-    Q = A.Q
-    construct_c_algebra(A)
-    CSteenrod.GenerateMilnorBasis(A.c_algebra, 200)
-    m = A.P(2)
-    n = A.Q(1)
-    mc = milnor_basis_elt_to_C(A, next(iter(m)))
-    nc = milnor_basis_elt_to_C(A, next(iter(n)))
-    ret = CSteenrod.allocateMilnorElement(A.c_algebra, m.degree() + n.degree())
-    CSteenrod.MilnorProduct(A.c_algebra, ret, mc, nc)
-    x = milnor_elt_from_C(A, ret)
+    A2 = makeAlgebra(p=2, dim=100)
+    A3 = makeAlgebra(p=3, dim=100)
     

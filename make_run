@@ -1,0 +1,6 @@
+#\bin\bash
+if ./make; then
+    python3 -i python/CWrappers/csteenrod.py
+fi
+
+

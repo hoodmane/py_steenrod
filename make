@@ -3,10 +3,8 @@ cd C;
 if make; then
     gcc -g -o test src/*.c
     cd ..
-    python3 -i python/CWrappers/csteenrod.py
 else
-    cd ..        
+    cd ..
     echo "Build failed"
+    ret 1
 fi
-
-

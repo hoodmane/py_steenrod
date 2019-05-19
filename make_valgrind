@@ -1,0 +1,4 @@
+#\bin\bash
+if ./make; then
+    valgrind --leak-check=full C/test
+fi

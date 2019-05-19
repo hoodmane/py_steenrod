@@ -198,7 +198,6 @@ def product_full_Qpart(m1, f, p):
     result = {m1: 1}
     for k in f:
         old_result = result
-        print(old_result)
         result = {}
         p_to_the_k = p**k
         for mono in old_result: 
@@ -434,4 +433,4 @@ def basis(n, *, algebra):
     if algebra.generic:
         return basis_generic(n, algebra.p, algebra.profile)
     else:
-        return basis_even(n, 2, algebra.profile)
+        return basis_even(n, algebra.p, algebra.profile)
