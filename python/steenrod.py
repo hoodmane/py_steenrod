@@ -256,7 +256,11 @@ class MilnorAlgebra(milnor.MinimalMilnorAlgebra):
         super(MilnorAlgebra, self).__init__(p, generic, profile, truncation)
         self.unit_monomial = ((), ()) if generic else ()
     def __repr__(self):
-        return "MilnorAlgebra(p=%s, generic=%s)" % (self.p, self.generic)
+        result = "MilnorAlgebra(p=%s" % (self.p)
+        if self.generic != (self.p != 2):
+            result += ", generic=%s" % self.generic
+        result += ")"
+        return result
         
 
     @staticmethod

@@ -14,6 +14,19 @@ def construct_c_algebra(algebra):
     CSteenrod.constructMilnorAlgebra(result)
     algebra.c_algebra = result
 
+def makeAlgebra(*, p, generic=None, profile = None, dim = 0):
+    algebra = steenrod.MilnorAlgebra.getInstance(p=p, generic=generic, profile=profile)
+    construct_c_algebra(algebra)
+    CSteenrod.GenerateMilnorBasis(algebra.c_algebra, dim)
+    algebra.c_max_degree = dim
+    return algebra
+
+def c_GenerateMilnorBasis(algebra, dim):
+    if dim > algebra.c_max_degree:
+        CSteenrod.GenerateMilnorBasis(algebra.c_algebra, dim)
+        algebra.c_max_degree = dim
+    
+
 def milnor_basis_elt_to_C(algebra, b):
     bitstring = 0
     p_part = b
@@ -64,6 +77,8 @@ def milnor_elt_from_C(algebra, m):
 
 
 def C_basis(algebra, dim):
+    if dim > algebra.c_max_degree:
+        raise Error("C basis only known through degree %s < %s." (algebra.c_max_degree, dim))
     A = algebra.c_algebra
     c_basisElementList = A.basis_table[dim]
     result = [None] * int(c_basisElementList.length)
@@ -74,6 +89,9 @@ def C_basis(algebra, dim):
 
 def C_product(m1, m2):
     A = m1.algebra
+    out_degree = m1.degree() + m2.degree()
+    if out_degree > A.c_max_degree:
+        raise Error("C basis only known through degree %s < %s." (A.c_max_degree, out_degree))
     ret = CSteenrod.allocateMilnorElement(A.c_algebra, m1.degree() + m2.degree())
     b1 = next(iter(m1))
     b2 = next(iter(m2))
@@ -84,16 +102,14 @@ def C_product(m1, m2):
     CSteenrod.freeMilnorElement(ret)
     return x
 
-def makeAlgebra(*, p, generic=None, profile = None, dim = 0):
-    A = steenrod.MilnorAlgebra.getInstance(p=p, generic=generic, profile=profile)
-    construct_c_algebra(A)
-    CSteenrod.GenerateMilnorBasis(A.c_algebra, dim)
-    return A
+def check_C_product(a, b):
+    return C_product(a,b) == a*b
 
 def test_C_product():
     A2 = makeAlgebra(p=2, dim=100)
     A2gen = makeAlgebra(p=2, generic=True, dim=100)
-    A3 = makeAlgebra(p=3, dim=200)
+    A3 = makeAlgebra(p=3, dim=100)
+    A5 = makeAlgebra(p=5, dim=400)
     tests = [
         (A2.Sq(1), A2.Sq(1)),
         (A2.Sq(2), A2.Sq(2)),
@@ -101,11 +117,17 @@ def test_C_product():
         (A2gen.P(1), A2gen.P(1)),
         (A2gen.P(2), A2gen.P(1)),
         (A2gen.Q(0)*A2gen.P(4), A2gen.Q(0,1)),
-        (A3.P(1),A3.Q(0)),
-        (A3.P(1,1,1), A3.P(1,1,1)),
-        (A3.P(3,3,1), A3.P(1,1,1)),
-        (A3.P(3,3), A3.Q(0,1)),
+        #(A3.P(1),A3.Q(0)),
+        #(A3.P(1,1,1), A3.P(1,1,1)),
+        #(A3.P(3,3,1), A3.P(1,1,1)),
+        #(A3.P(3,3), A3.Q(0,1)),
     ]
+    
+    #check_C_product(Q(1)* P(1, 1),  Q(0) * P(1, 1))
+    #check_C_product(Q(1)*P(2, 1), Q(0))
+    # Q(2) P(3) * Q(0) P(3)
+    # Q(2) P(1) * Q(0)
+    # Q(1) P(0, 1) * Q(0) P(3)
 
     for (m1, m2) in tests:
         c_prod = C_product(m1, m2) 
@@ -114,6 +136,29 @@ def test_C_product():
             print("Test failed: %s * %s -- " % (m1, m2))
             print("   c_prod : ", c_prod)
             print("   py_prod : ", py_prod)
+            
+    algebras = (A2, A2gen, A3, A5)
+    import random
+    for i in range(100):
+        algebra = random.choice(algebras)
+        #print(algebra)
+        x_deg = 10000; y_deg = 0
+        while x_deg + y_deg > algebra.c_max_degree:
+            x_deg = random.randint(0,30)#algebra.c_max_degree/2)
+            y_deg = random.randint(0,30)#algebra.c_max_degree/2)
+        x_basis = C_basis(algebra, x_deg)
+        y_basis = C_basis(algebra, y_deg)
+        if len(x_basis) == 0 or len(y_basis) == 0:
+            continue
+        x = random.choice(x_basis)
+        y = random.choice(y_basis)
+        py_prod = x * y
+        prod = C_product(x, y)
+        if py_prod != prod:
+            print("%s ( %s, %s, %s ) : %s * %s" % (algebra, x_deg, y_deg, x_deg + y_deg,  x, y))
+            print("  Test %s failed" % i)
+            
+    
 
 def test_C_basis():
     A2 = makeAlgebra(p=2, dim=50)

@@ -6,12 +6,15 @@
 #include <stdio.h>
 
 #include "khash.h"
+
+
 KHASH_MAP_INIT_INT(prime_to_table, unsigned long**)
 KHASH_MAP_INIT_INT(prime_to_list, unsigned long*)
 
 void initializePrime(unsigned long p){
     directBinomialInitializeTable(p);
     initializeXiTauDegrees(p);
+    initializeInverseTable(p);
 }
 
 long ModPositive(long  n, long p){
@@ -22,17 +25,63 @@ long MinusOneToTheN(long n){
     return -(n % 2 * 2 - 1);
 }
 
-unsigned long integer_power(unsigned long a, unsigned long b){
-    unsigned long res = 1;
-    while(b > 0 ){
-        if(b & 1 != 0){
-            res *= a;
+unsigned long integer_power(unsigned long b, unsigned long e){
+    unsigned long result = 1;
+    while(e > 0){
+        if((e&1) == 1){
+            result *= b;
         }
-        a *= a;
-        b >>= 1;
+        b *= b;
+        e >>= 1;
     }
-    return res;
+    return result;
 }
+
+long power_mod(long p, long b, long e){
+    long result = 1;
+//      b is b^{2^i} mod p
+//      if the current bit of e is odd, mutliply b^{2^i} mod p into r.
+    while (e > 0){
+        if ((e&1) == 1){
+            result = (result*b)%p;
+        }
+        b = (b*b)%p;
+        e >>= 1;
+    }
+    return result;
+}
+
+khash_t(prime_to_list) * inverse_table;
+
+void initializeInverseTable(unsigned long p){
+    if(inverse_table == NULL){
+        inverse_table = kh_init(prime_to_list);
+    }
+    khint_t k;
+    int absent;
+    k = kh_put(prime_to_list, inverse_table, p, &absent);  // insert a key to the hash table
+    if(!absent){
+        return;
+    }
+    unsigned long* table_p = malloc(p*sizeof(unsigned long*));
+    for(unsigned long n = 0; n < p; n ++){
+        table_p[n] = power_mod(p, n, p - 2);
+    }
+    kh_val(inverse_table, k) = table_p;
+}
+
+
+/**
+ * Finds the inverse of k mod p.
+ * Uses Fermat's little theorem: x^(p-1) = 1 mod p ==> x^(p-2) = x^(-1).
+ * @param k an integer
+ * @return the inverse of k mod p.
+ */
+long inverse(unsigned long p, long k){
+    khint_t key = kh_get(prime_to_list, inverse_table, p);
+    return kh_val(inverse_table, key)[k];
+}
+
 
 unsigned long p_to_the_n_minus_1_over_p_minus_1(unsigned long p, unsigned long n){
     return (integer_power(p, n) - 1) / (p - 1);
@@ -81,6 +130,7 @@ void directBinomialInitializeTable(unsigned long p){
             entry /= k;
             table_p[n][k] = entry % p;
         }
+        memset(table_p[n] + n + 1, 0, (p - n - 1) * sizeof(unsigned long));
     }
     kh_val(binomial_table, k) = table_p;
 }
@@ -228,20 +278,123 @@ unsigned long* getXiDegrees(unsigned long p) {
     return kh_value(xi_degrees, key);
 }
 
+long** allocate_matrix(unsigned long rows, unsigned long cols)  {
+    long** M = calloc(1, rows * sizeof(long*) + rows * cols * sizeof(long));
+    for(long row = 0; row < rows; row++){
+        M[row] = (long*)(M + rows) + row * cols;
+    }
+    return M;
+}
 
-//int main(){
-//    directBinomialInitializeTable(7);
-//    for(int n = 0; n < 7; n++){
-//        for(int k = 0; k < 7; k++){
-//            cout << directBinomial(7, n, k) << " ";
-//        }
-//        cout << "\n";
-//    }
-//    int l[5] = {1, 2, 4, 8, 15};
-//    cout << Multinomial2(5, l) << "\n";
-//
-//    map<int, int> test;
-//    test[0] += 5;
-//    cout << test[0] << "\n";
-//
-//}
+void print_matrix(long **M, unsigned long rows, unsigned long columns){
+    printf("    [\n");
+    for(long i = 0; i < rows; i++){
+        printf("        [");
+        for(long j = 0; j < columns; j++){
+            printf("%ld, ", M[i][j]);
+        }
+        printf("]\n");
+    }
+    printf("    ]\n");
+}
+
+void row_reduce(row_reduce_state * state){
+    unsigned long p = state->p;
+    unsigned long source_dim = state->source_dim;
+    unsigned long target_dim = state->target_dim;
+    long ** matrix = state->matrix;
+    for(state->pivot++ ; state->pivot < target_dim; state->pivot++){
+        long pivot_row;
+        for(pivot_row = state->pivot; pivot_row < source_dim; pivot_row ++){
+            if(matrix[pivot_row][state->pivot] != 0){
+                break;
+            }
+        }
+        if(pivot_row == source_dim){
+            state->found_cokernel = true;
+            return;
+        }
+        print_matrix(matrix, state->source_dim, state->source_dim + state->target_dim);
+        long * temp = matrix[state->pivot];
+        matrix[state->pivot] = matrix[pivot_row];
+        matrix[pivot_row] = temp;
+        printf("row(%ld) <==> row(%ld)\n", state->pivot, pivot_row);
+        print_matrix(matrix, state->source_dim, state->source_dim + state->target_dim);
+
+        long c = matrix[state->pivot][state->pivot];
+        long c_inv = inverse(state->p, c);
+        for(long column = state -> pivot; column < source_dim + target_dim; column ++){
+            matrix[state->pivot][column] = (matrix[state->pivot][column] * c_inv) % p;
+        }
+        printf("row(%ld) *= %ld\n", state->pivot, c_inv);
+        print_matrix(matrix, state->source_dim, state->source_dim + state->target_dim);
+        for(long row = 0; row < state->pivot; row++){
+            long row_op_coeff = (-matrix[row][state->pivot] + p) % p;
+            if(row_op_coeff == 0){
+                continue;
+            }
+            // Do row operation
+            for(long column = state -> pivot; column < source_dim + target_dim; column++){
+                matrix[row][column] = (matrix[row][column] + row_op_coeff * matrix[state->pivot][column]) % p;
+            }
+            printf("row(%ld) += %ld * row(%ld)\n", row, row_op_coeff, state->pivot);
+            print_matrix(matrix, state->source_dim, state->source_dim + state->target_dim);
+        }
+        // Between pivot and pivot_row, we already checked that the pivot column is 0, so skip ahead a bit.
+        for(long row = pivot_row + 1; row < source_dim; row++){
+            long row_op_coeff = (-matrix[row][state->pivot] + p) % p;
+            if(row_op_coeff == 0){
+                continue;
+            }
+            // Do row operation
+            for(long column = state -> pivot; column < source_dim + target_dim; column++){
+                matrix[row][column] = (matrix[row][column] + row_op_coeff * matrix[state->pivot][column]) % p;
+            }
+            printf("row(%ld) += %ld * row(%ld)\n", row, row_op_coeff, state->pivot);
+            print_matrix(matrix, state->source_dim, state->source_dim + state->target_dim);
+        }
+    }
+    state->found_cokernel = false;
+    return;
+}
+
+
+
+#define C_sdim 5
+#define C_tdim 8
+int main(){
+    unsigned long p = 7;
+    initializePrime(p);
+    for(long i=0; i < p; i++){
+        printf("%ld -> %ld\n", i, inverse(7, i));
+    }
+    long src[C_sdim][C_sdim + C_tdim] =
+            {{1, 1, 3, 4, 5, 2, 5, 0, 1, 0, 0, 0, 0}, {0, 6, 3, 6, 1, 1, 4, 3, 0, 1, 0, 0, 0}, {3, 0, 3, 3, 0, 2, 6, 3, 0, 0, 1, 0, 0}, {1, 3, 1, 5, 6, 4, 2, 2, 0, 0, 0, 1, 0}, {3, 0, 5, 1, 5, 2, 2, 3, 0, 0, 0, 0, 1}};
+    row_reduce_state state;
+    state.p = p;
+    state.row_capacity = 100;
+    state.column_capacity = 100;
+    state.pivot = -1;
+    state.source_dim = C_sdim;
+    state.target_dim = C_tdim;
+    long ** M = allocate_matrix(100, 100);
+    state.matrix = M;
+    for(long i = 0; i < state.source_dim; i++){
+        for(long j = 0; j < state.target_dim + state.source_dim; j++){
+            M[i][j] = src[i][j];
+        }
+    }
+    row_reduce(&state);
+    printf("[\n");
+    for(long i = 0; i < state.source_dim; i++){
+        printf("    [");
+        for(long j = 0; j < state.target_dim + state.source_dim; j++){
+            printf("%ld, ", M[i][j]);
+        }
+        printf("]\n");
+    }
+    printf("]\n");
+    printf("found_cokernel? %s\n", state.found_cokernel ? "true" : "false");
+    printf("pivot: %ld\n", state.pivot);
+    free(state.matrix);
+}
