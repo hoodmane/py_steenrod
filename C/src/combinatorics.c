@@ -11,10 +11,25 @@
 KHASH_MAP_INIT_INT(prime_to_table, unsigned long**)
 KHASH_MAP_INIT_INT(prime_to_list, unsigned long*)
 
+void initializeInverseTable(unsigned long p);
+void initializeBinomialTable(unsigned long p);
+void initializeXiTauDegrees(unsigned long);
+
+unsigned long directBinomial(unsigned long p, unsigned long n, unsigned long k);
+unsigned long Multinomial2(unsigned long len, unsigned long* l);
+unsigned long Binomial2(unsigned long n, unsigned long k );
+unsigned long MultinomialOdd(unsigned long p, unsigned long len, unsigned long* l);
+unsigned long BinomialOdd(unsigned long p, unsigned long n, unsigned long k);
+
 void initializePrime(unsigned long p){
-    directBinomialInitializeTable(p);
-    initializeXiTauDegrees(p);
+    initializeBinomialTable(p);
     initializeInverseTable(p);
+    initializeXiTauDegrees(p);
+}
+void freePrimes() {
+//    freeBinomialTables();
+//    freeInverseTables();
+//    freeXiTauDegreess();
 }
 
 long ModPositive(long  n, long p){
@@ -96,19 +111,17 @@ unsigned long logp(unsigned long p, unsigned long n) {
     return result;
 }
 
-unsigned long* basepExpansion(unsigned long p, unsigned long n, unsigned long padlength){
-    unsigned long* result = (unsigned long*) calloc(padlength, sizeof(unsigned long));
+void basepExpansion(unsigned long * result, unsigned long p, unsigned long n){
     unsigned long i = 0;
     for( ; n > 0; n /= p){
         result[i] = n % p;
         i++;
     }
-    return result;
 }
 
 khash_t(prime_to_table) * binomial_table = NULL;
 
-void directBinomialInitializeTable(unsigned long p){
+void initializeBinomialTable(unsigned long p){
     if(binomial_table == NULL){
         binomial_table = kh_init(prime_to_table);
     }
@@ -159,7 +172,7 @@ unsigned long Binomial2(unsigned long n, unsigned long k ) {
     if(n < k || k < 0){
         return 0;
     } else {
-        if((n-k) & k == 0){
+        if(((n-k) & k) == 0){
             return 1;
         } else {
             return 0;
@@ -175,10 +188,12 @@ unsigned long MultinomialOdd(unsigned long p, unsigned long len, unsigned long* 
     }
     unsigned long answer = 1;
     unsigned long base_p_expansion_length = logp(p, total);
-    unsigned long* total_expansion = basepExpansion(p, total, base_p_expansion_length);
-    unsigned long *l_expansions[len];
+    unsigned long total_expansion[base_p_expansion_length];
+    basepExpansion(total_expansion, p, total);
+    unsigned long l_expansions[len][base_p_expansion_length];
     for(unsigned long i=0; i < len; i++){
-        l_expansions[i] = basepExpansion(p,  l[i], base_p_expansion_length );
+        memset(l_expansions[i], 0, base_p_expansion_length * sizeof(unsigned long));
+        basepExpansion(l_expansions[i], p,  l[i]);
     }
     for(unsigned long index = 0; index < base_p_expansion_length; index++){
         unsigned long multi = 1;
@@ -186,17 +201,12 @@ unsigned long MultinomialOdd(unsigned long p, unsigned long len, unsigned long* 
         for(unsigned long i = 0; i < len; i++){
             partial_sum += l_expansions[i][index];
             if(partial_sum > total_expansion[index]){
-                answer = 0;
-                goto BREAK;
+                return 0;
             }
             multi *= directBinomial(p, partial_sum, l_expansions[i][index]);
             multi = multi % p;
         }
         answer = (answer * multi) % p;
-    }
-    BREAK:
-    for(unsigned long i = 0; i < len; i++){
-        free(l_expansions[i]);
     }
     return answer;
 }
@@ -399,4 +409,4 @@ int main(){
     printf("pivot: %ld\n", state.pivot);
     free(state.matrix);
 }
-/**/
+**/

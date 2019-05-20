@@ -2,8 +2,8 @@
 // Created by Hood on 5/8/2019.
 //
 
-#include "milnor_datatypes.h"
 #include "milnor.h"
+#include "milnor_private.h"
 #include "combinatorics.h"
 
 #include "khash.h"
@@ -11,163 +11,70 @@
 #include <string.h>
 #include <stdio.h>
 
-#define MAX_DIMENSION 2000
-
-/**/
-int main() {
-    char buffer[100];
-
-    initializePrime(3);
-    MilnorAlgebra * algebra;
-    MilnorAlgebra a;
-    algebra = & a;
-    algebra->p = 3;
-    algebra->generic = true;
-    initializeMilnorAlgebraFields(algebra);
-//    algebra->p = 3;
-//    algebra->generic = true;
-//    algebra->profile.restricted = true;
-//    algebra->profile.q_part = (~0);
-//    algebra->profile.p_part_length = 1;
-//    algebra->profile.p_part = (unsigned long*)malloc(sizeof(unsigned long));
-//    algebra->profile.p_part[0] = 5;
-//    algebra->profile.truncated = false;
-//    generateMilnorBasisQpartTable(algebra, 20);
-//    freeMilnorBasisQPartTable(algebra);
-//    generateMilnorBasisQpartTable(algebra, 20);
-//    generateMilnorBasisQpartTable(algebra, 76);
-//
-//    Q_part_list* Q_table = algebra->Q_table;
-//    for(unsigned long int residue = 0; residue < 2*3 - 2; ++residue) {
-//        Q_part_list v = Q_table[residue];
-//        printf("residue: %ld\n", residue);
-//        for(int i = 0; i < v.length ; i++){
-//            Q_part q_part = v.list[i];
-//            printf(" %ld , %ld\n", q_part.bit_string, q_part.degree);
-//        }
-//        printf("\n");
-//    }
-//    freeMilnorBasisQPartTable(algebra);
-
-//    generateMilnorBasisPpartTable(algebra, 10);
-//    P_part_list * P_table = algebra->P_table;
-//    for(int n = 0; n < 10; n++){
-//        printf("deg: %d \n", n);
-//        for(int i = 0; i < P_table[n].length; i++){
-//            P_part v = P_table[n].list[i];
-//            printf("   [");
-//            for(int j = 0; j < v.length; j++){
-//                printf("%ld, ", v.p_part[j]);
-//            }
-//            printf("]\n");
-//        }
-//        printf("\n");
-//    }
-//    freeMilnorBasisPpartTable(algebra);
+#define MAX_DIMENSION 10000
 
 
-    //GenerateMilnorBasis(algebra, 76);
-    //freeMilnorBasisQPartTable(algebra);
-    GenerateMilnorBasis(algebra, 50);
 
-    MilnorBasisElement m;
-//    m.p_degree = 0;
-//    m.p_length = 0;
-//    m.q_degree = 5;
-//    m.q_part = 2;
-//    printf("test:\n");
-//    unsigned long idx = GetIndexFromMilnorBasisElement(algebra, m);
-//    GetMilnorBasisElementFromIndex(algebra, idx1);
-
-
-    MilnorBasisElement_list * basis_table = algebra->basis_table;
-    for(int n = 0; n < algebra->basis_max_degree; n++){
-        printf("deg: %d \n", n);
-        for(int i = 0; i < basis_table[n].length; i++){
-            MilnorBasisElement v = basis_table[n].list[i];
-            milnor_basis_element_to_string(buffer, &v);
-            printf("  %d: '%s'\n", i , buffer);
-        }
-        printf("\n");
+MilnorAlgebra * constructMilnorAlgebra(unsigned long p, bool generic, Profile *profile){
+    MilnorAlgebraInternal * algebra = malloc(sizeof(MilnorAlgebraInternal));
+    initializePrime(p);
+    algebra->public_algebra.p = p;
+    algebra->public_algebra.algebra.p = p;
+    algebra->public_algebra.generic = generic;
+    if(profile == NULL){
+        algebra->public_algebra.profile.truncated = false;
+        algebra->public_algebra.profile.p_part_length = 0;
+        algebra->public_algebra.profile.q_part = -1;
+    } else {
+        algebra->public_algebra.profile = *profile;
     }
 
-//    P_part r, s;
-//    r.length = 3;
-//    unsigned long r_list[3] = {2, 5, 1};
-//    r.p_part = r_list;
-//    s.length = 3;
-//    unsigned long s_list[3] = {2, 2, 2};
-//    s.p_part = s_list;
-//    auto M = initialize_milnor_matrix(r, s);
-//    do {
-//        cout << "[\n";
-//        for(int row = 0; row <= r.length; row++) {
-//            cout << "  [";
-//            for (int col = 0; col <= s.length; col++) {
-//                cout << M[row][col] << ", ";
-//            }
-//            cout << "]\n";
-//        }
-//        cout << "]\n\n";
-//    } while(step_milnor_matrix(2, M, r, s));
-//    m.p_degree = 0;
-//    m.p_length = 0;
-//    m.q_degree = 5;
-//    m.q_part = 2;
-//    MonomialIndex idx = GetIndexFromMilnorBasisElement(algebra, m);
+//    algebra->public_algebra.algebra.compute_basis =
+//    algebra->public_algebra.algebra.get_basis_dimension =
+//    algebra->public_algebra.algebra.multiply_basis_elements =
 
-    MilnorBasisElement A,B;
-    A = milnor_basis_element_from_string(algebra, "Q(2)*P(1)");
-    B = milnor_basis_element_from_string(algebra, "Q(0)");
-    unsigned long output_degree = A.p_degree + A.q_degree + B.p_degree + B.q_degree;
-    unsigned long output_dimension = algebra->basis_table[output_degree].length;
-    Vector * result = allocateVector(algebra->p, output_degree, output_dimension);
-    MilnorProduct(algebra, result, A, B);
-    string str1 = buffer;
-    int len1 = milnor_element_to_string(str1, algebra, result);
-    string str2 = str1 + len1 + 1;
-    int len2 = milnor_basis_element_to_string(str2, &A);
-    string str3 = str2 + len2 + 1;
-    milnor_basis_element_to_string(str3, &B);
-    printf("%s * %s = %s\n", str2, str3, str1);
-    free(A.p_part);
-    free(B.p_part);
-    freeVector(result);
+    algebra->P_table = NULL;
+    algebra->P_table_by_P_length = NULL;
+    algebra->P_table_max_degree = 0;
+
+    algebra->Q_table = NULL;
+    algebra->Q_table_max_tau = 0;
+
+    algebra->basis_table = NULL;
+    algebra->public_algebra.max_degree = -1;
+    algebra->basis_element_to_index_map = NULL;
+
+    return (MilnorAlgebra*)algebra;
+}
+
+void freeMilnorAlgebra(MilnorAlgebra* algebra){
     freeMilnorBasis(algebra);
+    free(algebra);
 }
-/**/
 
-typedef struct {
-    Algebra algebra;
-    MilnorAlgebra internal_algebra;
-} MilnorAlgebra_export;
-
-Algebra * constructMilnorAlgebra(unsigned long p, bool generic, Profile *profile){
-    MilnorAlgebra_export * algebra = malloc(sizeof(MilnorAlgebra_export));
-    algebra->algebra.p = p;
-//    algebra->algebra.compute_basis =
-//    algebra->algebra.get_basis_dimension =
-//    algebra->algebra.multiply_basis_elements =
-    algebra->internal_algebra.p = p;
-    algebra->internal_algebra.generic = generic;
-    initializeMilnorAlgebraFields(&algebra->internal_algebra);
-    if(profile != NULL){
-        algebra->internal_algebra.profile = *profile;
-    }
+unsigned long GetMilnorAlgebraDimension(Algebra * public_algebra, unsigned long degree) {
+    MilnorAlgebraInternal * algebra = (MilnorAlgebraInternal *) public_algebra;
+    return algebra->basis_table[degree].length;
 }
+
+MilnorBasisElement_list GetMilnorAlgebraBasis(MilnorAlgebra * public_algebra, unsigned long degree){
+    MilnorAlgebraInternal * algebra = (MilnorAlgebraInternal *) public_algebra;
+    return algebra->basis_table[degree];
+}
+
 
 
 // TODO: Break this up into several methods.
 // Generate the PTable through degree new_max_degree.
 // This is only needed in order to help generate the basis table, so it can in principle be deallocated immediately afterwards.
 // However, we keep it around so that if we need to extend the table we don't have to redo our work.
-void generateMilnorBasisPpartTable(MilnorAlgebra * algebra, unsigned long new_max_degree) {
-    unsigned long p = algebra->p;
+void generateMilnorBasisPpartTable(MilnorAlgebraInternal * algebra, unsigned long new_max_degree) {
+    unsigned long p = algebra->public_algebra.p;
     unsigned long * xi_degrees = getXiDegrees(p);
 
     unsigned long profile_list[MAX_XI_TAU];
     for(long idx = 0;  idx < MAX_XI_TAU; idx ++){
-        profile_list[idx] = getProfileExponent(algebra->profile, p, idx) - 1;
+        profile_list[idx] = getProfileExponent(algebra->public_algebra.profile, p, idx) - 1;
     }
 
     unsigned long old_max_degree = algebra -> P_table_max_degree;
@@ -182,7 +89,6 @@ void generateMilnorBasisPpartTable(MilnorAlgebra * algebra, unsigned long new_ma
 
     // If old_max_degree is 0 we need to set up the base case for our recursion.
     // In degree 0 there's a single partition of length 0.
-    P_part_list degree_list, tau_list;
     if(old_max_degree == 0){
         unsigned long * p_part = calloc(1, sizeof(unsigned long));
         // In order to deallocate correctly, the zero dimensional part has to be the same as the rest.
@@ -213,6 +119,7 @@ void generateMilnorBasisPpartTable(MilnorAlgebra * algebra, unsigned long new_ma
     P_part tau_list_buffer[MAX_DIMENSION];
     unsigned long tau_list_length;
     for(unsigned long current_degree = old_max_degree + 1; current_degree <= new_max_degree; current_degree++){
+//        printf("current_degree: %ld;  ", current_degree);
         degree_list_length = 0;
         tau_table[current_degree] = (P_part_list*) calloc(MAX_XI_TAU, sizeof(P_part_list));
 
@@ -253,6 +160,7 @@ void generateMilnorBasisPpartTable(MilnorAlgebra * algebra, unsigned long new_ma
             tau_table[current_degree][xi].list = malloc(tau_list_length * sizeof(P_part));
             memcpy(tau_table[current_degree][xi].list, tau_list_buffer, tau_list_length * sizeof(P_part));
         }
+//        printf("degree_list_length: %ld\n", degree_list_length);
         degree_table[current_degree].length = degree_list_length;
         degree_table[current_degree].list = malloc(degree_list_length * sizeof(P_part));
         memcpy(degree_table[current_degree].list, degree_list_buffer, degree_list_length * sizeof(P_part));
@@ -260,7 +168,7 @@ void generateMilnorBasisPpartTable(MilnorAlgebra * algebra, unsigned long new_ma
 }
 
 // Free the PpartTable.
-void freeMilnorBasisPpartTable(MilnorAlgebra * algebra){
+void freeMilnorBasisPpartTable(MilnorAlgebraInternal * algebra){
     if(algebra->P_table == NULL){
         return;
     }
@@ -273,7 +181,6 @@ void freeMilnorBasisPpartTable(MilnorAlgebra * algebra){
         for(unsigned long xi = 0; xi < MAX_XI_TAU; xi ++){
             free(tau_table[current_degree][xi].list);
         }
-        P_part_list test = degree_table[current_degree];
         for(unsigned long idx = 0; idx < degree_table[current_degree].length; idx++) {
             free(degree_table[current_degree].list[idx].p_part);
         }
@@ -293,11 +200,11 @@ void freeMilnorBasisPpartTable(MilnorAlgebra * algebra){
 // Generate the QTable through degree new_max_degree.
 // This is only needed in order to help generate the basis table, so it could in principle be deallocated immediately afterwards.
 // However, we keep it around so that if we need to extend the table we don't have to redo our work.
-void generateMilnorBasisQpartTable(MilnorAlgebra * algebra, unsigned long new_max_degree){
-    unsigned long p = algebra->p;
+void generateMilnorBasisQpartTable(MilnorAlgebraInternal * algebra, unsigned long new_max_degree){
+    unsigned long p = algebra->public_algebra.p;
     unsigned long q = 2*(p-1);
     unsigned long * tau_degrees = getTauDegrees(p);
-    unsigned long profile = algebra->profile.q_part;
+    unsigned long profile = algebra->public_algebra.profile.q_part;
 
     unsigned long old_max_tau = algebra->Q_table_max_tau;
     // New max tau is number of tau_i's less than max_degree.
@@ -357,7 +264,7 @@ void generateMilnorBasisQpartTable(MilnorAlgebra * algebra, unsigned long new_ma
         // residue is the number of 1's in bit_string mod q.
         // c bits were unset when we incremented and one new bit was set so we have to add 1 - c.
         residue += 1 - c;
-        if(bit_string & profile != 0){
+        if((bit_string & profile) != 0){
             continue;
         }
         residue = ModPositive(residue, q);
@@ -366,7 +273,6 @@ void generateMilnorBasisQpartTable(MilnorAlgebra * algebra, unsigned long new_ma
     }
 
     Q_part_list* table = algebra->Q_table;
-    Q_part test = residue_bin_buffer[2][0];
     for (int residue = 0; residue < q; residue++) {
         table[residue].list = (Q_part*) realloc(table[residue].list, (table[residue].length + residue_bin_length[residue])* sizeof(Q_part));
         memcpy(
@@ -380,9 +286,9 @@ void generateMilnorBasisQpartTable(MilnorAlgebra * algebra, unsigned long new_ma
 
 // Free the QpartTable.
 // Thankfully a lot less elaborate than freeing PpartTable.
-void freeMilnorBasisQPartTable(MilnorAlgebra * algebra){
-    unsigned long max_tau = algebra->Q_table_max_tau;
-    unsigned long q = 2*algebra->p - 2;
+void freeMilnorBasisQPartTable(MilnorAlgebraInternal * algebra){
+    unsigned long p = algebra->public_algebra.p;
+    unsigned long q = 2*p - 2;
     Q_part_list * table = algebra->Q_table;
     for (int residue = 0; residue < q; residue++) {
         free(table[residue].list);
@@ -392,35 +298,36 @@ void freeMilnorBasisQPartTable(MilnorAlgebra * algebra){
     algebra->Q_table = NULL;
 }
 
-void GenerateMilnorBasis(MilnorAlgebra * algebra, unsigned long max_degree) {
-    unsigned long p = algebra->p;
+void GenerateMilnorBasis(Algebra * public_algebra, unsigned long max_degree) {
+    MilnorAlgebraInternal * algebra = (MilnorAlgebraInternal*) public_algebra;
+    unsigned long p = algebra->public_algebra.p;
     initializePrime(p);
-    unsigned long old_max_degree = algebra->basis_max_degree;
+    unsigned long old_max_degree = algebra->public_algebra.max_degree;
     algebra->basis_table = (MilnorBasisElement_list *) realloc(
             algebra->basis_table,
             (max_degree + 1) * sizeof(MilnorBasisElement_list)
     );
-    algebra->basis_max_degree = max_degree;
-    algebra->basis_name_to_index_map = (khash_t(monomial_index_map) **)realloc(
-            algebra->basis_name_to_index_map,
+    algebra->public_algebra.max_degree = max_degree;
+    algebra->basis_element_to_index_map = (khash_t(monomial_index_map) **)realloc(
+            algebra->basis_element_to_index_map,
             (max_degree + 1) * sizeof(khash_t(monomial_index_map) *)
         );
-    MilnorBasisElement_list * table = algebra->basis_table;
-    khash_t(monomial_index_map) ** name_table = algebra->basis_name_to_index_map;
+    khash_t(monomial_index_map) ** name_table = algebra->basis_element_to_index_map;
     for(long k = old_max_degree + 1; k <= max_degree; k++){
         name_table[k] = kh_init(monomial_index_map);
     }
-    if(algebra->generic){
+    if(algebra->public_algebra.generic){
         GenerateMilnorBasisGeneric(algebra, old_max_degree, max_degree);
     } else {
         GenerateMilnorBasis2(algebra, old_max_degree, max_degree);
     }
 }
 
-void freeMilnorBasis(MilnorAlgebra * algebra){
+void freeMilnorBasis(MilnorAlgebra * public_algebra){
+    MilnorAlgebraInternal * algebra = (MilnorAlgebraInternal*) public_algebra;
     MilnorBasisElement_list * table = algebra->basis_table;
-    khash_t(monomial_index_map) ** name_table = algebra->basis_name_to_index_map;
-    for(unsigned long degree = 0; degree <= algebra->basis_max_degree; degree++) {
+    khash_t(monomial_index_map) ** name_table = algebra->basis_element_to_index_map;
+    for(unsigned long degree = 0; degree <= algebra->public_algebra.max_degree; degree++) {
         free(table[degree].list);
         khint_t bin;
         for (bin = 0; bin < kh_end(name_table[degree]); ++bin) {
@@ -431,24 +338,22 @@ void freeMilnorBasis(MilnorAlgebra * algebra){
     }
 
     freeMilnorBasisPpartTable(algebra);
-    if(algebra->generic){
+    if(algebra->public_algebra.generic){
         freeMilnorBasisQPartTable(algebra);
     }
 
-    for(long k = 0; k <= algebra->basis_max_degree; k++){
-        kh_destroy(monomial_index_map, algebra->basis_name_to_index_map[k]);
+    for(long k = 0; k <= algebra->public_algebra.max_degree; k++){
+        kh_destroy(monomial_index_map, algebra->basis_element_to_index_map[k]);
     }
-    free(algebra->basis_name_to_index_map);
+    free(algebra->basis_element_to_index_map);
     free(algebra->basis_table);
 }
 
-void GenerateMilnorBasis2(MilnorAlgebra * algebra, unsigned long old_max_degree, unsigned long new_max_degree){
+void GenerateMilnorBasis2(MilnorAlgebraInternal * algebra, unsigned long old_max_degree, unsigned long new_max_degree){
     generateMilnorBasisPpartTable(algebra, new_max_degree);
-    unsigned long p = algebra->p;
-    Profile profile = algebra->profile;
 
     MilnorBasisElement_list * table = algebra->basis_table;
-    khash_t(monomial_index_map) ** name_table = algebra->basis_name_to_index_map;
+    khash_t(monomial_index_map) ** name_table = algebra->basis_element_to_index_map;
 
     MilnorBasisElement_list current_degree_list;
     for(unsigned long degree = old_max_degree + 1; degree <= new_max_degree; degree++){
@@ -459,7 +364,7 @@ void GenerateMilnorBasis2(MilnorAlgebra * algebra, unsigned long old_max_degree,
             P_part x = p_parts.list[i];
             MilnorBasisElement m = (MilnorBasisElement){0, 0, degree, x.length, x.p_part};
             char key[200];
-            milnor_basis_element_to_string(key, &m);
+            milnor_basis_element_to_key(key, &m);
             int absent;
             khint_t bin = kh_put(monomial_index_map, name_table[degree], key, &absent);
             if(absent){
@@ -475,13 +380,13 @@ void GenerateMilnorBasis2(MilnorAlgebra * algebra, unsigned long old_max_degree,
 
 // Get the basis in degree n for the generic steenrod algebra at the prime p.
 // We just put together the "even part" of the basis and the "Q part".
-void GenerateMilnorBasisGeneric(MilnorAlgebra * algebra, unsigned long old_max_degree, unsigned long new_max_degree){
-    unsigned long p = algebra->p;
+void GenerateMilnorBasisGeneric(MilnorAlgebraInternal * algebra, unsigned long old_max_degree, unsigned long new_max_degree){
+    unsigned long p = algebra->public_algebra.p;
     unsigned long q = 2 * (p - 1);
     generateMilnorBasisPpartTable(algebra, new_max_degree / q);
     generateMilnorBasisQpartTable(algebra, new_max_degree);
     MilnorBasisElement_list* table = algebra->basis_table;
-    khash_t(monomial_index_map) ** name_table = algebra->basis_name_to_index_map;
+    khash_t(monomial_index_map) ** name_table = algebra->basis_element_to_index_map;
 
     for(unsigned long degree = old_max_degree + 1; degree <= new_max_degree; degree++){
         // p_deg records the desired degree of the P part of the basis element.
@@ -498,13 +403,12 @@ void GenerateMilnorBasisGeneric(MilnorAlgebra * algebra, unsigned long old_max_d
             }
             unsigned long q_bit_string = q_part.bit_string;
             unsigned long p_deg = (degree - q_deg);
-            P_part_list test = algebra->P_table[0];
             P_part_list p_list = algebra->P_table[p_deg / q];
             for(unsigned long j = 0; j < p_list.length; j++) {
                 P_part p_part = p_list.list[j];
                 MilnorBasisElement m = (MilnorBasisElement){q_part.degree, q_bit_string, p_deg, p_part.length, p_part.p_part};
                 char key[200];
-                milnor_basis_element_to_string(key, &m);
+                milnor_basis_element_to_key(key, &m);
                 int absent;
                 khint_t bin = kh_put(monomial_index_map, name_table[degree], key, &absent);
                 if(absent){
@@ -524,14 +428,16 @@ void GenerateMilnorBasisGeneric(MilnorAlgebra * algebra, unsigned long old_max_d
 
 
 
-MilnorBasisElement GetMilnorBasisElementFromIndex(MilnorAlgebra * algebra, unsigned long degree, unsigned long idx) {
+MilnorBasisElement GetMilnorBasisElementFromIndex(MilnorAlgebra * public_algebra, unsigned long degree, unsigned long idx) {
+    MilnorAlgebraInternal * algebra = (MilnorAlgebraInternal*) public_algebra;
     return algebra->basis_table[degree].list[idx];
 }
 
-unsigned long GetIndexFromMilnorBasisElement(MilnorAlgebra * algebra, MilnorBasisElement b){
-    kh_monomial_index_map_t * map = algebra->basis_name_to_index_map[b.q_degree + b.p_degree];
+unsigned long GetIndexFromMilnorBasisElement(MilnorAlgebra * public_algebra, MilnorBasisElement b){
+    MilnorAlgebraInternal * algebra = (MilnorAlgebraInternal*) public_algebra;
+    kh_monomial_index_map_t * map = algebra->basis_element_to_index_map[b.q_degree + b.p_degree];
     char key[200];
-    milnor_basis_element_to_string(key, &b);
+    milnor_basis_element_to_key(key, &b);
     khint_t bin = kh_get(monomial_index_map, map, key);
     if(bin == kh_end(map)){
         printf("Uh-oh, not here. degree: %ld, elt: '%s'\n", b.q_degree + b.p_degree, key);
@@ -558,7 +464,6 @@ void initialize_milnor_matrix(unsigned long M[MAX_XI_TAU][MAX_XI_TAU], P_part r,
 // function was a little long and this seemed like a decent chunk to extract.
 // At least it contains all of the steps that modify M so that seems like a good thing.
 void step_milnor_matrix_update_matrix(unsigned long M[MAX_XI_TAU][MAX_XI_TAU], P_part r, P_part s, int i, int j, int x)  {
-    unsigned long rows = r.length + 1;
     unsigned long cols = s.length + 1;
     for(long row = 1; row < i; row ++){
         M[row][0] = r.p_part[row-1];
@@ -641,8 +546,8 @@ long min(long a, long b){
 
 // Handles the multiplication in the even subalgebra of the Steenrod algebra P.
 // When p = 2, this is isomorphic to the whole Steenrod algebra so this method does everything.
-void MilnorProductEven(MilnorAlgebra * algebra, Vector * result, MilnorBasisElement r_elt, MilnorBasisElement s_elt){
-    unsigned long p = algebra->p;
+void MilnorProductEven(MilnorAlgebraInternal * algebra, Vector * result, MilnorBasisElement r_elt, MilnorBasisElement s_elt){
+    unsigned long p = algebra->public_algebra.p;
     P_part r, s;
     r.degree = r_elt.p_degree;
     r.length = r_elt.p_length;
@@ -665,6 +570,9 @@ void MilnorProductEven(MilnorAlgebra * algebra, Vector * result, MilnorBasisElem
     }
     memset(result->vector, 0, result->dimension * sizeof(long));
     do {
+        char buffer[200];
+//        milnor_matrix_to_string(buffer, M, rows, cols);
+//        printf("%s",buffer);
         // check diagonals
         long coeff = 1; // I think this needs to be signed.
         unsigned long diagonal_sums[MAX_XI_TAU];
@@ -699,7 +607,7 @@ void MilnorProductEven(MilnorAlgebra * algebra, Vector * result, MilnorBasisElem
         }
         if(coeff != 0) {
             MilnorBasisElement m = (MilnorBasisElement){0, 0, output_degree, max_nonzero_diagonal, diagonal_sums};
-            unsigned long idx = GetIndexFromMilnorBasisElement(algebra, m);
+            unsigned long idx = GetIndexFromMilnorBasisElement((MilnorAlgebra*)algebra, m);
             addBasisElementToVector(result, idx, coeff);
         }
     } while(step_milnor_matrix(p, M, r, s));
@@ -709,15 +617,15 @@ void MilnorProductEven(MilnorAlgebra * algebra, Vector * result, MilnorBasisElem
 
 // Reduce m1 * f = (Q_e0 Q_e1 ... P(r1, r2, ...)) * (Q_f0 Q_f1 ...) into the form Sum of Q's * P's
 // Result is represented as dictionary of pairs of tuples.
-void MilnorProductFullQpart(MilnorAlgebra * algebra, Vector * output, MilnorBasisElement m1, unsigned long f) {
-    unsigned long p = algebra->p;
+void MilnorProductFullQpart(MilnorAlgebraInternal * algebra, Vector * output, MilnorBasisElement m1, unsigned long f) {
+    unsigned long p = algebra->public_algebra.p;
     unsigned long q;
     q = 2*p-2;
     unsigned long * tau_degrees = getTauDegrees(p);
     unsigned long * xi_degrees = getXiDegrees(p);
     unsigned long p_degree = m1.p_degree;
     unsigned long q_degree = m1.q_degree;
-    unsigned long idx = GetIndexFromMilnorBasisElement(algebra, m1);
+    unsigned long idx = GetIndexFromMilnorBasisElement((MilnorAlgebra*)algebra, m1);
     Vector result, old_result;
     result.p = p;
     result.degree = p_degree + q_degree;
@@ -748,10 +656,10 @@ void MilnorProductFullQpart(MilnorAlgebra * algebra, Vector * output, MilnorBasi
             if(old_result.vector[idx] == 0){
                 continue;
             }
-            MilnorBasisElement mono = GetMilnorBasisElementFromIndex(algebra, old_result.degree, idx);
+            MilnorBasisElement mono = GetMilnorBasisElementFromIndex((MilnorAlgebra*)algebra, old_result.degree, idx);
             for(unsigned long i = 0; i < mono.p_length + 1; i++){
                 // There is already a Q of this index on the other side, so moving another one over will give 0.
-                if((mono.q_part & (1 << k+i)) != 0){
+                if((mono.q_part & (1 << (k+i))) != 0){
                     continue;
                 }
                 // Make sure mono.p_part[i - 1] is large enough to deduct p^k from it
@@ -777,17 +685,17 @@ void MilnorProductFullQpart(MilnorAlgebra * algebra, Vector * output, MilnorBasi
                     p_mono_length = new_p_mono_length;
                 }
                 // Add the new Q.
-                q_mono |= (1 << k + i);
+                q_mono |= 1 << (k + i);
                 q_degree += tau_degrees[k+i];
 
                 unsigned long larger_Qs = 0;
-                unsigned long v = q_mono >> k + i + 1;
+                unsigned long v = q_mono >> (k + i + 1);
                 for( ; v != 0; v >>= 1){
                     larger_Qs += v & 1;
                 }
                 unsigned long coeff = MinusOneToTheN(larger_Qs) * old_result.vector[idx];
                 MilnorBasisElement m = (MilnorBasisElement){q_degree, q_mono, p_degree, p_mono_length, p_mono};
-                unsigned long out_idx = GetIndexFromMilnorBasisElement(algebra, m);
+                unsigned long out_idx = GetIndexFromMilnorBasisElement((MilnorAlgebra*)algebra, m);
                 addBasisElementToVector(&result, out_idx, coeff);
             }
         }
@@ -813,10 +721,11 @@ void MilnorProductFullQpart(MilnorAlgebra * algebra, Vector * output, MilnorBasi
 // This computes the product of the Milnor basis elements
 // $Q_{e_1} Q_{e_2} ... P(r_1, r_2, ...)$ and
 // $Q_{f_1} Q_{f_2} ... P(s_1, s_2, ...)$.
-void MilnorProductFull(MilnorAlgebra * algebra, Vector * result, MilnorBasisElement m1, MilnorBasisElement m2) {
-    unsigned long p = algebra-> p;
+void MilnorProductFull(MilnorAlgebraInternal * algebra, Vector * result, MilnorBasisElement m1, MilnorBasisElement m2) {
+    unsigned long p = algebra->public_algebra.p;
     MilnorBasisElement s = (MilnorBasisElement){0, 0, m2.p_degree, m2.p_length, m2.p_part};
     Vector m1_times_f;
+    m1_times_f.p = p;
     m1_times_f.degree = m1.q_degree + m1.p_degree + m2.q_degree;
     m1_times_f.dimension = algebra->basis_table[m1_times_f.degree].length;
     long m1_times_f_vector[m1_times_f.dimension];
@@ -824,8 +733,8 @@ void MilnorProductFull(MilnorAlgebra * algebra, Vector * result, MilnorBasisElem
     m1_times_f.vector = m1_times_f_vector;
     MilnorProductFullQpart(algebra, &m1_times_f, m1, m2.q_part);
 
-//    char buffer[200];
-//    milnor_element_to_string(buffer, algebra, &m1_times_f);
+    char buffer[200];
+    milnor_element_to_string(buffer, (MilnorAlgebra*)algebra, &m1_times_f);
 
     // Now for the Milnor matrices.  For each entry '(e,r): coeff' in answer,
     // multiply r with s.  Record coefficient for matrix and multiply by coeff.
@@ -834,54 +743,173 @@ void MilnorProductFull(MilnorAlgebra * algebra, Vector * result, MilnorBasisElem
         assignVector(result, &m1_times_f);
         return;
     }
-    unsigned long output_degree = m1.p_degree + m1.q_degree + m2.q_degree + m2.q_degree;
+
     for(long i = 0; i < m1_times_f.dimension; i++){
         if(m1_times_f.vector[i] == 0){
             continue;
         }
         long coeff = m1_times_f.vector[i];
-        MilnorBasisElement er_mono = GetMilnorBasisElementFromIndex(algebra, m1_times_f.degree, i);
+        MilnorBasisElement er_mono = GetMilnorBasisElementFromIndex((MilnorAlgebra*)algebra, m1_times_f.degree, i);
         MilnorBasisElement r = (MilnorBasisElement){0, 0, er_mono.p_degree, er_mono.p_length, er_mono.p_part};
         Vector prod;
+        prod.p = p;
         prod.degree = r.p_degree + s.p_degree;
         prod.dimension = algebra->basis_table[prod.degree].length;
         long prod_vector[prod.dimension];
         memset(prod_vector, 0, prod.dimension * sizeof(long));
         prod.vector = prod_vector;
         MilnorProductEven(algebra, &prod, r, s);
+        milnor_element_to_string(buffer, (MilnorAlgebra*)algebra, &prod);
         for(long j = 0; j < prod.dimension; j++){
             long c = prod.vector[j];
-            MilnorBasisElement m = GetMilnorBasisElementFromIndex(algebra, prod.degree, j);
+            MilnorBasisElement m = GetMilnorBasisElementFromIndex((MilnorAlgebra*)algebra, prod.degree, j);
             m.q_degree = er_mono.q_degree;
             m.q_part = er_mono.q_part;
-            unsigned long out_idx = GetIndexFromMilnorBasisElement(algebra, m);
+            unsigned long out_idx = GetIndexFromMilnorBasisElement((MilnorAlgebra*)algebra, m);
             addBasisElementToVector(result, out_idx, coeff*c);
         }
     }
 }
 
 // Multiplication of Milnor basis elements in the non generic case.
-void MilnorProduct2(MilnorAlgebra * algebra, Vector * result, MilnorBasisElement r, MilnorBasisElement s){
+void MilnorProduct2(MilnorAlgebraInternal * algebra, Vector * result, MilnorBasisElement r, MilnorBasisElement s){
     MilnorProductEven(algebra, result, r, s);
 }
 
-void MilnorProductGeneric(MilnorAlgebra * algebra, Vector * result, MilnorBasisElement r, MilnorBasisElement s ) {
+void MilnorProductGeneric(MilnorAlgebraInternal * algebra, Vector * result, MilnorBasisElement r, MilnorBasisElement s ) {
     MilnorProductFull(algebra, result, r, s);
 }
 
 
-// Multiply r and s in the Milnor algebra determined by algebra.
+// Multiply the basis elements corresponding to r_index and s_index in the Milnor algebra determined by algebra.
 // Note that since profile functions determine subalgebras, the product
 // doesn't need to care about the profile function at all.
-void  MilnorProduct(MilnorAlgebra * algebra, Vector * result, MilnorBasisElement r, MilnorBasisElement s)  {
-    if(r.q_degree + r.p_degree + s.q_degree + s.p_degree != result->degree){
+void MilnorProduct(Algebra * public_algebra, Vector * result, unsigned long r_degree, unsigned long r_index, unsigned long s_degree, unsigned long s_index)  {
+    MilnorAlgebraInternal * algebra = (MilnorAlgebraInternal*) public_algebra;
+    MilnorBasisElement r, s;
+    r = GetMilnorBasisElementFromIndex((MilnorAlgebra*)algebra, r_degree, r_index);
+    s = GetMilnorBasisElementFromIndex((MilnorAlgebra*)algebra, s_degree, s_index);
+    if(r_degree + s_degree != result->degree){
         printf("Result has degree %ld but should have degree %ld\n", result->degree, r.q_degree + r.p_degree + s.q_degree + s.p_degree);
         return;
     }
-    if(algebra->generic){
+    if(algebra->public_algebra.generic){
         MilnorProductFull(algebra, result, r, s);
     } else {
+//        printf("hi\n\n");
         MilnorProductEven(algebra, result, r, s);
     }
+}
+/**/
+
+
+
+
+/**/
+int main() {
+    char buffer[10000];
+
+//    MilnorBasisElement m, n;
+//    m.q_degree = 1;
+//    m.q_part = 1;
+//    m.p_degree = 8;
+//    m.p_length = 1;
+//    m.p_part = (unsigned long[1]){1};
+//
+//    n.q_degree = 1;
+//    n.q_part = 1;
+//    n.p_degree = 8;
+//    n.p_length = 1;
+//    n.p_part = (unsigned long[1]){1};
+
+//    unsigned long length = milnor_basis_element_to_key(buffer, &m);
+//    printf("hash key1: ");
+//    for(int i = 0; i < length+1; i++){
+//        printf("%x", buffer[i]);
+//    }
+//    printf("\n\n");
+
+//    length = milnor_basis_element_to_key(buffer, &n);
+//    printf("hash key2: ");
+//    for(int i = 0; i < length+1; i++){
+//        printf("%x", buffer[i]);
+//    }
+//    printf("\n");
+
+    MilnorAlgebra * algebra = constructMilnorAlgebra(2, false, NULL);
+
+//    generateMilnorBasisQpartTable(algebra, 20);
+//    freeMilnorBasisQPartTable(algebra);
+//    generateMilnorBasisQpartTable(algebra, 20);
+//    generateMilnorBasisQpartTable(algebra, 76);
+//
+//    Q_part_list* Q_table = algebra->Q_table;
+//    for(unsigned long int residue = 0; residue < 2*3 - 2; ++residue) {
+//        Q_part_list v = Q_table[residue];
+//        printf("residue: %ld\n", residue);
+//        for(int i = 0; i < v.length ; i++){
+//            Q_part q_part = v.list[i];
+//            printf(" %ld , %ld\n", q_part.bit_string, q_part.degree);
+//        }
+//        printf("\n");
+//    }
+//    freeMilnorBasisQPartTable(algebra);
+
+//    generateMilnorBasisPpartTable(algebra, 10);
+//    P_part_list * P_table = algebra->P_table;
+//    for(int n = 0; n < 10; n++){
+//        printf("deg: %d \n", n);
+//        for(int i = 0; i < P_table[n].length; i++){
+//            P_part v = P_table[n].list[i];
+//            printf("   [");
+//            for(int j = 0; j < v.length; j++){
+//                printf("%ld, ", v.p_part[j]);
+//            }
+//            printf("]\n");
+//        }
+//        printf("\n");
+//    }
+//    freeMilnorBasisPpartTable(algebra);
+
+
+    //GenerateMilnorBasis(algebra, 76);
+    //freeMilnorBasisQPartTable(algebra);
+    GenerateMilnorBasis((Algebra*)algebra, 100);
+
+//    for(int degree = 0; degree < algebra->max_degree; degree++){
+//        MilnorBasisElement_list basis_list = GetMilnorAlgebraBasis(algebra, degree);
+//        printf("degree: %d \n", degree);
+//        for(int i = 0; i < basis_list.length; i++){
+//            MilnorBasisElement v = basis_list.list[i];
+//            milnor_basis_element_to_string(buffer, &v);
+//            printf("  %d: '%s'\n", i , buffer);
+//        }
+//        printf("\n");
+//    }
+
+    MilnorBasisElement A,B;
+    //(A5.Q(1) * A5.P(2), A5.P(1, 1))
+    A = milnor_basis_element_from_string(algebra, "P(16, 4)");
+    B = milnor_basis_element_from_string(algebra, "P(8,1)");
+    unsigned long A_idx = GetIndexFromMilnorBasisElement(algebra, A);
+    unsigned long B_idx = GetIndexFromMilnorBasisElement(algebra, B);
+    unsigned long A_deg = A.p_degree + A.q_degree;
+    unsigned long B_deg = B.p_degree + B.q_degree;
+
+    unsigned long output_degree = A_deg + B_deg;
+    unsigned long output_dimension = GetMilnorAlgebraDimension((Algebra*)algebra, output_degree);
+    Vector * result = allocateVector(algebra->p, output_degree, output_dimension);
+    MilnorProduct((Algebra*)algebra, result, A_deg, A_idx, B_deg, B_idx);
+    string str1 = buffer;
+    int len1 = milnor_element_to_string(str1, algebra, result);
+    string str2 = str1 + len1 + 1;
+    int len2 = milnor_basis_element_to_string(str2, &A);
+    string str3 = str2 + len2 + 1;
+    milnor_basis_element_to_string(str3, &B);
+    printf("%s * %s = %s\n", str2, str3, str1);
+    free(A.p_part);
+    free(B.p_part);
+    freeVector(result);
+    freeMilnorAlgebra(algebra);
 }
 /**/

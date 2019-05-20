@@ -11,8 +11,9 @@ add_executable(csteen src/milnor.c src/milnor_datatypes.c src/combinatorics.c sr
 add_library(CSteenrod SHARED src/milnor.c src/milnor_datatypes.c src/combinatorics.c src/algebra.c)
 set_target_properties(CSteenrod PROPERTIES
     VERSION ${PROJECT_VERSION}
-    SOVERSION 1
-    PUBLIC_HEADER src/combinatorics.h src/milnor.h src/milnor_datatypes.h)
+    SOVERSION 1)
+target_include_directories(CSteenrod PUBLIC include PRIVATE src)
+
 configure_file(CSteenrod.pc.in CSteenrod.pc @ONLY)
 target_include_directories(CSteenrod PRIVATE .)
 install(TARGETS CSteenrod

@@ -4,10 +4,15 @@
 
 #include <stdio.h>
 #include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "milnor_datatypes.h"
 #include "milnor.h"
 #include "combinatorics.h"
+
+// Private functions
+unsigned long get_profile_name(char *buffer, Profile P);
+
 
 unsigned long getProfileExponent(Profile P, unsigned long p, unsigned long index){
     if(index < P.p_part_length){
@@ -19,45 +24,14 @@ unsigned long getProfileExponent(Profile P, unsigned long p, unsigned long index
     return -1;
 }
 
-bool checkProfile(unsigned long profile[], P_part xi_mono){
-    for(int i = 0; i < xi_mono.length; i++){
-        if(xi_mono.p_part[i] >= profile[i]){
-            return false;
-        }
-    }
-    return true;
-}
-
-void generate_profile_name(Profile P){
-    if (P.name != NULL) {
-        return;
-    }
-    char buffer[200];
+unsigned long get_profile_name(char *buffer, Profile P){
     unsigned long len = 0;
     len += sprintf(buffer + len, "Profile( truncated=%s, ", P.truncated ? "true" : "false");
     len += sprintf(buffer + len, "q_part=%lx, ", P.q_part);
     len += sprintf(buffer + len, "p_part=");
     len += array_to_string(buffer, P.p_part, P.p_part_length);
     len += sprintf(buffer + len, ")");
-    P.name = malloc((len + 1)* sizeof(char));
-    memcpy(P.name, buffer, len);
-}
-
-void initializeMilnorAlgebraFields(MilnorAlgebra * algebra){
-    algebra->profile.truncated = false;
-    algebra->profile.p_part_length = 0;
-    algebra->profile.q_part = -1;
-
-    algebra -> P_table = NULL;
-    algebra -> P_table_by_P_length = NULL;
-    algebra->P_table_max_degree = 0;
-
-    algebra->Q_table = NULL;
-    algebra->Q_table_max_tau = 0;
-
-    algebra->basis_table = NULL;
-    algebra->basis_max_degree = -1;
-    algebra->basis_name_to_index_map = NULL;
+    return len;
 }
 
 void milnor_algebra_generate_name(MilnorAlgebra *A){
@@ -68,8 +42,7 @@ void milnor_algebra_generate_name(MilnorAlgebra *A){
     long len = 0;
     len += sprintf(buffer + len, "MilnorAlgebra(p=%ld, generic=%s", A->p, A->generic ? "true" : "false" );
     if(A->profile.restricted){
-        generate_profile_name(A->profile);
-        len += sprintf(buffer + len, "%s", A->profile.name);
+        len += get_profile_name(buffer + len, A->profile);
     }
     len += sprintf(buffer + len, ")");
     char * result = malloc((len + 1)* sizeof(char));
@@ -90,6 +63,24 @@ int array_to_string(string buffer, unsigned long* A, unsigned long length){
 }
 
 
+int milnor_basis_element_to_key(string buffer, MilnorBasisElement *b){
+    // Copy bytes representing MilnorBasisElement to a string.
+//    printf("making hash.\n");
+//    printf("    pointer address: %lx\n", (long)b->p_part);
+    memcpy(buffer, &b->q_part, sizeof(unsigned long));
+    memcpy(buffer + sizeof(unsigned long), b->p_part, b->p_length * sizeof(unsigned long));
+    int len = ((b->p_length + 1) * sizeof(unsigned long)) / sizeof(char);
+
+    // Now we need to make sure that none of the entries are 0.
+    // That would end the string early.
+    for(unsigned int i = 0; i < len; i++){
+        buffer[i]++;
+    }
+    // Now add string terminating null character.
+    buffer[len] = '\0';
+    return len;
+}
+
 int milnor_basis_element_to_string(string buffer, MilnorBasisElement *b){
     if(b->p_length == 0 && b->q_part == 0){
         buffer[0] = '0';
@@ -101,7 +92,7 @@ int milnor_basis_element_to_string(string buffer, MilnorBasisElement *b){
         len += sprintf(buffer + len, "Q(");
         unsigned long idx = 0;
         for(unsigned long q_part = b->q_part; q_part > 0; q_part >>= 1){
-            if(q_part & 1 != 0){
+            if((q_part & 1) != 0){
                 len += sprintf(buffer + len, "%ld,", idx);
             }
             idx ++;
@@ -221,7 +212,7 @@ int milnor_element_to_string(string buffer, MilnorAlgebra * algebra, Vector * m)
     return len;
 }
 
-int milnor_matrix_to_string(string buffer, unsigned long** M, unsigned long rows, unsigned long cols){
+int milnor_matrix_to_string(string buffer, unsigned long M[MAX_XI_TAU][MAX_XI_TAU], unsigned long rows, unsigned long cols){
     unsigned long len = 0;
     len += sprintf(buffer + len, "[\n");
     for(int row = 0; row < rows; row++) {

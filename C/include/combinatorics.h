@@ -15,16 +15,24 @@ unsigned long p_to_the_n_minus_1_over_p_minus_1(unsigned long p, unsigned long n
 unsigned long logp(unsigned long p, unsigned long n);
 void basepExpansion(unsigned long * buffer, unsigned long p, unsigned long n);
 
+
+
 void initializePrime(unsigned long p);
-void freePrimes();
+void initializeInverseTable(unsigned long p);
+void directBinomialInitializeTable(unsigned long p);
 
 long inverse(unsigned long p, long k);
 
+unsigned long directBinomial(unsigned long p, unsigned long n, unsigned long k);
+unsigned long Multinomial2(unsigned long len, unsigned long* l);
+unsigned long Binomial2(unsigned long n, unsigned long k );
+unsigned long MultinomialOdd(unsigned long p, unsigned long len, unsigned long* l);
+unsigned long BinomialOdd(unsigned long p, unsigned long n, unsigned long k);
 unsigned long Multinomial(unsigned long p, unsigned long len, unsigned long l[]);
 unsigned long Binomial(unsigned long p, unsigned long n, unsigned long k);
 
 #define MAX_XI_TAU 10
-
+void initializeXiTauDegrees(unsigned long);
 unsigned long* getXiDegrees(unsigned long);
 unsigned long* getTauDegrees(unsigned long);
 
