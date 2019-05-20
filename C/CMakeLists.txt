@@ -7,8 +7,8 @@ SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${DEBUG_INFO_COMPILE_FLAGS}")
 
 
 include(GNUInstallDirs)
-add_executable(csteen src/milnor.c src/milnor_datatypes.c src/combinatorics.c)
-add_library(CSteenrod SHARED src/milnor.c src/milnor_datatypes.c src/combinatorics.c)
+add_executable(csteen src/milnor.c src/milnor_datatypes.c src/combinatorics.c src/algebra.c)
+add_library(CSteenrod SHARED src/milnor.c src/milnor_datatypes.c src/combinatorics.c src/algebra.c)
 set_target_properties(CSteenrod PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION 1

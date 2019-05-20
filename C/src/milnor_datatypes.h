@@ -7,6 +7,7 @@
 
 #include <stdbool.h>
 #include "khash.h"
+#include "algebra.h"
 typedef char* string;
 
 
@@ -77,29 +78,14 @@ typedef struct {
 
 void milnor_algebra_generate_name(MilnorAlgebra *A);
 
-typedef struct {
-    MilnorAlgebra * algebra;
-    unsigned long degree;
-    unsigned long algebra_dimension;
-    long* vector;
-} MilnorElement;
-
 void milnor_algebra_generate_name(MilnorAlgebra *A);
 
-void constructMilnorAlgebra(MilnorAlgebra * A);
+void initializeMilnorAlgebraFields(MilnorAlgebra * A);
 
 int array_to_string(string buffer, unsigned long* A, unsigned long length);
 int milnor_basis_element_to_string(string buffer, MilnorBasisElement *b);
 MilnorBasisElement milnor_basis_element_from_string(MilnorAlgebra * algebra, char* elt_string);
-int milnor_element_to_string(string buffer, MilnorAlgebra * algebra, MilnorElement * m);
+int milnor_element_to_string(string buffer, MilnorAlgebra * algebra, Vector * m);
 int milnor_matrix_to_string(string buffer, unsigned long** M, unsigned long rows, unsigned long cols);
-
-MilnorElement * allocateMilnorElement(MilnorAlgebra * algebra, unsigned long degree);
-void freeMilnorElement(MilnorElement * elt);
-
-void addBasisElementToMilnorElement(MilnorElement * elt, unsigned long idx, long coeff);
-void addMilnorElement(MilnorElement * target, MilnorElement * source);
-void scaleMilnorElement(MilnorElement *, long);
-void assignMilnorElement(MilnorElement * target, MilnorElement * source);
 
 #endif //CSTEENROD_MILNOR_DATATYPES_H

@@ -17,10 +17,10 @@ def wrap_milnor(CSteenrod):
     CSteenrod.GetIndexFromMilnorBasisElement.argtypes = [POINTER(c_MilnorAlgebra), c_MilnorBasisElement]
     CSteenrod.GetIndexFromMilnorBasisElement.restype = c_ulong   
     
-    #void MilnorProductEven(MilnorAlgebra * algebra, MilnorElement * result, MilnorBasisElement r_elt, MilnorBasisElement s_elt);
-    #void MilnorProductFullQpart(MilnorAlgebra * algebra, MilnorElement * result, MilnorBasisElement m1, unsigned long f);
-    #void MilnorProduct(MilnorAlgebra * algebra, MilnorElement * result, MilnorBasisElement r, MilnorBasisElement s);
-    CSteenrod.MilnorProduct.argtypes = [POINTER(c_MilnorAlgebra), POINTER(c_MilnorElement), c_MilnorBasisElement, c_MilnorBasisElement]
+    #void MilnorProductEven(MilnorAlgebra * algebra, Vector * result, MilnorBasisElement r_elt, MilnorBasisElement s_elt);
+    #void MilnorProductFullQpart(MilnorAlgebra * algebra, Vector * result, MilnorBasisElement m1, unsigned long f);
+    #void MilnorProduct(MilnorAlgebra * algebra, Vector * result, MilnorBasisElement r, MilnorBasisElement s);
+    CSteenrod.MilnorProduct.argtypes = [POINTER(c_MilnorAlgebra), POINTER(c_Vector), c_MilnorBasisElement, c_MilnorBasisElement]
     
     #unsigned long** initialize_milnor_matrix(P_part r, P_part s);
     #bool step_milnor_matrix(unsigned long  p, unsigned long ** M, P_part r, P_part s);

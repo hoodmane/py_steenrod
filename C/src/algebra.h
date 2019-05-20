@@ -6,6 +6,13 @@
 #define CSTEENROD_ALGEBRA_H
 #include <stdbool.h>
 
+typedef struct {
+    unsigned long p;
+    unsigned long degree;
+    unsigned long dimension;
+    long* vector;
+} Vector;
+
 typedef struct Algebra {
     unsigned long p;
 // Methods:
@@ -23,5 +30,13 @@ typedef struct Module {
     unsigned long (*get_basis_dimension)(struct Module* this, unsigned long degree);
     int (*act_on_basis)(struct Module* this, unsigned long degree, unsigned long alg_index, unsigned long mod_index);
 } Module;
+
+Vector * allocateVector(unsigned long p, unsigned long degree, unsigned long dimension);
+void freeVector(Vector * elt);
+
+void addBasisElementToVector(Vector * elt, unsigned long idx, long coeff);
+void addVector(Vector * target, Vector * source);
+void scaleVector(Vector *, long);
+void assignVector(Vector * target, Vector * source);
 
 #endif //CSTEENROD_ALGEBRA_H

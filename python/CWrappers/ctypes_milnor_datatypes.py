@@ -1,4 +1,5 @@
 from ctypes import *
+from ctypes_algebra import *
 
 #typedef struct {
 #    string name;
@@ -126,41 +127,16 @@ class c_MilnorAlgebra(Structure):
         ("basis_name_to_index_map", c_void_p)
     ]
 
-#typedef struct {
-#    MilnorAlgebra * algebra;
-#    unsigned long degree;
-#    unsigned long algebra_dimension;
-#    long* vector;
-#} MilnorElement;
-
-class c_MilnorElement(Structure):
-    _fields_ = [
-        ("algebra", POINTER(c_MilnorAlgebra)),
-        ("degree", c_ulong),
-        ("algebra_dimension", c_ulong),
-        ("vector", POINTER(c_long))
-    ]
-
 def wrap_milnor_datatypes(CSteenrod):        
     #void milnor_algebra_generate_name(MilnorAlgebra *A);
-    CSteenrod.milnor_algebra_generate_name.argtypes = [POINTER(c_MilnorElement)]
+    CSteenrod.milnor_algebra_generate_name.argtypes = [POINTER(c_MilnorAlgebra)]
          
     # string array_to_string(unsigned long* A, unsigned long length);
     # string milnor_basis_element_to_string(MilnorBasisElement *b);
     # MilnorBasisElement milnor_basis_element_from_string(MilnorAlgebra * algebra, char* elt_string);
-    # string milnor_element_to_string(MilnorAlgebra * algebra, MilnorElement * m);
+    # string milnor_element_to_string(MilnorAlgebra * algebra, Vector * m);
     # string milnor_matrix_to_string(unsigned long** M, unsigned long rows, unsigned long cols);
     
-    # void constructMilnorAlgebra(MilnorAlgebra * A);
-    CSteenrod.constructMilnorAlgebra.argtypes = [POINTER(c_MilnorAlgebra)]
-    
-    # MilnorElement * allocateMilnorElement(MilnorAlgebra * algebra, unsigned long degree);
-    CSteenrod.allocateMilnorElement.argtypes = [POINTER(c_MilnorAlgebra), c_ulong]
-    CSteenrod.allocateMilnorElement.restype = POINTER(c_MilnorElement)
-    # void freeMilnorElement(MilnorElement * elt);
-    CSteenrod.freeMilnorElement.argtypes = [POINTER(c_MilnorElement)]
-         
-    # void addBasisElementToMilnorElement(MilnorElement * elt, unsigned long idx, long coeff);
-    # void addMilnorElement(MilnorElement * target, MilnorElement * source);
-    # void scaleMilnorElement(MilnorElement *, long);
-    # void assignMilnorElement(MilnorElement * target, MilnorElement * source);
+    # void initializeMilnorAlgebraFields(MilnorAlgebra * A);
+    CSteenrod.initializeMilnorAlgebraFields.argtypes = [POINTER(c_MilnorAlgebra)]
+

@@ -43,7 +43,7 @@ void generate_profile_name(Profile P){
     memcpy(P.name, buffer, len);
 }
 
-void constructMilnorAlgebra(MilnorAlgebra * algebra){
+void initializeMilnorAlgebraFields(MilnorAlgebra * algebra){
     algebra->profile.truncated = false;
     algebra->profile.p_part_length = 0;
     algebra->profile.q_part = -1;
@@ -76,44 +76,6 @@ void milnor_algebra_generate_name(MilnorAlgebra *A){
     memcpy(result, buffer, len + 1);
     A->name = result;
 }
-
-
-
-MilnorElement * allocateMilnorElement(MilnorAlgebra * algebra, unsigned long degree){
-    MilnorElement * result = (MilnorElement*)malloc(sizeof(MilnorElement) + algebra->basis_table[degree].length * sizeof(long));
-    result->algebra = algebra;
-    result->degree = degree;
-    result->algebra_dimension = result->algebra->basis_table[result->degree].length;
-    result->vector = (long*)(result + 1);
-    memset(result->vector, 0, result->algebra_dimension * sizeof(long));
-    return result;
-}
-
-void freeMilnorElement(MilnorElement * elt){
-    free(elt);
-}
-
-void addBasisElementToMilnorElement(MilnorElement * elt, unsigned long idx, long coeff){
-    elt->vector[idx] += coeff;
-    elt->vector[idx] = ModPositive(elt->vector[idx], elt->algebra->p);
-}
-
-void addMilnorElement(MilnorElement * target, MilnorElement * source){
-    for(long i = 0; i < target->algebra_dimension; i++){
-        target->vector[i] += source->vector[i];
-    }
-}
-
-void assignMilnorElement(MilnorElement * target, MilnorElement * source){
-    memcpy(target->vector, source->vector, target->algebra_dimension * sizeof(long));
-}
-void scaleMilnorElement(MilnorElement * target, long s){
-    for(long i = 0; i < target->algebra_dimension; i++){
-        target->vector[i] *= s;
-        target->vector[i] = ModPositive(target->vector[i], target->algebra->p);
-    }
-}
-
 
 
 int array_to_string(string buffer, unsigned long* A, unsigned long length){
@@ -240,9 +202,9 @@ MilnorBasisElement milnor_basis_element_from_string(MilnorAlgebra * algebra, cha
     return result;
 }
 
-int milnor_element_to_string(string buffer, MilnorAlgebra * algebra, MilnorElement * m){
+int milnor_element_to_string(string buffer, MilnorAlgebra * algebra, Vector * m){
     unsigned long len = 0;
-    for(unsigned long i = 0; i < m->algebra_dimension; i ++){
+    for(unsigned long i = 0; i < m->dimension; i ++){
         if(m->vector[i] == 0){
             continue;
         }

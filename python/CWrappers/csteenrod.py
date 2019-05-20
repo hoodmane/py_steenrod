@@ -11,7 +11,7 @@ def construct_c_algebra(algebra):
     result = c_MilnorAlgebra()
     result.p = algebra.p
     result.generic = algebra.generic
-    CSteenrod.constructMilnorAlgebra(result)
+    CSteenrod.initializeMilnorAlgebraFields(result)
     algebra.c_algebra = result
 
 def makeAlgebra(*, p, generic=None, profile = None, degree = 0):
@@ -65,7 +65,7 @@ def milnor_basis_elt_from_C(algebra, b):
 
 def milnor_elt_from_C(algebra, m):
     result = {}
-    for i in range(m.contents.algebra_dimension):
+    for i in range(m.contents.dimension):
         if m.contents.vector[i] == 0:
             continue
         b = CSteenrod.GetMilnorBasisElementFromIndex(algebra.c_algebra, m.contents.degree, i)
@@ -92,14 +92,15 @@ def C_product(m1, m2):
     out_degree = m1.degree() + m2.degree()
     if out_degree > A.c_max_degree:
         raise Exception("C basis only known through degree %s < %s." % (A.c_max_degree, out_degree))
-    ret = CSteenrod.allocateMilnorElement(A.c_algebra, m1.degree() + m2.degree())
+    out_dimension = C_dimension(A, out_degree)
+    ret = CSteenrod.allocateVector(A.p, out_degree, out_dimension)
     b1 = next(iter(m1))
     b2 = next(iter(m2))
     mc = milnor_basis_elt_to_C(A, b1)
     nc = milnor_basis_elt_to_C(A, b2)
     CSteenrod.MilnorProduct(A.c_algebra, ret, mc, nc)
     x = milnor_elt_from_C(A, ret)
-    CSteenrod.freeMilnorElement(ret)
+    CSteenrod.freeVector(ret)
     return x
 
 def check_C_product(a, b):

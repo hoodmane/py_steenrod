@@ -25,9 +25,9 @@ void GenerateMilnorBasisGeneric(MilnorAlgebra * algebra, unsigned long old_n, un
 MilnorBasisElement GetMilnorBasisElementFromIndex(MilnorAlgebra *algebra, unsigned long degree, unsigned long index);
 unsigned long GetIndexFromMilnorBasisElement(MilnorAlgebra *algebra,  MilnorBasisElement b);
 
-void MilnorProductEven(MilnorAlgebra * algebra, MilnorElement * result, MilnorBasisElement r_elt, MilnorBasisElement s_elt);
-void MilnorProductFullQpart(MilnorAlgebra * algebra, MilnorElement * result, MilnorBasisElement m1, unsigned long f);
-void MilnorProduct(MilnorAlgebra * algebra, MilnorElement * result, MilnorBasisElement r, MilnorBasisElement s);
+void MilnorProductEven(MilnorAlgebra * algebra, Vector * result, MilnorBasisElement r_elt, MilnorBasisElement s_elt);
+void MilnorProductFullQpart(MilnorAlgebra * algebra, Vector * result, MilnorBasisElement m1, unsigned long f);
+void MilnorProduct(MilnorAlgebra * algebra, Vector * result, MilnorBasisElement r, MilnorBasisElement s);
 
 
 void initialize_milnor_matrix(unsigned long M[MAX_XI_TAU][MAX_XI_TAU], P_part r, P_part s);
