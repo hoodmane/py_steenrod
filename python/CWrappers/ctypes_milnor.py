@@ -10,12 +10,12 @@ def wrap_milnor(CSteenrod):
     #void GenerateMilnorBasis(MilnorAlgebra * algebra, unsigned long max_degree);
     CSteenrod.GenerateMilnorBasis.argtypes = [POINTER(c_MilnorAlgebra), c_ulong]
     
-    # MilnorBasisElement GetMilnorBasisElementFromIndex(MilnorAlgebra *algebra, MonomialIndex idx);
-    CSteenrod.GetMilnorBasisElementFromIndex.argtypes = [POINTER(c_MilnorAlgebra), c_MonomialIndex]
+    #MilnorBasisElement GetMilnorBasisElementFromIndex(MilnorAlgebra *algebra, unsigned long degree, unsigned long idx);
+    CSteenrod.GetMilnorBasisElementFromIndex.argtypes = [POINTER(c_MilnorAlgebra), c_ulong, c_ulong]
     CSteenrod.GetMilnorBasisElementFromIndex.restype = c_MilnorBasisElement
-    # MonomialIndex GetIndexFromMilnorBasisElement(MilnorAlgebra *algebra,  MilnorBasisElement b);
+    #unsigned long GetIndexFromMilnorBasisElement(MilnorAlgebra *algebra,  MilnorBasisElement b);
     CSteenrod.GetIndexFromMilnorBasisElement.argtypes = [POINTER(c_MilnorAlgebra), c_MilnorBasisElement]
-    CSteenrod.GetIndexFromMilnorBasisElement.restype = c_MonomialIndex    
+    CSteenrod.GetIndexFromMilnorBasisElement.restype = c_ulong   
     
     #void MilnorProductEven(MilnorAlgebra * algebra, MilnorElement * result, MilnorBasisElement r_elt, MilnorBasisElement s_elt);
     #void MilnorProductFullQpart(MilnorAlgebra * algebra, MilnorElement * result, MilnorBasisElement m1, unsigned long f);

@@ -362,6 +362,7 @@ void row_reduce(row_reduce_state * state){
 
 #define C_sdim 5
 #define C_tdim 8
+/**
 int main(){
     unsigned long p = 7;
     initializePrime(p);
@@ -398,3 +399,4 @@ int main(){
     printf("pivot: %ld\n", state.pivot);
     free(state.matrix);
 }
+/**/

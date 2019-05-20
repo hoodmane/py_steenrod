@@ -93,16 +93,6 @@ class c_MilnorBasisElement_list(Structure):
         ("list", POINTER(c_MilnorBasisElement))
     ]
 
-#typedef struct {
-#    unsigned long degree;
-#    unsigned long index;
-#} MonomialIndex;
-
-class c_MonomialIndex(Structure):
-    _fields_ = [
-        ("degree", c_ulong),
-        ("index", c_ulong)
-    ]
 
 #
 #typedef struct {
@@ -170,7 +160,7 @@ def wrap_milnor_datatypes(CSteenrod):
     # void freeMilnorElement(MilnorElement * elt);
     CSteenrod.freeMilnorElement.argtypes = [POINTER(c_MilnorElement)]
          
-    # void addBasisElementToMilnorElement(MilnorElement * elt, MonomialIndex idx, long coeff);
+    # void addBasisElementToMilnorElement(MilnorElement * elt, unsigned long idx, long coeff);
     # void addMilnorElement(MilnorElement * target, MilnorElement * source);
     # void scaleMilnorElement(MilnorElement *, long);
     # void assignMilnorElement(MilnorElement * target, MilnorElement * source);

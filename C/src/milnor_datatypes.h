@@ -58,13 +58,7 @@ typedef struct {
 } MilnorBasisElement_list;
 
 
-typedef struct {
-    unsigned long degree;
-    unsigned long index;
-} MonomialIndex;
-
-
-KHASH_MAP_INIT_STR(monomial_index_map, MonomialIndex)
+KHASH_MAP_INIT_STR(monomial_index_map, unsigned long)
 
 typedef struct {
     unsigned long p;
@@ -103,7 +97,7 @@ int milnor_matrix_to_string(string buffer, unsigned long** M, unsigned long rows
 MilnorElement * allocateMilnorElement(MilnorAlgebra * algebra, unsigned long degree);
 void freeMilnorElement(MilnorElement * elt);
 
-void addBasisElementToMilnorElement(MilnorElement * elt, MonomialIndex idx, long coeff);
+void addBasisElementToMilnorElement(MilnorElement * elt, unsigned long idx, long coeff);
 void addMilnorElement(MilnorElement * target, MilnorElement * source);
 void scaleMilnorElement(MilnorElement *, long);
 void assignMilnorElement(MilnorElement * target, MilnorElement * source);

@@ -4,9 +4,11 @@
 
 #ifndef CSTEENROD_MILNOR_H
 #define CSTEENROD_MILNOR_H
+#include <stdbool.h>
 
 #include "combinatorics.h"
 #include "milnor_datatypes.h"
+#include "algebra.h"
 
 
 
@@ -20,8 +22,8 @@ void freeMilnorBasis(MilnorAlgebra * algebra);
 void GenerateMilnorBasis2(MilnorAlgebra * algebra, unsigned long old_n, unsigned long n);
 void GenerateMilnorBasisGeneric(MilnorAlgebra * algebra, unsigned long old_n, unsigned long n);
 
-MilnorBasisElement GetMilnorBasisElementFromIndex(MilnorAlgebra *algebra, MonomialIndex idx);
-MonomialIndex GetIndexFromMilnorBasisElement(MilnorAlgebra *algebra,  MilnorBasisElement b);
+MilnorBasisElement GetMilnorBasisElementFromIndex(MilnorAlgebra *algebra, unsigned long degree, unsigned long index);
+unsigned long GetIndexFromMilnorBasisElement(MilnorAlgebra *algebra,  MilnorBasisElement b);
 
 void MilnorProductEven(MilnorAlgebra * algebra, MilnorElement * result, MilnorBasisElement r_elt, MilnorBasisElement s_elt);
 void MilnorProductFullQpart(MilnorAlgebra * algebra, MilnorElement * result, MilnorBasisElement m1, unsigned long f);
@@ -31,4 +33,5 @@ void MilnorProduct(MilnorAlgebra * algebra, MilnorElement * result, MilnorBasisE
 void initialize_milnor_matrix(unsigned long M[MAX_XI_TAU][MAX_XI_TAU], P_part r, P_part s);
 bool step_milnor_matrix(unsigned long  p, unsigned long M[MAX_XI_TAU][MAX_XI_TAU], P_part r, P_part s);
 
+Algebra * getMilnorAlgebra(unsigned long p, bool generic, Profile profile);
 #endif //CSTEENROD_MILNOR_H

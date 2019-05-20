@@ -1,7 +1,7 @@
 #\bin\bash
 if ./make; then
-    #python3 -i python/CWrappers/csteenrod.py
-    python3 -i python/CWrappers/row_reduce.py
+    python3 -i python/CWrappers/csteenrod.py
+    #python3 -i python/CWrappers/row_reduce.py
 fi
 
 
