@@ -29,9 +29,9 @@ MilnorAlgebra * constructMilnorAlgebra(unsigned long p, bool generic, Profile *p
         algebra->public_algebra.profile = *profile;
     }
 
-//    algebra->public_algebra.algebra.compute_basis =
-//    algebra->public_algebra.algebra.get_basis_dimension =
-//    algebra->public_algebra.algebra.multiply_basis_elements =
+    algebra->public_algebra.algebra.compute_basis = GenerateMilnorBasis;
+    algebra->public_algebra.algebra.get_basis_dimension = GetMilnorAlgebraDimension;
+    algebra->public_algebra.algebra.multiply_basis_elements = MilnorProduct;
 
     algebra->P_table = NULL;
     algebra->P_table_by_P_length = NULL;
@@ -119,7 +119,6 @@ void generateMilnorBasisPpartTable(MilnorAlgebraInternal * algebra, unsigned lon
     P_part tau_list_buffer[MAX_DIMENSION];
     unsigned long tau_list_length;
     for(unsigned long current_degree = old_max_degree + 1; current_degree <= new_max_degree; current_degree++){
-//        printf("current_degree: %ld;  ", current_degree);
         degree_list_length = 0;
         tau_table[current_degree] = (P_part_list*) calloc(MAX_XI_TAU, sizeof(P_part_list));
 
@@ -160,7 +159,6 @@ void generateMilnorBasisPpartTable(MilnorAlgebraInternal * algebra, unsigned lon
             tau_table[current_degree][xi].list = malloc(tau_list_length * sizeof(P_part));
             memcpy(tau_table[current_degree][xi].list, tau_list_buffer, tau_list_length * sizeof(P_part));
         }
-//        printf("degree_list_length: %ld\n", degree_list_length);
         degree_table[current_degree].length = degree_list_length;
         degree_table[current_degree].list = malloc(degree_list_length * sizeof(P_part));
         memcpy(degree_table[current_degree].list, degree_list_buffer, degree_list_length * sizeof(P_part));
@@ -298,7 +296,7 @@ void freeMilnorBasisQPartTable(MilnorAlgebraInternal * algebra){
     algebra->Q_table = NULL;
 }
 
-void GenerateMilnorBasis(Algebra * public_algebra, unsigned long max_degree) {
+bool GenerateMilnorBasis(Algebra * public_algebra, unsigned long max_degree) {
     MilnorAlgebraInternal * algebra = (MilnorAlgebraInternal*) public_algebra;
     unsigned long p = algebra->public_algebra.p;
     initializePrime(p);
@@ -321,6 +319,7 @@ void GenerateMilnorBasis(Algebra * public_algebra, unsigned long max_degree) {
     } else {
         GenerateMilnorBasis2(algebra, old_max_degree, max_degree);
     }
+    return true;
 }
 
 void freeMilnorBasis(MilnorAlgebra * public_algebra){
@@ -570,9 +569,6 @@ void MilnorProductEven(MilnorAlgebraInternal * algebra, Vector * result, MilnorB
     }
     memset(result->vector, 0, result->dimension * sizeof(long));
     do {
-        char buffer[200];
-//        milnor_matrix_to_string(buffer, M, rows, cols);
-//        printf("%s",buffer);
         // check diagonals
         long coeff = 1; // I think this needs to be signed.
         unsigned long diagonal_sums[MAX_XI_TAU];
@@ -700,7 +696,7 @@ void MilnorProductFullQpart(MilnorAlgebraInternal * algebra, Vector * output, Mi
             }
         }
     }
-    assignVector(output, &result);
+    addVectors(output, &result);
 }
 
 
@@ -740,7 +736,7 @@ void MilnorProductFull(MilnorAlgebraInternal * algebra, Vector * result, MilnorB
     // multiply r with s.  Record coefficient for matrix and multiply by coeff.
     // Store in 'result'.
     if(m2.p_length == 0){
-        assignVector(result, &m1_times_f);
+        addVectors(result, &m1_times_f);
         return;
     }
 
@@ -796,7 +792,6 @@ void MilnorProduct(Algebra * public_algebra, Vector * result, unsigned long r_de
     if(algebra->public_algebra.generic){
         MilnorProductFull(algebra, result, r, s);
     } else {
-//        printf("hi\n\n");
         MilnorProductEven(algebra, result, r, s);
     }
 }
@@ -805,7 +800,7 @@ void MilnorProduct(Algebra * public_algebra, Vector * result, unsigned long r_de
 
 
 
-/**/
+/**
 int main() {
     char buffer[10000];
 

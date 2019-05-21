@@ -1,4 +1,4 @@
 #\bin\bash
 if ./make; then
-    valgrind --leak-check=full C/csteen
+    valgrind --leak-check=full C/csteen 
 fi

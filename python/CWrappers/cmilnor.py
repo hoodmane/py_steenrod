@@ -5,15 +5,15 @@ from ctypes_wrap import *
 
 import steenrod
 
-def construct_c_algebra(algebra):
+def construct_C_algebra(algebra):
     if hasattr(algebra, "c_algebra"):
         return
     algebra.c_algebra = CSteenrod.constructMilnorAlgebra(algebra.p, algebra.generic, POINTER(c_Profile)())
-
-def makeAlgebra(*, p, generic=None, profile = None, degree = 0):
-    algebra = steenrod.MilnorAlgebra.getInstance(p=p, generic=generic, profile=profile)
-    construct_c_algebra(algebra)
     algebra.c_max_degree = 0
+
+def makeCMilnorAlgebra(*, p, generic=None, profile = None, degree = 0):
+    algebra = steenrod.MilnorAlgebra.getInstance(p=p, generic=generic, profile=profile)
+    construct_C_algebra(algebra)
     c_GenerateMilnorBasis(algebra, degree)
     return algebra
 
@@ -21,7 +21,6 @@ def c_GenerateMilnorBasis(algebra, degree):
     if degree > algebra.c_max_degree:
         CSteenrod.GenerateMilnorBasis(cast(algebra.c_algebra, POINTER(c_Algebra)), degree)
         algebra.c_max_degree = degree
-    
 
 def milnor_basis_elt_to_C(algebra, b):
     bitstring = 0
@@ -39,6 +38,9 @@ def milnor_basis_elt_to_C(algebra, b):
     result.p_part = p_array
     return result
 
+def milnor_basis_elt_to_C_index(algebra, b):
+    c_MBE = milnor_basis_elt_to_C(algebra, b)
+    return CSteenrod.GetIndexFromMilnorBasisElement(algebra.c_algebra, c_MBE)
 
 def milnor_basis_elt_from_C(algebra, b):
     bitstring = b.q_part
@@ -94,21 +96,24 @@ def C_product(m1, m2):
     ret = CSteenrod.allocateVector(algebra.p, out_degree, out_dimension)
     b1 = next(iter(m1))
     b2 = next(iter(m2))
-    m1_idx = CSteenrod.GetIndexFromMilnorBasisElement(algebra.c_algebra, milnor_basis_elt_to_C(algebra, b1))
-    m2_idx = CSteenrod.GetIndexFromMilnorBasisElement(algebra.c_algebra, milnor_basis_elt_to_C(algebra, b2))
+    m1_idx = milnor_basis_elt_to_C_index(algebra, b1)
+    m2_idx = milnor_basis_elt_to_C_index(algebra, b2)
     CSteenrod.MilnorProduct(cast(algebra.c_algebra, POINTER(c_Algebra)), ret, m1_deg, m1_idx, m2_deg, m2_idx)
     x = milnor_elt_from_C(algebra, ret)
     CSteenrod.freeVector(ret)
     return x
 
+
+            
+
 def check_C_product(a, b):
     return C_product(a,b) == a*b
 
 def test_C_product():
-    A2 = makeAlgebra(p=2, degree=100)
-    A2gen = makeAlgebra(p=2, generic=True, degree=100)
-    A3 = makeAlgebra(p=3, degree=200)
-    A5 = makeAlgebra(p=5, degree=400)
+    A2 = makeCMilnorAlgebra(p=2, degree=100)
+    A2gen = makeCMilnorAlgebra(p=2, generic=True, degree=100)
+    A3 = makeCMilnorAlgebra(p=3, degree=200)
+    A5 = makeCMilnorAlgebra(p=5, degree=400)
     tests = [
         (A2.Sq(1), A2.Sq(1)),
         (A2.Sq(2), A2.Sq(2)),
@@ -124,10 +129,10 @@ def test_C_product():
         (A3.P(3,3,1), A3.P(1,1,1)),
         (A3.Q(1) * A3.P(2, 1), A3.Q(0)),
         (A3.Q(2) * A3.P(1),    A3.Q(0)),
-        (A3.Q(2) * A3.P(3),    A3.Q(0) * A3.P(3)),   
-        (A3.Q(1) * A3.P(0, 1), A3.Q(0) * A3.P(3)),             
+        (A3.Q(2) * A3.P(3),    A3.Q(0) * A3.P(3)),
+        (A3.Q(1) * A3.P(0, 1), A3.Q(0) * A3.P(3)),
         (A3.Q(1) * A3.P(1, 1), A3.Q(0) * A3.P(1, 1)),
-        
+
         (A5.Q(1) * A5.P(8, 2),  A5.Q(0) * A5.P(7)),
         (A5.Q(2) * A5.P(11),  A5.P(4, 2))
     ]
@@ -149,14 +154,14 @@ def test_C_product():
     # 42: Sq(12, 8) * Sq(3, 1)
     #  Sq(16, 4) * Sq(8, 1)
     for (m1, m2) in tests:
-        c_prod = C_product(m1, m2) 
+        c_prod = C_product(m1, m2)
         py_prod = m1 * m2
         #print("Test : %s * %s " % (m1, m2))
         if c_prod != py_prod:
             print("Test failed: %s * %s -- " % (m1, m2))
             print("   c_prod : ", c_prod)
             print("   py_prod : ", py_prod)
-    
+
 
     algebras = (A2, )#A2gen, A3, A5)
     import random
@@ -170,7 +175,7 @@ def test_C_product():
             y_deg = random.randint(0,max_degree)
             x_dim = C_dimension(algebra, x_deg)
             y_dim = C_dimension(algebra, y_deg)
-            
+
         x_basis = C_basis(algebra, x_deg)
         y_basis = C_basis(algebra, y_deg)
         x = random.choice(x_basis)
@@ -181,14 +186,14 @@ def test_C_product():
         if py_prod != prod:
             print("%s ( %s, %s, %s ) : %s * %s" % (algebra, x_deg, y_deg, x_deg + y_deg,  x, y))
             print("  Test %s failed" % i)
-            
-    
+
+
 
 def test_C_basis():
-    A2 = makeAlgebra(p=2, degree=50)
-    A2gen = makeAlgebra(p=2, generic=True, degree=50)
-    A3 = makeAlgebra(p=3, degree=50)
-    
+    A2 = makeCMilnorAlgebra(p=2, degree=50)
+    A2gen = makeCMilnorAlgebra(p=2, generic=True, degree=50)
+    A3 = makeCMilnorAlgebra(p=3, degree=50)
+
     for alg in (A2, A2gen, A3):
         for dim in range(50):
             c_basis = C_basis(alg, dim)
@@ -198,10 +203,11 @@ def test_C_basis():
                 print("Discrepency for algebra %s in dimension %s." % (alg, dim))
                 print("  c_basis:", c_basis)
                 print("  py_basis:", py_basis)
-            
+
+
 
 if __name__ == "__main__":
     pass
-    A2 = makeAlgebra(p=2, degree=100)
-    #A3 = makeAlgebra(p=3, dim=200)
+    A2 = makeCMilnorAlgebra(p=2, degree=100)
+    #A3 = makeCMilnorAlgebra(p=3, dim=200)
     

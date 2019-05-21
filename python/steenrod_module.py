@@ -166,6 +166,9 @@ class FiniteSteenrodModule:
         raise NotImplementedError()
         #return module.milnor_actions[]
 
+    def basis_degree(self, b):
+        return self.gens[b]
+
 
     #
     # Adding generators and relations

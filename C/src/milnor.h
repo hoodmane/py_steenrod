@@ -58,7 +58,7 @@ MilnorAlgebra * constructMilnorAlgebra(unsigned long p, bool generic, Profile *p
 void freeMilnorAlgebra(MilnorAlgebra *);
 
 // Implemented in milnor.c
-void GenerateMilnorBasis(Algebra * algebra, unsigned long max_degree);
+bool GenerateMilnorBasis(Algebra * algebra, unsigned long max_degree);
 void freeMilnorBasis(MilnorAlgebra * algebra);
 
 unsigned long GetMilnorAlgebraDimension(Algebra * algebra, unsigned long degree);
