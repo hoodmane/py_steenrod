@@ -200,11 +200,8 @@ def product_full_Qpart(m1, f, p):
         old_result = result
         result = {}
         p_to_the_k = p**k
-#        print(old_result)
         for mono in old_result: 
-#            print(mono)
             for i in range(0, 1 + len(mono[1])):
-#                print("    i", i)
                 q_mono = mono[0]
                 p_mono = mono[1]
                 if (k + i in q_mono):
@@ -219,12 +216,9 @@ def product_full_Qpart(m1, f, p):
                     p_mono = tuple(p_mono)                
 
                 ind = len([x for x in q_mono if x >= k+i])  
-#                print("    larger_Qs", ind)
                 q_mono = q_mono[:len(q_mono) - ind] + (k+i,) + q_mono[len(q_mono) - ind:]
                 
                 coeff = (-1)**ind * old_result[mono]
-#                print("    coeff:", coeff)
-#                print("")
                 result[(q_mono, p_mono)] = coeff % p
     return result
 

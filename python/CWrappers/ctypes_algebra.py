@@ -1,20 +1,6 @@
 from ctypes import *
+from cFpVector import *
 
-#typedef struct {
-#    unsigned long p;
-#    unsigned long degree;
-#    unsigned long dimension;
-#    long* vector;
-#} MilnorElement;
-
-class c_Vector(Structure):
-    _fields_ = [
-        ("p", c_ulong),
-        ("degree", c_ulong),
-        ("dimension", c_ulong),
-        ("vector", POINTER(c_long))
-    ]
-    
 #typedef struct Algebra {
 #    unsigned long p;
 #// Methods:
@@ -114,18 +100,7 @@ class c_Resolution(Structure):
     ]
 
 
-def wrap_algebra(CSteenrod):        
-    # Vector * allocateVector(unsigned long p, unsigned long degree, unsigned long dimension);
-    CSteenrod.allocateVector.argtypes = [c_ulong, c_ulong, c_ulong]
-    CSteenrod.allocateVector.restype = POINTER(c_Vector)
-    # void freeVector(Vector * elt);
-    CSteenrod.freeVector.argtypes = [POINTER(c_Vector)]
-         
-    # void addBasisElementToVector(Vector * elt, unsigned long idx, long coeff);
-    # void addVector(Vector * target, Vector * source);
-    # void scaleVector(Vector *, long);
-    # void assignVector(Vector * target, Vector * source);
-    
+def wrap_algebra(CSteenrod):
     #FiniteDimensionalModule * constructFiniteDimensionalModule(Algebra * algebra, unsigned long dimension, unsigned long * generator_degrees);
     CSteenrod.constructFiniteDimensionalModule.argtypes = [POINTER(c_Algebra), c_ulong, POINTER(c_ulong)]
     CSteenrod.constructFiniteDimensionalModule.restype = POINTER(c_FiniteDimensionalModule)

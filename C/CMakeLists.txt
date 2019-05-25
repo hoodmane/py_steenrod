@@ -12,11 +12,13 @@ add_executable(csteen
         include/algebra.h
         include/combinatorics.h
         include/milnor.h
-        src/algebra.c
-        src/algebra.h
+        src/khash.h
         src/combinatorics.c
         src/combinatorics.h
-        src/khash.h
+        src/FpVector.c
+        src/FpVector.h
+        src/algebra.c
+        src/algebra.h
         src/milnor.c
         src/milnor.h
         src/milnor_datatypes.c
@@ -27,17 +29,20 @@ add_library(CSteenrod SHARED
         include/algebra.h
         include/combinatorics.h
         include/milnor.h
-        src/algebra.c
-        src/algebra.h
+        src/khash.h
         src/combinatorics.c
         src/combinatorics.h
-        src/khash.h
+        src/FpVector.c
+        src/FpVector.h
+        src/algebra.c
+        src/algebra.h
         src/milnor.c
         src/milnor.h
         src/milnor_datatypes.c
         src/milnor_private.h
         src/modules.c
     )
+    
 set_target_properties(CSteenrod PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION 1)

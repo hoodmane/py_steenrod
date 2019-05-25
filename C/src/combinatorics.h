@@ -6,42 +6,42 @@
 #define CSTEENROD_COMBINATORICS_H
 #include <stdbool.h>
 
-long ModPositive(long n, long p);
-long MinusOneToTheN(long n);
-unsigned long integer_power(unsigned long a, unsigned long b);
-long power_mod(long p, long b, long e);
+#define MAX_PRIME 251
+#define MAX_PRIME_INDEX 54
 
-unsigned long p_to_the_n_minus_1_over_p_minus_1(unsigned long p, unsigned long n);
-unsigned long logp(unsigned long p, unsigned long n);
-void basepExpansion(unsigned long * buffer, unsigned long p, unsigned long n);
 
-void initializePrime(unsigned long p);
+typedef unsigned int uint;
+
+// Generated with Mathematica:
+//   Boole[PrimeQ[#]] PrimePi[#] - 1 & /@ Range[0, 255]
+extern int prime_to_index_map[256];
+
+int ModPositive(int n, int p);
+uint MinusOneToTheN(uint p, uint n);
+uint integer_power(uint a, uint b);
+int power_mod(int p, int b, int e);
+
+uint p_to_the_n_minus_1_over_p_minus_1(uint p, uint n);
+uint logp(uint p, uint n);
+void basepExpansion(uint * buffer, uint p, uint n);
+
+void initializePrime(uint p);
 void freePrimes();
 
-long inverse(unsigned long p, long k);
+int inverse(uint p, int k);
 
-unsigned long Multinomial(unsigned long p, unsigned long len, unsigned long l[]);
-unsigned long Binomial(unsigned long p, unsigned long n, unsigned long k);
+uint Multinomial(uint p, uint len, uint l[]);
+uint Binomial(uint p, uint n, uint k);
 
 #define MAX_XI_TAU 10
 
-unsigned long* getXiDegrees(unsigned long);
-unsigned long* getTauDegrees(unsigned long);
+uint* getXiDegrees(uint);
+uint* getTauDegrees(uint);
 
+uint getBitlength(uint);
+uint getBitMask(uint p);
+uint getEntriesPer64Bits(uint);
 
-long** allocate_matrix(unsigned long rows, unsigned long cols);
-
-typedef struct {
-    unsigned long p;
-    long source_dim;
-    long target_dim;
-    long pivot;
-    long row_capacity;
-    long column_capacity;
-    long ** matrix;
-    bool found_cokernel;
-} row_reduce_state;
-
-void row_reduce(row_reduce_state * state);
+uint modPLookup(uint p, uint n);
 
 #endif //CSTEENROD_COMBINATORICS_H

@@ -2,6 +2,7 @@ import os,sys
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 from ctypes import *
 from ctypes_wrap import *
+from cFpVector import *
 
 import steenrod
 
@@ -29,7 +30,7 @@ def milnor_basis_elt_to_C(algebra, b):
         for x in b[0]:
             bitstring |= 1 << x
         p_part = b[1]
-    p_array = (c_ulong * len(p_part))(*p_part)
+    p_array = (c_uint * len(p_part))(*p_part)
     result = c_MilnorBasisElement()
     result.q_degree = algebra.basis_q_degree(b)
     result.q_part = bitstring
@@ -63,11 +64,12 @@ def milnor_basis_elt_from_C(algebra, b):
 
 def milnor_elt_from_C(algebra, m):
     result = {}
-    for i in range(m.contents.dimension):
-        if m.contents.vector[i] == 0:
+    for i in range(m.dimension):
+        entry = c_getVectorEntry(m, i)
+        if entry == 0:
             continue
-        b = CSteenrod.GetMilnorBasisElementFromIndex(algebra.c_algebra, m.contents.degree, i)
-        result[milnor_basis_elt_from_C(algebra, b)] = m.contents.vector[i]
+        b = CSteenrod.GetMilnorBasisElementFromIndex(algebra.c_algebra, m.degree, i)
+        result[milnor_basis_elt_from_C(algebra, b)] = entry
     return algebra.get_element(result)
 
 
@@ -93,12 +95,13 @@ def C_product(m1, m2):
     if out_degree > algebra.c_max_degree:
         raise Exception("C basis only known through degree %s < %s." % (algebra.c_max_degree, out_degree))
     out_dimension = C_dimension(algebra, out_degree)
-    ret = CSteenrod.allocateVector(algebra.p, out_degree, out_dimension)
+    ret = construct_c_vector(algebra.p, out_dimension)
+    ret.degree = out_degree
     b1 = next(iter(m1))
     b2 = next(iter(m2))
     m1_idx = milnor_basis_elt_to_C_index(algebra, b1)
     m2_idx = milnor_basis_elt_to_C_index(algebra, b2)
-    CSteenrod.MilnorProduct(cast(algebra.c_algebra, POINTER(c_Algebra)), ret, m1_deg, m1_idx, m2_deg, m2_idx)
+    CSteenrod.MilnorProduct(cast(algebra.c_algebra, POINTER(c_Algebra)), ret, 1, m1_deg, m1_idx, m2_deg, m2_idx)
     x = milnor_elt_from_C(algebra, ret)
     CSteenrod.freeVector(ret)
     return x
@@ -154,16 +157,16 @@ def test_C_product():
     # 42: Sq(12, 8) * Sq(3, 1)
     #  Sq(16, 4) * Sq(8, 1)
     for (m1, m2) in tests:
+        print("Test : %s * %s " % (m1, m2))    
         c_prod = C_product(m1, m2)
         py_prod = m1 * m2
-        #print("Test : %s * %s " % (m1, m2))
         if c_prod != py_prod:
-            print("Test failed: %s * %s -- " % (m1, m2))
+            print("Test failed: p=%s, %s * %s -- " % (m1.algebra.p, m1, m2))
             print("   c_prod : ", c_prod)
             print("   py_prod : ", py_prod)
 
 
-    algebras = (A2, )#A2gen, A3, A5)
+    algebras = (A2, A2gen, A3, A5)
     import random
     for i in range(5000):
         algebra = random.choice(algebras)

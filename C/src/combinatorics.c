@@ -2,46 +2,53 @@
 // Created by Hood on 4/29/2019.
 //
 
-#include "combinatorics.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "khash.h"
+#include "combinatorics.h"
+#include "FpVector.h"
+
+// Private functions
+void initializeInverseTable(uint p);
+void initializeBinomialTable(uint p);
+void initializeXiTauDegrees(uint p);
+
+uint directBinomial(uint p, uint n, uint k);
+uint Multinomial2(uint len, uint* l);
+uint Binomial2(uint n, uint k );
+uint MultinomialOdd(uint p, uint len, uint* l);
+uint BinomialOdd(uint p, uint n, uint k);
 
 
-KHASH_MAP_INIT_INT(prime_to_table, unsigned long**)
-KHASH_MAP_INIT_INT(prime_to_list, unsigned long*)
+int prime_to_index_map[256] = {
+    -1, -1, 0, 1, -1, 2, -1, 3, -1, -1, -1, 4, -1, 5, -1, -1, -1, 6, -1, 
+    7, -1, -1, -1, 8, -1, -1, -1, -1, -1, 9, -1, 10, -1, -1, -1, -1, -1, 
+    11, -1, -1, -1, 12, -1, 13, -1, -1, -1, 14, -1, -1, -1, -1, -1, 15, 
+    -1, -1, -1, -1, -1, 16, -1, 17, -1, -1, -1, -1, -1, 18, -1, -1, -1, 
+    19, -1, 20, -1, -1, -1, -1, -1, 21, -1, -1, -1, 22, -1, -1, -1, -1, 
+    -1, 23, -1, -1, -1, -1, -1, -1, -1, 24, -1, -1, -1, 25, -1, 26, -1, 
+    -1, -1, 27, -1, 28, -1, -1, -1, 29, -1, -1, -1, -1, -1, -1, -1, -1, 
+    -1, -1, -1, -1, -1, 30, -1, -1, -1, 31, -1, -1, -1, -1, -1, 32, -1, 
+    33, -1, -1, -1, -1, -1, -1, -1, -1, -1, 34, -1, 35, -1, -1, -1, -1, 
+    -1, 36, -1, -1, -1, -1, -1, 37, -1, -1, -1, 38, -1, -1, -1, -1, -1, 
+    39, -1, -1, -1, -1, -1, 40, -1, 41, -1, -1, -1, -1, -1, -1, -1, -1, 
+    -1, 42, -1, 43, -1, -1, -1, 44, -1, 45, -1, -1, -1, -1, -1, -1, -1, 
+    -1, -1, -1, -1, 46, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 47, 
+    -1, -1, -1, 48, -1, 49, -1, -1, -1, 50, -1, -1, -1, -1, -1, 51, -1, 
+    52, -1, -1, -1, -1, -1, -1, -1, -1, -1, 53, -1, -1, -1, -1
+};
 
-void initializeInverseTable(unsigned long p);
-void initializeBinomialTable(unsigned long p);
-void initializeXiTauDegrees(unsigned long);
-
-unsigned long directBinomial(unsigned long p, unsigned long n, unsigned long k);
-unsigned long Multinomial2(unsigned long len, unsigned long* l);
-unsigned long Binomial2(unsigned long n, unsigned long k );
-unsigned long MultinomialOdd(unsigned long p, unsigned long len, unsigned long* l);
-unsigned long BinomialOdd(unsigned long p, unsigned long n, unsigned long k);
-
-void initializePrime(unsigned long p){
-    initializeBinomialTable(p);
-    initializeInverseTable(p);
-    initializeXiTauDegrees(p);
-}
-void freePrimes() {
-//    freeBinomialTables();
-//    freeInverseTables();
-//    freeXiTauDegreess();
-}
-
-long ModPositive(long  n, long p){
+int ModPositive(int  n, int p){
     return ((n % p) + p) % p;
 }
 
-long MinusOneToTheN(long n){
-    return -(n % 2 * 2 - 1);
+uint MinusOneToTheN(uint p, uint n){
+    return (n & 1) ? p-1 : 1;
 }
 
-unsigned long integer_power(unsigned long b, unsigned long e){
-    unsigned long result = 1;
+uint integer_power(uint b, uint e){
+    uint result = 1;
     while(e > 0){
         if((e&1) == 1){
             result *= b;
@@ -52,8 +59,8 @@ unsigned long integer_power(unsigned long b, unsigned long e){
     return result;
 }
 
-long power_mod(long p, long b, long e){
-    long result = 1;
+int power_mod(int p, int b, int e){
+    int result = 1;
 //      b is b^{2^i} mod p
 //      if the current bit of e is odd, mutliply b^{2^i} mod p into r.
     while (e > 0){
@@ -66,23 +73,14 @@ long power_mod(long p, long b, long e){
     return result;
 }
 
-khash_t(prime_to_list) * inverse_table;
+uint *inverse_table[MAX_PRIME_INDEX] = {0};
 
-void initializeInverseTable(unsigned long p){
-    if(inverse_table == NULL){
-        inverse_table = kh_init(prime_to_list);
+void initializeInverseTable(uint p){
+    uint* table = malloc(p*sizeof(uint));
+    for(uint n = 0; n < p; n ++){
+        table[n] = power_mod(p, n, p - 2);
     }
-    khint_t k;
-    int absent;
-    k = kh_put(prime_to_list, inverse_table, p, &absent);  // insert a key to the hash table
-    if(!absent){
-        return;
-    }
-    unsigned long* table_p = malloc(p*sizeof(unsigned long*));
-    for(unsigned long n = 0; n < p; n ++){
-        table_p[n] = power_mod(p, n, p - 2);
-    }
-    kh_val(inverse_table, k) = table_p;
+    inverse_table[prime_to_index_map[p]] = table;
 }
 
 
@@ -92,18 +90,16 @@ void initializeInverseTable(unsigned long p){
  * @param k an integer
  * @return the inverse of k mod p.
  */
-long inverse(unsigned long p, long k){
-    khint_t key = kh_get(prime_to_list, inverse_table, p);
-    return kh_val(inverse_table, key)[k];
+int inverse(uint p, int k){
+    return inverse_table[prime_to_index_map[p]][k];
 }
 
-
-unsigned long p_to_the_n_minus_1_over_p_minus_1(unsigned long p, unsigned long n){
+uint p_to_the_n_minus_1_over_p_minus_1(uint p, uint n){
     return (integer_power(p, n) - 1) / (p - 1);
 }
 
-unsigned long logp(unsigned long p, unsigned long n) {
-    unsigned long result = 0;
+uint logp(uint p, uint n) {
+    uint result = 0;
     while(n > 0){
         n /= p;
         result ++;
@@ -111,53 +107,70 @@ unsigned long logp(unsigned long p, unsigned long n) {
     return result;
 }
 
-void basepExpansion(unsigned long * result, unsigned long p, unsigned long n){
-    unsigned long i = 0;
+void basepExpansion(uint * result, uint p, uint n){
+    uint i = 0;
     for( ; n > 0; n /= p){
         result[i] = n % p;
         i++;
     }
 }
 
-khash_t(prime_to_table) * binomial_table = NULL;
+uint **binomial_table[MAX_PRIME_INDEX] = {0};
 
-void initializeBinomialTable(unsigned long p){
-    if(binomial_table == NULL){
-        binomial_table = kh_init(prime_to_table);
+void initializePrime(uint p){
+    if(p > MAX_PRIME){
+        // Fatal error: max prime allowed is 251
     }
-    khint_t k;
-    int absent;
-    k = kh_put(prime_to_table, binomial_table, p, &absent);  // insert a key to the hash table
-    if(!absent){
-        return;
+    if(prime_to_index_map[p]==-1){
+        // Fatal error: p is not prime.
     }
-    unsigned long** table_p = (unsigned long**) malloc(p*p*sizeof(unsigned long) + p*sizeof(unsigned long*));
-    for(unsigned long i = 0; i < p; i++){
-        table_p[i] = (unsigned long*) (table_p + p) + p*i;
+    if(binomial_table[prime_to_index_map[p]] != NULL){
+        return; // Prime already initialized
     }
-    for(unsigned long n = 0; n < p; n ++){
-        unsigned long entry = 1;
-        table_p[n][0] = entry;
-        for(unsigned long k = 1; k <= n; k++) {
-            entry *= (n + 1 - k);
-            entry /= k;
-            table_p[n][k] = entry % p;
-        }
-        memset(table_p[n] + n + 1, 0, (p - n - 1) * sizeof(unsigned long));
-    }
-    kh_val(binomial_table, k) = table_p;
+    initializeBinomialTable(p);
+    initializeInverseTable(p);
+    initializeXiTauDegrees(p);
+    initializeModpLookupTable(p);
+    initializeLimbBitIndexLookupTable(p);
+}
+void freePrimes() {
+//    freeBinomialTables();
+//    freeInverseTables();
+//    freeXiTauDegreess();
 }
 
-unsigned long directBinomial(unsigned long p, unsigned long n, unsigned long k){
-    khint_t key = kh_get(prime_to_table, binomial_table, p);
-    return kh_val(binomial_table, key)[n][k];
+
+void initializeBinomialTable(uint p){
+    uint** table = (uint**) malloc(p*p*sizeof(uint) + p*sizeof(uint*));
+    uint * current_row_ptr = (uint*)(table + p);
+    for(uint i = 0; i < p; i++){
+        table[i] = current_row_ptr;
+        current_row_ptr += p;
+    }
+    // assert(current_row_ptr == (uint*)(table + p) + p*p);
+    for(uint n = 0; n < p; n ++){
+        uint entry = 1;
+        table[n][0] = entry;
+        for(uint k = 1; k <= n; k++) {
+            entry *= (n + 1 - k);
+            entry /= k;
+            table[n][k] = entry % p;
+        }
+        memset(table[n] + n + 1, 0, (p - n - 1) * sizeof(uint));
+    }
+    binomial_table[prime_to_index_map[p]] = table;
+}
+
+// This is a table lookup, n, k < p.
+uint directBinomial(uint p, uint n, uint k){
+    return binomial_table[prime_to_index_map[p]][n][k];
 }
 
 //Multinomial coefficient of the list l
-unsigned long Multinomial2(unsigned long len, unsigned long* l){
-    unsigned long bit_or = 0;
-    unsigned long sum = 0;
-    for(unsigned long i = 0; i < len; i++){
+uint Multinomial2(uint len, uint* l){
+    uint bit_or = 0;
+    uint sum = 0;
+    for(uint i = 0; i < len; i++){
         sum += l[i];
         bit_or |= l[i];
 //        if(bit_or < sum){
@@ -168,7 +181,7 @@ unsigned long Multinomial2(unsigned long len, unsigned long* l){
 }
 
 //Mod 2 binomial coefficient n choose k
-unsigned long Binomial2(unsigned long n, unsigned long k ) {
+uint Binomial2(uint n, uint k ) {
     if(n < k || k < 0){
         return 0;
     } else {
@@ -181,24 +194,24 @@ unsigned long Binomial2(unsigned long n, unsigned long k ) {
 }
 
 //Mod p multinomial coefficient of l. If p is 2, more efficient to use Multinomial2.
-unsigned long MultinomialOdd(unsigned long p, unsigned long len, unsigned long* l){
-    unsigned long total = 0;
-    for(unsigned long i = 0; i < len; i++){
+uint MultinomialOdd(uint p, uint len, uint* l){
+    uint total = 0;
+    for(uint i = 0; i < len; i++){
         total += l[i];
     }
-    unsigned long answer = 1;
-    unsigned long base_p_expansion_length = logp(p, total);
-    unsigned long total_expansion[base_p_expansion_length];
+    uint answer = 1;
+    uint base_p_expansion_length = logp(p, total);
+    uint total_expansion[base_p_expansion_length];
     basepExpansion(total_expansion, p, total);
-    unsigned long l_expansions[len][base_p_expansion_length];
-    for(unsigned long i=0; i < len; i++){
-        memset(l_expansions[i], 0, base_p_expansion_length * sizeof(unsigned long));
+    uint l_expansions[len][base_p_expansion_length];
+    for(uint i=0; i < len; i++){
+        memset(l_expansions[i], 0, base_p_expansion_length * sizeof(uint));
         basepExpansion(l_expansions[i], p,  l[i]);
     }
-    for(unsigned long index = 0; index < base_p_expansion_length; index++){
-        unsigned long multi = 1;
-        unsigned long partial_sum = 0;
-        for(unsigned long i = 0; i < len; i++){
+    for(uint index = 0; index < base_p_expansion_length; index++){
+        uint multi = 1;
+        uint partial_sum = 0;
+        for(uint i = 0; i < len; i++){
             partial_sum += l_expansions[i][index];
             if(partial_sum > total_expansion[index]){
                 return 0;
@@ -212,16 +225,16 @@ unsigned long MultinomialOdd(unsigned long p, unsigned long len, unsigned long* 
 }
 
 //Mod p binomial coefficient n choose k. If p is 2, more efficient to use Binomial2.
-unsigned long BinomialOdd(unsigned long p, unsigned long n, unsigned long k) {
+uint BinomialOdd(uint p, uint n, uint k) {
     if( n < k || k < 0 ){
         return 0;
     }
-    unsigned long l[2] = { n-k, k };
+    uint l[2] = { n-k, k };
     return MultinomialOdd(p, 2, l);
 }
 
 //Dispatch to Multinomial2 or MultinomialOdd
-unsigned long Multinomial(unsigned long p, unsigned long len, unsigned long l[]) {
+uint Multinomial(uint p, uint len, uint l[]) {
     if(p == 2){
         return Multinomial2(len, l);
     } else {
@@ -230,7 +243,7 @@ unsigned long Multinomial(unsigned long p, unsigned long len, unsigned long l[])
 }
 
 //Dispatch to Binomial2 or BinomialOdd
-unsigned long Binomial(unsigned long p, unsigned long n, unsigned long k){
+uint Binomial(uint p, uint n, uint k){
     if(p == 2){
         return Binomial2(n, k);
     } else {
@@ -239,174 +252,59 @@ unsigned long Binomial(unsigned long p, unsigned long n, unsigned long k){
 }
 
 
-khash_t(prime_to_list) * xi_degrees, * tau_degrees;
+uint * xi_degrees[MAX_PRIME_INDEX] = {0};
+uint * tau_degrees[MAX_PRIME_INDEX] = {0};
 
-void initializeXiTauDegrees(unsigned long p){
-    if(xi_degrees == NULL){
-        xi_degrees = kh_init(prime_to_list);
-        tau_degrees = kh_init(prime_to_list);
-    }
-    khint_t xi_key, tau_key;
-    int absent;
-    xi_key = kh_put(prime_to_list, xi_degrees, p, &absent);  // insert a key to the hash table
-    if(!absent){
-        return;
-    }
-    tau_key = kh_put(prime_to_list, tau_degrees, p, &absent);  // insert a key to the hash table
-
-    kh_val(xi_degrees, xi_key) = (unsigned long*)malloc(MAX_XI_TAU * sizeof(unsigned long));
-    kh_val(tau_degrees, tau_key) = (unsigned long*)malloc(MAX_XI_TAU * sizeof(unsigned long));
-
-    unsigned long current_xi_degree = 0;
-    unsigned long p_to_the_i = 1;
-    for(unsigned long i = 0; i < MAX_XI_TAU; i++ ){
+void initializeXiTauDegrees(uint p){
+    uint * xi = (uint*)malloc(MAX_XI_TAU * sizeof(uint));
+    uint * tau = (uint*)malloc(MAX_XI_TAU * sizeof(uint));
+    uint current_xi_degree = 0;
+    uint p_to_the_i = 1;
+    for(uint i = 0; i < MAX_XI_TAU; i++ ){
         current_xi_degree += p_to_the_i;
-        kh_val(xi_degrees, xi_key)[i] = current_xi_degree;
-        kh_val(tau_degrees, tau_key)[i] = 2 * p_to_the_i - 1;
+        xi[i] = current_xi_degree;
+        tau[i] = 2 * p_to_the_i - 1;
         p_to_the_i *= p;
     }
+    xi_degrees[prime_to_index_map[p]] = xi;
+    tau_degrees[prime_to_index_map[p]] = tau;
 }
 
 
-unsigned long* getTauDegrees(unsigned long p) {
-    khint_t key;
-    key = kh_get(prime_to_list, tau_degrees, p);
-//    if(key == kh_end(tau_degrees)){
-//        initializeXiTauDegrees(p);
-//        key = kh_get(prime_to_list, tau_degrees, p);
-//    }
-    return kh_value(tau_degrees, key);
+uint* getTauDegrees(uint p) {
+    return tau_degrees[prime_to_index_map[p]];
 }
 
-unsigned long* getXiDegrees(unsigned long p) {
-    khint_t key;
-    key = kh_get(prime_to_list, xi_degrees, p);
-    if(key == kh_end(xi_degrees)){
-        initializeXiTauDegrees(p);
-        key = kh_get(prime_to_list, xi_degrees, p);
-    }
-    return kh_value(xi_degrees, key);
+uint* getXiDegrees(uint p) {
+    return xi_degrees[prime_to_index_map[p]];
 }
 
-long** allocate_matrix(unsigned long rows, unsigned long cols)  {
-    long** M = calloc(1, rows * sizeof(long*) + rows * cols * sizeof(long));
-    for(long row = 0; row < rows; row++){
-        M[row] = (long*)(M + rows) + row * cols;
-    }
-    return M;
-}
-
-void print_matrix(long **M, unsigned long rows, unsigned long columns){
-    printf("    [\n");
-    for(long i = 0; i < rows; i++){
-        printf("        [");
-        for(long j = 0; j < columns; j++){
-            printf("%ld, ", M[i][j]);
-        }
-        printf("]\n");
-    }
-    printf("    ]\n");
-}
-
-void row_reduce(row_reduce_state * state){
-    unsigned long p = state->p;
-    unsigned long source_dim = state->source_dim;
-    unsigned long target_dim = state->target_dim;
-    long ** matrix = state->matrix;
-    for(state->pivot++ ; state->pivot < target_dim; state->pivot++){
-        long pivot_row;
-        for(pivot_row = state->pivot; pivot_row < source_dim; pivot_row ++){
-            if(matrix[pivot_row][state->pivot] != 0){
-                break;
-            }
-        }
-        if(pivot_row == source_dim){
-            state->found_cokernel = true;
-            return;
-        }
-        print_matrix(matrix, state->source_dim, state->source_dim + state->target_dim);
-        long * temp = matrix[state->pivot];
-        matrix[state->pivot] = matrix[pivot_row];
-        matrix[pivot_row] = temp;
-        printf("row(%ld) <==> row(%ld)\n", state->pivot, pivot_row);
-        print_matrix(matrix, state->source_dim, state->source_dim + state->target_dim);
-
-        long c = matrix[state->pivot][state->pivot];
-        long c_inv = inverse(state->p, c);
-        for(long column = state -> pivot; column < source_dim + target_dim; column ++){
-            matrix[state->pivot][column] = (matrix[state->pivot][column] * c_inv) % p;
-        }
-        printf("row(%ld) *= %ld\n", state->pivot, c_inv);
-        print_matrix(matrix, state->source_dim, state->source_dim + state->target_dim);
-        for(long row = 0; row < state->pivot; row++){
-            long row_op_coeff = (-matrix[row][state->pivot] + p) % p;
-            if(row_op_coeff == 0){
-                continue;
-            }
-            // Do row operation
-            for(long column = state -> pivot; column < source_dim + target_dim; column++){
-                matrix[row][column] = (matrix[row][column] + row_op_coeff * matrix[state->pivot][column]) % p;
-            }
-            printf("row(%ld) += %ld * row(%ld)\n", row, row_op_coeff, state->pivot);
-            print_matrix(matrix, state->source_dim, state->source_dim + state->target_dim);
-        }
-        // Between pivot and pivot_row, we already checked that the pivot column is 0, so skip ahead a bit.
-        for(long row = pivot_row + 1; row < source_dim; row++){
-            long row_op_coeff = (-matrix[row][state->pivot] + p) % p;
-            if(row_op_coeff == 0){
-                continue;
-            }
-            // Do row operation
-            for(long column = state -> pivot; column < source_dim + target_dim; column++){
-                matrix[row][column] = (matrix[row][column] + row_op_coeff * matrix[state->pivot][column]) % p;
-            }
-            printf("row(%ld) += %ld * row(%ld)\n", row, row_op_coeff, state->pivot);
-            print_matrix(matrix, state->source_dim, state->source_dim + state->target_dim);
-        }
-    }
-    state->found_cokernel = false;
-    return;
-}
-
-
-
-#define C_sdim 5
-#define C_tdim 8
+//#define C_sdim 5
+//#define C_tdim 8
 /**
 int main(){
-    unsigned long p = 7;
+    uint p = 7;
     initializePrime(p);
-    for(long i=0; i < p; i++){
+    for(int i=0; i < p; i++){
         printf("%ld -> %ld\n", i, inverse(7, i));
     }
-    long src[C_sdim][C_sdim + C_tdim] =
+    int src[C_sdim][C_sdim + C_tdim] =
             {{1, 1, 3, 4, 5, 2, 5, 0, 1, 0, 0, 0, 0}, {0, 6, 3, 6, 1, 1, 4, 3, 0, 1, 0, 0, 0}, {3, 0, 3, 3, 0, 2, 6, 3, 0, 0, 1, 0, 0}, {1, 3, 1, 5, 6, 4, 2, 2, 0, 0, 0, 1, 0}, {3, 0, 5, 1, 5, 2, 2, 3, 0, 0, 0, 0, 1}};
-    row_reduce_state state;
-    state.p = p;
-    state.row_capacity = 100;
-    state.column_capacity = 100;
-    state.pivot = -1;
-    state.source_dim = C_sdim;
-    state.target_dim = C_tdim;
-    long ** M = allocate_matrix(100, 100);
-    state.matrix = M;
-    for(long i = 0; i < state.source_dim; i++){
-        for(long j = 0; j < state.target_dim + state.source_dim; j++){
+
+    uint rows = C_sdim;
+    uint cols = C_sdim + C_tdim;
+    int ** M = allocate_matrix(rows, cols);
+    for(int i = 0; i < rows; i++){
+        for(int j = 0; j < cols; j++){
             M[i][j] = src[i][j];
         }
     }
-    row_reduce(&state);
-    printf("[\n");
-    for(long i = 0; i < state.source_dim; i++){
-        printf("    [");
-        for(long j = 0; j < state.target_dim + state.source_dim; j++){
-            printf("%ld, ", M[i][j]);
-        }
-        printf("]\n");
-    }
-    printf("]\n");
-    printf("found_cokernel? %s\n", state.found_cokernel ? "true" : "false");
-    printf("pivot: %ld\n", state.pivot);
-    free(state.matrix);
+    int column_to_pivot_row[cols];
+    memset(column_to_pivot_row, 0, cols * sizeof(int));
+    row_reduce(M, column_to_pivot_row, p, rows, cols);
+    char buffer[200];
+    array_to_string(buffer, column_to_pivot_row, cols);
+    printf("column_to_pivot_row: %s\n", buffer);
+    free(M);
 }
-**/
+/**/

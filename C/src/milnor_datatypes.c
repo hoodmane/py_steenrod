@@ -11,10 +11,10 @@
 #include "combinatorics.h"
 
 // Private functions
-unsigned long get_profile_name(char *buffer, Profile P);
+uint get_profile_name(char *buffer, Profile P);
 
 
-unsigned long getProfileExponent(Profile P, unsigned long p, unsigned long index){
+uint getProfileExponent(Profile P, uint p, uint index){
     if(index < P.p_part_length){
         return integer_power(p, P.p_part[index]);
     }
@@ -24,10 +24,10 @@ unsigned long getProfileExponent(Profile P, unsigned long p, unsigned long index
     return -1;
 }
 
-unsigned long get_profile_name(char *buffer, Profile P){
-    unsigned long len = 0;
+uint get_profile_name(char *buffer, Profile P){
+    uint len = 0;
     len += sprintf(buffer + len, "Profile( truncated=%s, ", P.truncated ? "true" : "false");
-    len += sprintf(buffer + len, "q_part=%lx, ", P.q_part);
+    len += sprintf(buffer + len, "q_part=%x, ", P.q_part);
     len += sprintf(buffer + len, "p_part=");
     len += array_to_string(buffer, P.p_part, P.p_part_length);
     len += sprintf(buffer + len, ")");
@@ -39,8 +39,8 @@ void milnor_algebra_generate_name(MilnorAlgebra *A){
         return;
     }
     char buffer[200];
-    long len = 0;
-    len += sprintf(buffer + len, "MilnorAlgebra(p=%ld, generic=%s", A->p, A->generic ? "true" : "false" );
+    int len = 0;
+    len += sprintf(buffer + len, "MilnorAlgebra(p=%d, generic=%s", A->p, A->generic ? "true" : "false" );
     if(A->profile.restricted){
         len += get_profile_name(buffer + len, A->profile);
     }
@@ -51,12 +51,12 @@ void milnor_algebra_generate_name(MilnorAlgebra *A){
 }
 
 
-int array_to_string(string buffer, unsigned long* A, unsigned long length){
+int array_to_string(string buffer, uint* A, uint length){
     buffer[0] = '[';
     buffer[1] = '\0';
-    long len = 1;
+    int len = 1;
     for (int i = 0; i < length; i++) {
-        len += sprintf(buffer + len, "%ld, ", A[i]);
+        len += sprintf(buffer + len, "%d, ", A[i]);
     }
     len += sprintf(buffer + len, "]");
     return len;
@@ -66,10 +66,10 @@ int array_to_string(string buffer, unsigned long* A, unsigned long length){
 int milnor_basis_element_to_key(string buffer, MilnorBasisElement *b){
     // Copy bytes representing MilnorBasisElement to a string.
 //    printf("making hash.\n");
-//    printf("    pointer address: %lx\n", (long)b->p_part);
-    memcpy(buffer, &b->q_part, sizeof(unsigned long));
-    memcpy(buffer + sizeof(unsigned long), b->p_part, b->p_length * sizeof(unsigned long));
-    int len = ((b->p_length + 1) * sizeof(unsigned long)) / sizeof(char);
+//    printf("    pointer address: %x\n", (int)b->p_part);
+    memcpy(buffer, &b->q_part, sizeof(uint));
+    memcpy(buffer + sizeof(uint), b->p_part, b->p_length * sizeof(uint));
+    int len = ((b->p_length + 1) * sizeof(uint)) / sizeof(char);
 
     // Now we need to make sure that none of the entries are 0.
     // That would end the string early.
@@ -87,13 +87,13 @@ int milnor_basis_element_to_string(string buffer, MilnorBasisElement *b){
         buffer[1] = '\0';
         return 1;
     }
-    long len = 0;
+    int len = 0;
     if(b->q_part != 0){
         len += sprintf(buffer + len, "Q(");
-        unsigned long idx = 0;
-        for(unsigned long q_part = b->q_part; q_part > 0; q_part >>= 1){
+        uint idx = 0;
+        for(uint q_part = b->q_part; q_part > 0; q_part >>= 1){
             if((q_part & 1) != 0){
-                len += sprintf(buffer + len, "%ld,", idx);
+                len += sprintf(buffer + len, "%d,", idx);
             }
             idx ++;
         }
@@ -104,8 +104,8 @@ int milnor_basis_element_to_string(string buffer, MilnorBasisElement *b){
     }
     if(b->p_length != 0){
         len += sprintf(buffer + len, "P(");
-        for(unsigned long i = 0; i < b->p_length; i++){
-            len += sprintf(buffer + len, "%ld,", b->p_part[i]);
+        for(uint i = 0; i < b->p_length; i++){
+            len += sprintf(buffer + len, "%d,", b->p_part[i]);
         }
         len += sprintf(buffer + len, ")");
     }
@@ -138,22 +138,22 @@ char *trimwhitespace(char *str){
 MilnorBasisElement milnor_basis_element_from_string(MilnorAlgebra * algebra, char* elt_string){
     char *idx_string, *string, *tofree;
     char * Q_or_P;
-    unsigned long p = algebra->p;
-    unsigned long q = algebra->generic ? 2*p-2 : 1;
+    uint p = algebra->p;
+    uint q = algebra->generic ? 2*p-2 : 1;
     tofree = string = strdup(elt_string);
 
-    unsigned long Q_part[20] = {0};
-    unsigned long P_part[20] = {0};
-    unsigned long Q_part_len = 0;
-    unsigned long P_part_len = 0;
-    unsigned long q_degree = 0;
-    unsigned long p_degree = 0;
+    uint Q_part[20] = {0};
+    uint P_part[20] = {0};
+    uint Q_part_len = 0;
+    uint P_part_len = 0;
+    uint q_degree = 0;
+    uint p_degree = 0;
 
     while ((Q_or_P = strsep(&string, "*")) != NULL){
         Q_or_P = trimwhitespace(Q_or_P);
-        unsigned long int* target = Q_part;
-        unsigned long int len = 0;
-        unsigned long int *Q_or_P_len = &Q_part_len;
+        uint* target = Q_part;
+        uint len = 0;
+        uint *Q_or_P_len = &Q_part_len;
         if(Q_or_P[0] == 'P'){
             target = P_part;
             Q_or_P_len = &P_part_len;
@@ -170,17 +170,17 @@ MilnorBasisElement milnor_basis_element_from_string(MilnorAlgebra * algebra, cha
     free(tofree);
     tofree = NULL;
     string = NULL;
-    unsigned long* tau_degrees = getTauDegrees(p);
-    unsigned long* xi_degrees = getXiDegrees(p);
-    unsigned long Q_bit_string = 0;
-    for(unsigned long i = 0; i < Q_part_len; i++){
+    uint* tau_degrees = getTauDegrees(p);
+    uint* xi_degrees = getXiDegrees(p);
+    uint Q_bit_string = 0;
+    for(uint i = 0; i < Q_part_len; i++){
         Q_bit_string += (1 << Q_part[i]);
         q_degree += tau_degrees[Q_part[i]];
     }
 
-    unsigned long * output_P_part = (unsigned long*) malloc(P_part_len * sizeof(unsigned long));
-    memcpy(output_P_part, P_part, P_part_len * sizeof(unsigned long));
-    for(unsigned long i = 0; i < P_part_len; i++){
+    uint * output_P_part = (uint*) malloc(P_part_len * sizeof(uint));
+    memcpy(output_P_part, P_part, P_part_len * sizeof(uint));
+    for(uint i = 0; i < P_part_len; i++){
         p_degree += xi_degrees[i] * P_part[i] * q;
     }
 
@@ -193,16 +193,19 @@ MilnorBasisElement milnor_basis_element_from_string(MilnorAlgebra * algebra, cha
     return result;
 }
 
-int milnor_element_to_string(string buffer, MilnorAlgebra * algebra, Vector * m){
-    unsigned long len = 0;
-    for(unsigned long i = 0; i < m->dimension; i ++){
-        if(m->vector[i] == 0){
+int milnor_element_to_string(string buffer, MilnorAlgebra * algebra, uint degree, Vector * m){
+    uint p = algebra->p;
+    VectorInterface vectorInterface = algebra->algebra.vectorInterface;
+    uint len = 0;
+    for(uint i = 0; i < m->dimension; i ++){
+        uint entry = vectorInterface.getEntry(p, m, i);
+        if(entry == 0){
             continue;
         }
-        if(m->vector[i] != 1) {
-            len += sprintf(buffer + len, "%ld * ", m->vector[i]);
+        if(entry != 1) {
+            len += sprintf(buffer + len, "%d * ", entry);
         }
-        MilnorBasisElement b = GetMilnorBasisElementFromIndex(algebra, m->degree, i);
+        MilnorBasisElement b = GetMilnorBasisElementFromIndex(algebra, degree, i);
         len += milnor_basis_element_to_string(buffer + len, &b);
         len += sprintf(buffer + len, " + ");
     }
@@ -212,8 +215,8 @@ int milnor_element_to_string(string buffer, MilnorAlgebra * algebra, Vector * m)
     return len;
 }
 
-int milnor_matrix_to_string(string buffer, unsigned long M[MAX_XI_TAU][MAX_XI_TAU], unsigned long rows, unsigned long cols){
-    unsigned long len = 0;
+int milnor_matrix_to_string(string buffer, uint M[MAX_XI_TAU][MAX_XI_TAU], uint rows, uint cols){
+    uint len = 0;
     len += sprintf(buffer + len, "[\n");
     for(int row = 0; row < rows; row++) {
         len += sprintf(buffer + len, "  ");
