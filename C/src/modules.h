@@ -69,7 +69,7 @@ typedef struct {
 typedef struct {
     uint dimension;
     uint * column_to_pivot_row;
-    Vector * kernel;
+    Vector ** kernel;
 } Kernel;
 
 typedef struct {
@@ -77,7 +77,7 @@ typedef struct {
     Module * target;
     Vector *** outputs;
     uint max_computed_degree;
-    Vector ** coimage_to_image_isomorphism;
+    Vector *** coimage_to_image_isomorphism;
     Kernel ** kernel; // This is redundant with the next module's coimage_to_image_iso
 } FreeModuleHomomorphism;
 //void initializeFreeModuleHomomorphism(FreeModuleHomomorphism * f, )
@@ -88,7 +88,7 @@ void FreeModuleHomomorphism_apply_to_basis_element(FreeModuleHomomorphism * f, V
 
 void FreeModuleAllocateSpaceForNewGenerators(FreeModuleHomomorphism * f, uint num_gens);
 
-void getHomomorphismMatrix(Vector * result, FreeModuleHomomorphism * f, uint degree);
+void getHomomorphismMatrix(Vector ** result, FreeModuleHomomorphism * f, uint degree);
 Kernel * constructKernel(VectorInterface * vectImpl, uint p, uint rows, uint columns);
 
 #endif //CSTEENROD_MODULES_H

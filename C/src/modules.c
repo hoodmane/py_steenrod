@@ -299,9 +299,9 @@ void addGeneratorToFreeModuleHomomorphism(FreeModuleHomomorphism * f, uint degre
 }
 
 // result should be big enough to hold output (how big is that?)
-void getHomomorphismMatrix(Vector * result, FreeModuleHomomorphism * f, uint degree){
+void getHomomorphismMatrix(Vector ** result, FreeModuleHomomorphism * f, uint degree){
     for(int i = 0; i < module_get_dimension(&f->source->module, degree); i++){
-        FreeModuleHomomorphism_apply_to_basis_element(f, &result[i], 1, degree, i);
+        FreeModuleHomomorphism_apply_to_basis_element(f, result[i], 1, degree, i);
     }
 }
 

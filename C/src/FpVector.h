@@ -109,12 +109,15 @@ uint vectorToString(char * buffer, Vector * v);
 void printVector(uint p, Vector * v);
 
 uint getMatrixSize(VectorInterface * interface, uint p, uint rows, uint cols);
-Vector* initializeMatrix(uint64 * memory, VectorInterface * interface, uint p, uint rows, uint cols);
-Vector* constructMatrix(VectorInterface * interface, uint p, uint rows, uint cols);
+Vector** initializeMatrix(uint64 * memory, VectorInterface * interface, uint p, uint rows, uint cols);
+Vector** constructMatrix(VectorInterface * interface, uint p, uint rows, uint cols);
 
-uint matrixToString(char * buffer, Vector *M, uint rows);
-void printMatrix(Vector *matrix, uint rows);
+Vector** constructMatrixGeneric(uint p, uint rows, uint cols);
+Vector** constructMatrix2(uint p, uint rows, uint cols);
 
-void rowReduce(Vector * matrix, int * column_to_pivot_row, uint rows);
+uint matrixToString(char * buffer, Vector **M, uint rows);
+void printMatrix(Vector **matrix, uint rows);
+
+void rowReduce(Vector **matrix, int * column_to_pivot_row, uint rows);
 
 #endif //C_FPVECTOR_H

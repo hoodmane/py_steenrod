@@ -7,8 +7,6 @@ def construct_c_vector(p, dim, offset=0):
         v = CSteenrod.constructVector2(p, dim, offset)
     else:
         v = CSteenrod.constructVectorGeneric(p, dim, offset)
-    v.p = p
-    v.dimension = dim
     v.freed = False
     return v
     
@@ -21,20 +19,20 @@ def assign_c_vector(v, w):
     CSteenrod.assignVector(v, w)
     
 def c_packVector(v, list):
-    if v.dimension != len(list):
+    if v.contents.dimension != len(list):
         raise Exception("Wrong length.")
     c_list_type = c_uint * len(list)
     c_list = c_list_type()
     for i, elt in enumerate(list):
-        c_list[i] = elt % v.p
+        c_list[i] = elt % v.contents.p
     CSteenrod.packVector(v, c_list)
 
 def c_unpackVector(v):
-    c_list_type = c_uint * v.dimension
+    c_list_type = c_uint * v.contents.dimension
     c_list = c_list_type()
     CSteenrod.unpackVector(c_list, v)
-    py_list = [None] * v.dimension
-    for i in range(v.dimension):
+    py_list = [None] * v.contents.dimension
+    for i in range(v.contents.dimension):
         py_list[i] = c_list[i]
     return py_list
     
@@ -42,30 +40,76 @@ def c_getVectorEntry(v, idx):
     return CSteenrod.getVectorEntry(v, idx)
 
 def c_setVectorEntry(v, idx, value):
-    CSteenrod.setVectorEntry(v, idx, (value % v.p))
+    CSteenrod.setVectorEntry(v, idx, (value % v.contents.p))
     
 def c_addBasisElementToVector(v, idx, c=1):
     c = c % v.p
-    if v.p == 2:
+    if v.contents.p == 2:
         CSteenrod.addBasisElementToVector2(v, idx, c)
     else:
         CSteenrod.addBasisElementToVectorGeneric(v, idx, c)    
 
 def c_addVectors(v, w, c=1):
-    c = c % v.p
-    if v.p == 2:
+    c = c % v.contents.p
+    if v.contents.p == 2:
         CSteenrod.addVectors2(v, w, c)
     else:
         CSteenrod.addVectorsGeneric(v, w, c)        
     
     
 def c_scaleVector(v, c):
-    c = c % v.p
-    if v.p == 2:
+    c = c % v.contents.p
+    if v.contents.p == 2:
         CSteenrod.scaleVector2(v, c)
     else:
         CSteenrod.scaleVectorGeneric(v, c)        
-    
+
+def c_constructMatrix(p, rows, columns):
+    CSteenrod.initializePrime(p)
+    if p == 2:
+        M = CSteenrod.constructMatrix2(p, rows, columns)
+    else:
+        M = CSteenrod.constructMatrixGeneric(p, rows, columns)
+    M.p = p
+    M.rows = rows
+    M.columns = columns
+    return M
+
+def c_packMatrix(c_M, py_M):
+    for i in range(c_M.rows):
+        c_packVector(c_M[i], py_M[i])
+
+def c_unpackMatrix(c_M):
+    return [c_unpackVector(c_M[i]) for i in range(c_M.rows)]
+
+def c_row_reduce(c_M):
+    array_type = c_int * c_M.columns
+    pivots_array = array_type()
+    CSteenrod.rowReduce(c_M, pivots_array, c_M.rows)
+    c_M.pivots = pivots_array
+
+def vector_to_C(p, vector):
+    c_v = construct_c_vector(p, len(vector))
+    c_packVector(c_v, vector)
+    return c_v
+
+def vector_from_C(vector):
+    return c_unpackVector(vector)
+
+def matrix_to_C(p, matrix):
+    rows = len(matrix)
+    columns = len(matrix[0])
+    c_M = c_constructMatrix(p, rows, columns)
+    for i in range(rows):
+        c_M[i].dimension = columns
+    c_packMatrix(c_M, matrix)
+    return c_M
+
+def matrix_from_C(matrix):
+    return c_unpackMatrix(matrix)
+
+
+
     
 def test_c_vector(p, dim):
     import random

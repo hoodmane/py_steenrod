@@ -104,9 +104,14 @@ def wrap_FpVector(CSteenrod):
     CSteenrod.vectorToString.argtypes = [c_char_p, POINTER(c_Vector)]
     CSteenrod.vectorToString.restype = c_uint
     
-    #Vector* constructMatrix(VectorInterface * interface, uint p, uint rows, uint cols);
-    CSteenrod.constructMatrix.argtypes = [c_void_p, c_uint, c_uint, c_uint]
-    CSteenrod.constructMatrix.restype = POINTER(c_Vector)
+    #Vector* constructMatrixGeneric(uint p, uint rows, uint cols);
+    CSteenrod.constructMatrixGeneric.argtypes = [c_uint, c_uint, c_uint]
+    CSteenrod.constructMatrixGeneric.restype = POINTER(POINTER(c_Vector))
     
-    #void rowReduce(Vector * matrix, int * column_to_pivot_row, uint rows);
-    CSteenrod.rowReduce.argtypes = [POINTER(c_Vector), POINTER(c_int)]
+    #Vector* constructMatrix2(uint p, uint rows, uint cols);
+    CSteenrod.constructMatrix2.argtypes = [c_uint, c_uint, c_uint]
+    CSteenrod.constructMatrix2.restype = POINTER(POINTER(c_Vector))
+
+
+    #void rowReduce(Vector **matrix, int * column_to_pivot_row, uint rows);
+    CSteenrod.rowReduce.argtypes = [POINTER(POINTER(c_Vector)), POINTER(c_int)]

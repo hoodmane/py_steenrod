@@ -250,7 +250,6 @@ uint packLimb(VectorStd* vector, uint * limb_array, uint limb_idx){
 
 void packVector(Vector * target, uint * source){
     VectorStd * t = (VectorStd*) target;
-    uint len = 0;
     for(uint limb = 0; limb < target->size; limb++){
         source += packLimb(t, source, limb);
     }
@@ -408,7 +407,6 @@ void scaleVectorGeneric(Vector * target, uint coeff){
     VectorStd * t = (VectorStd*) target;   
     uint entries_per_64_bits = getEntriesPer64Bits(t->p);    
     uint entries[entries_per_64_bits];
-    uint idx = 0;
     for(uint i = 0; i < target->size; i++){
         t->vector[i] = coeff * t->vector[i];
         uint limb_length = unpackLimb(entries, t, i);
@@ -513,7 +511,7 @@ void scaleVector2(Vector * target, uint coeff){
 }
 
 VectorInterface VectorGenericInterface = {
-    3,
+    (sizeof(VectorStd) + 7)/8,
     getEntriesPer64Bits, getVectorSize, initializeVectorGeneric,
     constructVectorGeneric, freeVector,    
     assignVector, setVectorToZero, packVector, unpackVector,
@@ -523,7 +521,7 @@ VectorInterface VectorGenericInterface = {
 };
 
 VectorInterface Vector2Interface = {
-    3,
+    (sizeof(VectorStd) + 7)/8,
     getEntriesPer64Bits, getVectorSize, initializeVector2,    
     constructVector2, freeVector,    
     assignVector, setVectorToZero, packVector, unpackVector,
@@ -552,74 +550,73 @@ void printVector(uint p, Vector * v){
 
 /**/
 int main(int argc, char *argv[]){
-    uint p = 3;
-    uint bitmask = 3;
-    uint dim = 49;
-    uint num_vectors = 100;
-    uint scale = 3;    
-    uint num_repeats = 400;
-
+    // uint p = 3;
+    // uint bitmask = 3;
+    // uint dim = 49;
+    // uint num_vectors = 100;
+    // uint scale = 3;    
+    // uint num_repeats = 400;
     
-    initializePrime(p);
-    uint arrays[num_vectors][dim];
-    uint container_size = VectorGenericInterface.container_size;
-    uint contents_size = VectorGenericInterface.getSize(p, dim, 0);
-    uint64 vector_container_memory[container_size * num_vectors];
-    uint64 vector_contents_memory[contents_size * num_vectors];
-    uint64 * vector_container_ptr = vector_container_memory;
-    uint64 * vector_contents_ptr = vector_contents_memory;
-    Vector * vectors[num_vectors];
-    for(uint i = 0; i < num_vectors; i++){
-        for(uint j = 0; j < dim; j++){
-            arrays[i][j] = modPLookup(p, rand() & bitmask);
-        }
-    }
-    for(uint i = 0; i < num_vectors; i++){
-        vectors[i] = VectorGenericInterface.initialize(p, vector_container_ptr, vector_contents_ptr, dim, 0);
-        vector_container_ptr += container_size;
-        vector_contents_ptr += contents_size;
-    }
-    
+    // initializePrime(p);
+    // uint arrays[num_vectors][dim];
+    // uint container_size = VectorGenericInterface.container_size;
+    // uint contents_size = VectorGenericInterface.getSize(p, dim, 0);
+    // uint64 vector_container_memory[container_size * num_vectors];
+    // uint64 vector_contents_memory[contents_size * num_vectors];
+    // uint64 * vector_container_ptr = vector_container_memory;
+    // uint64 * vector_contents_ptr = vector_contents_memory;
+    // Vector * vectors[num_vectors];
     // for(uint i = 0; i < num_vectors; i++){
-    //     packVector(vectors[i], arrays[i]);
+    //     for(uint j = 0; j < dim; j++){
+    //         arrays[i][j] = modPLookup(p, rand() & bitmask);
+    //     }
     // }
-
-    char buffer[1000];
-    array_to_string(buffer, arrays[1], dim);
-    printf("array:     %s\n", buffer);
-
-    printf("Packing    ");
-    packVector(vectors[1], arrays[1]);
-    printf("\n");
-    for(uint i = 0; i < dim; i++){
-        printf("%d ", getVectorEntry(vectors[1], i));
-    }
-    printf("\n");
-    vectorToString(buffer, vectors[1]);
-    printf("vector:    %s\n", buffer);
-    unpackVector(arrays[1], vectors[1]);
-    array_to_string(buffer, arrays[1], dim);
-    printf("unpacked:  %s\n", buffer);
-
-    return 0;
-    sliceVector(vectors[1], vectors[0], 2, 4);
-
-
-    Vector * v = constructVector(&VectorGenericInterface, p, 4 - 2, vectors[1]->offset);
-    packVector(v, arrays[3]);
-    vectorToString(buffer, v);
-    printf("v:               %s\n", buffer);
-
-    vectorToString(buffer, vectors[0]);
-    printf("vector: %s\n", buffer);
-    vectorToString(buffer, vectors[1]);
-    printf("slice:           %s\n", buffer);
+    // for(uint i = 0; i < num_vectors; i++){
+    //     vectors[i] = VectorGenericInterface.initialize(p, vector_container_ptr, vector_contents_ptr, dim, 0);
+    //     vector_container_ptr += container_size;
+    //     vector_contents_ptr += contents_size;
+    // }
     
-    addVectorsGeneric(vectors[1], v, 1);
-    vectorToString(buffer, vectors[1]);
-    printf("sum:             %s\n", buffer);
-    vectorToString(buffer, vectors[0]);
-    printf("vector: %s\n", buffer);    
+    // // for(uint i = 0; i < num_vectors; i++){
+    // //     packVector(vectors[i], arrays[i]);
+    // // }
+
+    // char buffer[1000];
+    // array_to_string(buffer, arrays[1], dim);
+    // printf("array:     %s\n", buffer);
+
+    // printf("Packing    ");
+    // packVector(vectors[1], arrays[1]);
+    // printf("\n");
+    // for(uint i = 0; i < dim; i++){
+    //     printf("%d ", getVectorEntry(vectors[1], i));
+    // }
+    // printf("\n");
+    // vectorToString(buffer, vectors[1]);
+    // printf("vector:    %s\n", buffer);
+    // unpackVector(arrays[1], vectors[1]);
+    // array_to_string(buffer, arrays[1], dim);
+    // printf("unpacked:  %s\n", buffer);
+
+    // return 0;
+    // sliceVector(vectors[1], vectors[0], 2, 4);
+
+
+    // Vector * v = constructVector(&VectorGenericInterface, p, 4 - 2, vectors[1]->offset);
+    // packVector(v, arrays[3]);
+    // vectorToString(buffer, v);
+    // printf("v:               %s\n", buffer);
+
+    // vectorToString(buffer, vectors[0]);
+    // printf("vector: %s\n", buffer);
+    // vectorToString(buffer, vectors[1]);
+    // printf("slice:           %s\n", buffer);
+    
+    // addVectorsGeneric(vectors[1], v, 1);
+    // vectorToString(buffer, vectors[1]);
+    // printf("sum:             %s\n", buffer);
+    // vectorToString(buffer, vectors[0]);
+    // printf("vector: %s\n", buffer);    
 
     // printf("argc : %d\n", argc);
     // if(argc > 1){
@@ -655,65 +652,105 @@ int main(int argc, char *argv[]){
     // printf("%s\n\n", buffer);
     // vectorToString(buffer, p, vectors[0]);
     // printf("%s\n\n", buffer);
+    
+    // #define ROWS 5
+    // #define COLS 10
+    // uint p = 5;
+
+    #define ROWS 2
+    #define COLS 3
+    uint p = 3;
+    initializePrime(p);
+    Vector ** M = constructMatrix(&VectorGenericInterface, p, ROWS, COLS);
+    uint array[ROWS][COLS] = {{1,2,1},{1,1,0}};
+    // uint array[ROWS][COLS] = {
+    //     {1, 0, 0, 4, 0, 2, 1, 3, 0, 0},
+    //     {4, 3, 2, 3, 4, 3, 4, 2, 4, 4},
+    //     {3, 0, 1, 2, 3, 4, 4, 3, 1, 3},
+    //     {0, 1, 3, 0, 2, 1, 3, 0, 2, 3},
+    //     {4, 4, 3, 4, 2, 4, 0, 0, 0, 3}
+    // };
+    for(uint i = 0; i < ROWS; i++){
+        packVector(M[i], array[i]);
+    }        
+    printMatrix(M, ROWS);  
+
+
+    int pivots[COLS];
+    rowReduce(M, pivots, ROWS);
+    printf("M: ");
+    printMatrix(M, ROWS);
     return 0;
 }
 /**/
 
 uint getMatrixSize(VectorInterface * vectImpl, uint p, uint rows, uint cols){
-    return rows * vectImpl->container_size + rows * vectImpl->getSize(p, cols, 0);
+    return rows 
+        + rows * vectImpl->container_size 
+        + rows * vectImpl->getSize(p, cols, 0);
 }
 
-Vector* initializeMatrix(uint64 * memory, VectorInterface * vectImpl, uint p, uint rows, uint cols)  {
+Vector** initializeMatrix(uint64 * memory, VectorInterface * vectImpl, uint p, uint rows, uint cols)  {
     uint container_size = vectImpl->container_size;
     uint vector_size = vectImpl->getSize(p, cols, 0);
-    Vector * M = (Vector *) memory;
-    uint64 * container_ptr = (uint64*)M;
+    Vector ** vector_ptr = (Vector**)memory;
+    uint64 * container_ptr = (uint64*)(memory + rows);
     uint64 * values_ptr = container_ptr + rows * container_size;
     for(int row = 0; row < rows; row++){
-        vectImpl->initialize(p, container_ptr, values_ptr, cols, 0);
+        *vector_ptr = vectImpl->initialize(p, container_ptr, values_ptr, cols, 0);
+        vector_ptr ++;
         container_ptr += container_size;
         values_ptr += vector_size;
     }
-    return M;
+    return (Vector**)memory;
 }
 
-Vector* constructMatrix(VectorInterface * vectorImplementation, uint p, uint rows, uint cols)  {
+Vector** constructMatrix(VectorInterface * vectorImplementation, uint p, uint rows, uint cols)  {
     uint64 * M = malloc(getMatrixSize(vectorImplementation, p, rows, cols) * sizeof(uint64));
     return initializeMatrix(M, vectorImplementation, p, rows, cols);
 }
 
-uint matrixToString(char * buffer, Vector *M, uint rows){
+Vector** constructMatrixGeneric(uint p, uint rows, uint cols)  {
+    return constructMatrix(&VectorGenericInterface, p, rows, cols);
+}
+
+Vector** constructMatrix2(uint p, uint rows, uint cols)  {
+    return constructMatrix(&Vector2Interface, p, rows, cols);
+}
+
+uint matrixToString(char * buffer, Vector **M, uint rows){
     int len = 0;
     len += sprintf(buffer + len, "    [\n");
     for(int i = 0; i < rows; i++){
-        len += vectorToString(buffer + len, &M[i]);
+        len += sprintf(buffer + len, "        ");
+        len += vectorToString(buffer + len, M[i]);
+        len += sprintf(buffer + len, ",\n");
     }
     len += sprintf(buffer + len, "    ]\n");
     return len;
 }
 
-void printMatrix(Vector *matrix, uint rows){
+void printMatrix(Vector **matrix, uint rows){
     char buffer[10000];
     matrixToString(buffer, matrix, rows);
     printf("%s\n", buffer);
 }
 
-void rowReduce(Vector * matrix, int * column_to_pivot_row, uint rows){
-    VectorInterface * vectorImpl = matrix->interface;
-    uint p = matrix->p;
-    uint columns = matrix->dimension;
+void rowReduce(Vector ** matrix, int * column_to_pivot_row, uint rows){
+    VectorInterface * vectorImpl = matrix[0]->interface;
+    uint p = matrix[0]->p;
+    uint columns = matrix[0]->dimension;
     VectorIterator rowIterators[rows];
     for(uint i = 0; i < rows; i++){
-        rowIterators[i] = vectorImpl->getIterator(&matrix[i]);
+        rowIterators[i] = vectorImpl->getIterator(matrix[i]);
     }
     memset(column_to_pivot_row, -1, columns * sizeof(uint));
     uint pivot = 0;
     for(uint pivot_column = 0; pivot_column < columns; pivot_column++){
         // Search down column for a nonzero entry.
         uint pivot_row;
-        for(uint i = pivot; i < rows; i++){
-            if(rowIterators[i].value != 0){
-                pivot_row = i;
+        for(pivot_row = pivot; pivot_row < rows; pivot_row++){
+            if(rowIterators[pivot_row].value != 0){
                 break;
             }
         }
@@ -728,18 +765,24 @@ void rowReduce(Vector * matrix, int * column_to_pivot_row, uint rows){
         column_to_pivot_row[pivot_column] = pivot_row;
 
         printMatrix(matrix, rows);
-        // Otherwise pivot_row contains a row with a pivot in current column.
-        // swap pivot row up.
-        Vector temp = matrix[pivot];
+
+        // Pivot_row contains a row with a pivot in current column.
+        // Swap pivot row up.
+        Vector* temp = matrix[pivot];
         matrix[pivot] = matrix[pivot_row];
         matrix[pivot_row] = temp;
 
+        VectorIterator temp_it = rowIterators[pivot];
+        rowIterators[pivot] = rowIterators[pivot_row];
+        rowIterators[pivot_row] = temp_it;
+
         printf("row(%d) <==> row(%d)\n", pivot, pivot_row);
         printMatrix(matrix, rows);
+
         // Divide pivot row by pivot entry
         int c = rowIterators[pivot].value;
         int c_inv = inverse(p, c);
-        vectorImpl->scale(&matrix[pivot], c_inv);
+        vectorImpl->scale(matrix[pivot], c_inv);
 
         printf("row(%d) *= %d\n", pivot, c_inv);
         printMatrix(matrix, rows);
@@ -755,7 +798,9 @@ void rowReduce(Vector * matrix, int * column_to_pivot_row, uint rows){
                 continue;
             }
             // Do row operation
-            vectorImpl->add(&matrix[i], &matrix[pivot], row_op_coeff);
+            vectorImpl->add(matrix[i], matrix[pivot], row_op_coeff);
+
+            printf("row(%d) <== row(%d) + %d * row(%d)\n", i, i, row_op_coeff, pivot);
             printMatrix(matrix, rows);
         }
         pivot ++;
