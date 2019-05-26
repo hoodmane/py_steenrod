@@ -4,7 +4,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 SET(DEBUG_INFO_COMPILE_FLAGS "-g")
 SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${DEBUG_INFO_COMPILE_FLAGS}")
-
+SET(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -lprofiler")
 
 
 include(GNUInstallDirs)
@@ -17,8 +17,11 @@ add_executable(csteen
         src/combinatorics.h
         src/FpVector.c
         src/FpVector.h
-        src/algebra.c
         src/algebra.h
+        src/modules.h
+        src/modules.c
+        src/resolution.h
+        src/resolution.c
         src/milnor.c
         src/milnor.h
         src/milnor_datatypes.c
@@ -34,15 +37,18 @@ add_library(CSteenrod SHARED
         src/combinatorics.h
         src/FpVector.c
         src/FpVector.h
-        src/algebra.c
         src/algebra.h
+        src/modules.h
+        src/modules.c
+        src/resolution.h
+        src/resolution.c
         src/milnor.c
         src/milnor.h
         src/milnor_datatypes.c
         src/milnor_private.h
         src/modules.c
     )
-    
+
 set_target_properties(CSteenrod PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION 1)

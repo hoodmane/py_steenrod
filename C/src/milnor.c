@@ -793,14 +793,14 @@ void MilnorProduct(Algebra * public_algebra, Vector * result, uint coeff, uint r
     } else {
         MilnorProductEven(algebra, product_array, r, s);
     }
-    public_algebra->vectorInterface.pack(public_algebra->p, result, product_array);
+    public_algebra->vectorInterface.pack(result, product_array);
 }
 /**/
 
 
 
 
-/**/
+/**
 int main() {
     char buffer[10000];
 
@@ -894,4 +894,4 @@ int main() {
     freeVector(result);
     freeMilnorAlgebra(algebra);
 }
-/**/
+**/

@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "milnor.h"
+#include "FpVector.h"
 #include "combinatorics.h"
 
 // Private functions
@@ -51,16 +52,7 @@ void milnor_algebra_generate_name(MilnorAlgebra *A){
 }
 
 
-int array_to_string(string buffer, uint* A, uint length){
-    buffer[0] = '[';
-    buffer[1] = '\0';
-    int len = 1;
-    for (int i = 0; i < length; i++) {
-        len += sprintf(buffer + len, "%d, ", A[i]);
-    }
-    len += sprintf(buffer + len, "]");
-    return len;
-}
+
 
 
 int milnor_basis_element_to_key(string buffer, MilnorBasisElement *b){
@@ -194,18 +186,20 @@ MilnorBasisElement milnor_basis_element_from_string(MilnorAlgebra * algebra, cha
 }
 
 int milnor_element_to_string(string buffer, MilnorAlgebra * algebra, uint degree, Vector * m){
-    uint p = algebra->p;
     VectorInterface vectorInterface = algebra->algebra.vectorInterface;
     uint len = 0;
-    for(uint i = 0; i < m->dimension; i ++){
-        uint entry = vectorInterface.getEntry(p, m, i);
-        if(entry == 0){
+    for(
+        VectorIterator it = vectorInterface.getIterator(m); 
+        it.has_more; 
+        it = vectorInterface.stepIterator(it)
+    ){
+        if(it.value == 0){
             continue;
         }
-        if(entry != 1) {
-            len += sprintf(buffer + len, "%d * ", entry);
+        if(it.value != 1) {
+            len += sprintf(buffer + len, "%d * ", it.value);
         }
-        MilnorBasisElement b = GetMilnorBasisElementFromIndex(algebra, degree, i);
+        MilnorBasisElement b = GetMilnorBasisElementFromIndex(algebra, degree, it.index);
         len += milnor_basis_element_to_string(buffer + len, &b);
         len += sprintf(buffer + len, " + ");
     }

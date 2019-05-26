@@ -43,7 +43,6 @@ typedef struct {
 
 
 // Implemented in milnor_datatypes.c
-int array_to_string(string buffer, uint* A, uint length);
 int milnor_basis_element_to_string(string buffer, MilnorBasisElement *b);
 MilnorBasisElement milnor_basis_element_from_string(MilnorAlgebra * algebra, char* elt_string);
 
