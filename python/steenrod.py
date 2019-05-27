@@ -76,7 +76,7 @@ class AdemElement(Vector):
             result = sum(b)
         return result
 
-    def basis_elt_to_string(self, basis_elt):
+    def basis_elt_to_string(self, module, basis_elt):
         """Get string representation of basis vector. Overrides method in Vector."""
         if self.algebra.generic:
             result = adem.adem_basis_elt_generic_map(
@@ -120,7 +120,7 @@ class MilnorElement(Vector):
         """Convert self to the Adem basis"""
         return milnor_to_adem_on_basis(basis_elt, p=module.p, generic=module.generic)
 
-    def basis_elt_to_string(self, basis_elt):
+    def basis_elt_to_string(self, module, basis_elt):
         """Get string representation of basis vector. Overrides method in Vector."""
         if self.algebra.generic:
             Qs = ["Q(%s)" % s for s in basis_elt[0]]

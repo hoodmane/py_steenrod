@@ -10,14 +10,14 @@ typedef struct Module {
     uint p;
     Algebra *algebra;
 // Methods:
-    bool (*compute_basis)(struct Module *this, uint degree);
-    uint (*get_dimension)(struct Module *this, uint degree);
-    void (*act_on_basis)(struct Module *this, Vector *result, uint coeff, uint op_degree,uint op_index, uint mod_degree, uint mod_index);
+    bool (*computeBasis)(struct Module *this, uint degree);
+    uint (*getDimension)(struct Module *this, uint degree);
+    void (*actOnBasis)(struct Module *this, Vector *result, uint coeff, uint op_degree,uint op_index, uint mod_degree, uint mod_index);
 } Module;
 
-#define module_compute_basis(module, degree) ((module)->compute_basis)(module, degree)
-#define module_get_dimension(module, degree) ((module)->get_dimension)(module, degree)
-#define module_act_on_basis(module, result, coeff, op_deg, op, r_deg, r) ((module)->act_on_basis)(module, result, coeff, op_deg, op, r_deg, r)
+#define module_computeBasis(module, degree) ((module)->computeBasis)(module, degree)
+#define module_getDimension(module, degree) ((module)->getDimension)(module, degree)
+#define module_actOnBasis(module, result, coeff, op_deg, op, r_deg, r) ((module)->actOnBasis)(module, result, coeff, op_deg, op, r_deg, r)
 
 
 
@@ -30,17 +30,20 @@ typedef struct {
     Vector ****actions;
 } FiniteDimensionalModule;
 
-FiniteDimensionalModule * constructFiniteDimensionalModule(Algebra *algebra, uint dimension, uint *generator_degrees);
+FiniteDimensionalModule * FiniteDimensionalModule_construct(Algebra *algebra, uint dimension, uint *generator_degrees);
 
-void freeFiniteDimensionalModule(FiniteDimensionalModule *module);
-void addActionToFiniteDimensionalModule(
+void FiniteDimensionalModule_free(FiniteDimensionalModule *module);
+void FiniteDimensionalModule_setAction(
     FiniteDimensionalModule *module,
     uint operation_degree, uint operation_idx,
     uint input_degree, uint input_idx,
-    uint *output
+    Vector *output
 );
 
-void FiniteDimensionalModule_act_on_basis(Module *this, Vector *result, uint coeff,  uint op_degree, uint op_index, uint mod_degree, uint mod_index);
+bool FiniteDimensionalModule_computeBasis(Module *this, uint dimension);
+uint FiniteDimensionalModule_getDimension(Module* this, uint degree);
+void FiniteDimensionalModule_actOnBasis(
+    Module *this, Vector *result, uint coeff,  uint op_degree, uint op_index, uint mod_degree, uint mod_index);
 
 typedef struct {
     Module module;
@@ -50,11 +53,14 @@ typedef struct {
     uint *number_of_generators_in_degree;
 } FreeModule;
 
-FreeModule *constructFreeModule(Algebra * algebra, uint max_degree);
-void freeFreeModule(FreeModule * module);
+FreeModule *FreeModule_construct(Algebra * algebra, uint max_generator_degree, uint max_degree);
+void FreeModule_free(FreeModule * module);
 
-void FreeModuleConstructBlockOffsetTable(FreeModule * M, uint degree);
+void FreeModule_ConstructBlockOffsetTable(FreeModule * M, uint degree);
 
+bool FreeModule_computeBasis(Module* this, uint degree);
+uint FreeModule_getDimension(Module* this, uint degree);
+void FreeModule_actOnBasis(Module * this, Vector * result, uint coeff, uint op_degree, uint op_index, uint mod_degree, uint mod_idx);
 
 typedef struct {
     uint *column_to_pivot_row;
@@ -72,12 +78,12 @@ typedef struct {
 //void initializeFreeModuleHomomorphism(FreeModuleHomomorphism * f, )
 
 FreeModuleHomomorphism *constructFreeModuleHomomorphism(FreeModule *source, Module *target);
-void addGeneratorToFreeModuleHomomorphism(FreeModuleHomomorphism *f, uint gen_degree, Vector *output);
-void FreeModuleHomomorphism_apply_to_basis_element(FreeModuleHomomorphism *f, Vector *result, uint coeff, uint input_degree, uint input_index);
+void FreeModuleHomomorphism_addGenerator(FreeModuleHomomorphism *f, uint gen_degree, Vector *output);
+void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism *f, Vector *result, uint coeff, uint input_degree, uint input_index);
 
-void FreeModuleHomomorphismAllocateSpaceForNewGenerators(FreeModuleHomomorphism *f, uint num_gens);
+void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism *f, uint num_gens);
 
-void getHomomorphismMatrix(Matrix *result, FreeModuleHomomorphism *f, uint degree);
-Kernel *constructKernel(VectorInterface *vectImpl, uint p, uint rows, uint columns);
+void FreeModuleHomomorphism_getMatrix(Matrix *result, FreeModuleHomomorphism *f, uint degree);
+Kernel *Kernel_construct(VectorInterface *vectImpl, uint p, uint rows, uint columns);
 
 #endif //CSTEENROD_MODULES_H

@@ -635,9 +635,9 @@ class FreeSteenrodModuleElement(Vector):
     def basis_degree(self, b):
         return self.module.gens[b[1]] + b[0].degree()
         
-    def basis_elt_to_string(self, basis_elt):
+    def basis_elt_to_string(self, module, basis_elt):
         result = ""
-        if basis_elt[0] != basis_elt[0].algebra.unit():
+        if basis_elt[0] != module.unit():
             result += str(basis_elt[0]) + " "
         result += basis_elt[1]        
         return result
@@ -654,9 +654,8 @@ class FreeSteenrodModule:
         self.milnor_algebra = steenrod.MilnorAlgebra.getInstanceFromAlgebra(self)
         self.gens = {}
     
-    
     def basis_degree(self, b):
-        return self.gens[b]
+        return self.gens[b[1]] + b[0].degree()
     
     def add_generator(self, name, degree):
         self.gens[name] = degree

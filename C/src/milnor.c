@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "khash.h"
 
@@ -37,9 +38,9 @@ MilnorAlgebra * constructMilnorAlgebra(uint p, bool generic, Profile *profile){
         algebra->public_algebra.profile = *profile;
     }
 
-    algebra->public_algebra.algebra.compute_basis = GenerateMilnorBasis;
-    algebra->public_algebra.algebra.get_dimension = GetMilnorAlgebraDimension;
-    algebra->public_algebra.algebra.multiply_basis_elements = MilnorProduct;
+    algebra->public_algebra.algebra.computeBasis = GenerateMilnorBasis;
+    algebra->public_algebra.algebra.getDimension = GetMilnorAlgebraDimension;
+    algebra->public_algebra.algebra.multiplyBasisElements = MilnorProduct;
 
     algebra->P_table = NULL;
     algebra->P_table_by_P_length = NULL;
@@ -786,6 +787,7 @@ void MilnorProduct(Algebra * public_algebra, Vector * result, uint coeff, uint r
     // }
     uint output_degree = r_degree + s_degree;
     uint output_dimension = algebra->basis_table[output_degree].length;
+    assert(output_dimension == result->dimension);
     uint product_array[output_dimension];
     memset(product_array, 0, output_dimension * sizeof(uint));
     if(algebra->public_algebra.generic){

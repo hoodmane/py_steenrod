@@ -106,7 +106,7 @@ void scaleVector2(Vector * target, uint c);
 
 
 uint vectorToString(char * buffer, Vector * v);
-void printVector(uint p, Vector * v);
+void printVector(Vector * v);
 
 typedef struct {
     uint p;

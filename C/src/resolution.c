@@ -25,8 +25,8 @@ void generateOldKernelAndComputeNewKernel(Resolution * resolution, uint degree){
     FreeModuleHomomorphism * previous_differential = &resolution->resolution_differentials[homological_degree - 1];
     FreeModule * source = current_differential->source;
     // assert(target == previous_differential.source)
-    uint source_dimension = module_get_dimension(&current_differential->source->module, degree);
-    uint target_dimension = module_get_dimension(current_differential->target, degree);
+    uint source_dimension = module_getDimension(&current_differential->source->module, degree);
+    uint target_dimension = module_getDimension(current_differential->target, degree);
 
     source->max_generator_degree ++;
     // assert(source->max_generator_degree == degree);
@@ -57,8 +57,7 @@ void generateOldKernelAndComputeNewKernel(Resolution * resolution, uint degree){
     for(uint i = 0; i < matrix->columns; i++){
         vectImpl->slice(slice_matrix[i], full_matrix->matrix[i], 0, matrix->rows);
     }
-    FreeModuleConstructBlockOffsetTable(source, degree);
-    getHomomorphismMatrix(matrix, current_differential, degree);
+    FreeModuleHomomorphism_getMatrix(matrix, current_differential, degree);
     // Write the identity matrix into the right block
     for(int i = 0; i < source_dimension; i++){
        vectImpl->setEntry(matrix->matrix[i], target_dimension + i, 1);
@@ -79,7 +78,7 @@ void generateOldKernelAndComputeNewKernel(Resolution * resolution, uint degree){
         }
     }
     uint kernel_size = rows - first_kernel_row;
-    Kernel * kernel = constructKernel(vectImpl, p, kernel_size, target_dimension);
+    Kernel * kernel = Kernel_construct(vectImpl, p, kernel_size, target_dimension);
     // Write pivots into kernel
     for(uint i = first_kernel_row; i < rows; i++){
         kernel->column_to_pivot_row[i] = column_to_pivot_row[i + target_dimension] - kernel_size;
@@ -118,13 +117,13 @@ void generateOldKernelAndComputeNewKernel(Resolution * resolution, uint degree){
     free(previous_kernel); // This information can now be found in this differential's coimage_to_image_matrix.
     
     // TODO: make a FreeModule function that increments degree and mallocs space for these vectors.
-    FreeModuleHomomorphismAllocateSpaceForNewGenerators(current_differential, homology_size);
+    FreeModuleHomomorphism_AllocateSpaceForNewGenerators(current_differential, homology_size);
     for(uint i = 0; i < homology_size; i++){
         Vector slice; 
         vectImpl->slice(&slice, full_matrix->matrix[first_kernel_row + i], 0, target_dimension);
-        addGeneratorToFreeModuleHomomorphism(current_differential, degree,  &slice);
+        FreeModuleHomomorphism_addGenerator(current_differential, degree,  &slice);
     }
-    FreeModuleConstructBlockOffsetTable(source, degree);
+    FreeModule_ConstructBlockOffsetTable(source, degree);
 
     // Now the part of the matrix that contains interesting information is current_target_row * (target_dimension + source_dimension + kernel_size).
     // Allocate a matrix coimage_to_image with these dimensions.

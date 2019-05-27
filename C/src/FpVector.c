@@ -110,6 +110,7 @@ void initializeLimbBitIndexLookupTable(uint p){
 }
 
 LimbBitIndexPair getLimbBitIndexPair(uint p, uint idx){
+    assert(prime_to_index_map[p] != -1);
     return limbBitIndexLookupTable[prime_to_index_map[p]][idx];
 }
 
@@ -119,9 +120,9 @@ uint getVectorSize(uint p, uint dimension, uint offset){
     return size; // Need extra space for vector fields.
 }
 
-Vector* initializeVector(VectorInterface *interface, uint p, uint64 *container, uint64 *memory, uint dimension, uint offset){
+Vector *initializeVector(VectorInterface *interface, uint p, uint64 *container, uint64 *memory, uint dimension, uint offset){
     uint bit_length = getBitlength(p);
-    VectorStd * v = (VectorStd *) container;
+    VectorStd *v = (VectorStd *) container;
     v->interface = interface;
     v->p = p;
     v->dimension = dimension;
@@ -284,9 +285,10 @@ void setVectorEntry(Vector * vector, uint index, uint value){
 }
 
 void sliceVector(Vector * result, Vector * source, uint start, uint end){
-    assert(start <= end && end < source->dimension);
+    assert(start <= end && end <= source->dimension);
     VectorStd * r = (VectorStd*) result;
     VectorStd * s = (VectorStd*) source;
+    r->p = s->p;
     r->dimension = end - start;
     if(start == end){
         r->size = 0;
@@ -540,149 +542,13 @@ uint vectorToString(char * buffer, Vector * vector){
     return len;
 }
 
-void printVector(uint p, Vector * v){
+void printVector(Vector * v){
     char buffer[200];
     vectorToString(buffer, v);
     printf("%s\n", buffer);
 }
 
 
-
-/**/
-int main(int argc, char *argv[]){
-    // uint p = 3;
-    // uint bitmask = 3;
-    // uint dim = 49;
-    // uint num_vectors = 100;
-    // uint scale = 3;    
-    // uint num_repeats = 400;
-    
-    // initializePrime(p);
-    // uint arrays[num_vectors][dim];
-    // uint container_size = VectorGenericInterface.container_size;
-    // uint contents_size = VectorGenericInterface.getSize(p, dim, 0);
-    // uint64 vector_container_memory[container_size * num_vectors];
-    // uint64 vector_contents_memory[contents_size * num_vectors];
-    // uint64 * vector_container_ptr = vector_container_memory;
-    // uint64 * vector_contents_ptr = vector_contents_memory;
-    // Vector * vectors[num_vectors];
-    // for(uint i = 0; i < num_vectors; i++){
-    //     for(uint j = 0; j < dim; j++){
-    //         arrays[i][j] = modPLookup(p, rand() & bitmask);
-    //     }
-    // }
-    // for(uint i = 0; i < num_vectors; i++){
-    //     vectors[i] = VectorGenericInterface.initialize(p, vector_container_ptr, vector_contents_ptr, dim, 0);
-    //     vector_container_ptr += container_size;
-    //     vector_contents_ptr += contents_size;
-    // }
-    
-    // // for(uint i = 0; i < num_vectors; i++){
-    // //     packVector(vectors[i], arrays[i]);
-    // // }
-
-    // char buffer[1000];
-    // array_to_string(buffer, arrays[1], dim);
-    // printf("array:     %s\n", buffer);
-
-    // printf("Packing    ");
-    // packVector(vectors[1], arrays[1]);
-    // printf("\n");
-    // for(uint i = 0; i < dim; i++){
-    //     printf("%d ", getVectorEntry(vectors[1], i));
-    // }
-    // printf("\n");
-    // vectorToString(buffer, vectors[1]);
-    // printf("vector:    %s\n", buffer);
-    // unpackVector(arrays[1], vectors[1]);
-    // array_to_string(buffer, arrays[1], dim);
-    // printf("unpacked:  %s\n", buffer);
-
-    // return 0;
-    // sliceVector(vectors[1], vectors[0], 2, 4);
-
-
-    // Vector * v = constructVector(&VectorGenericInterface, p, 4 - 2, vectors[1]->offset);
-    // packVector(v, arrays[3]);
-    // vectorToString(buffer, v);
-    // printf("v:               %s\n", buffer);
-
-    // vectorToString(buffer, vectors[0]);
-    // printf("vector: %s\n", buffer);
-    // vectorToString(buffer, vectors[1]);
-    // printf("slice:           %s\n", buffer);
-    
-    // addVectorsGeneric(vectors[1], v, 1);
-    // vectorToString(buffer, vectors[1]);
-    // printf("sum:             %s\n", buffer);
-    // vectorToString(buffer, vectors[0]);
-    // printf("vector: %s\n", buffer);    
-
-    // printf("argc : %d\n", argc);
-    // if(argc > 1){
-    //     printf("Testing addVectors\n");
-    //     for(uint repeats = 0; repeats < num_repeats; repeats ++){
-    //         for(uint i = 0; i < num_vectors; i++){
-    //             for(uint j = 0; j < num_vectors; j++){
-    //                 if(i==j){
-    //                     continue;
-    //                 }
-    //                 addVectorsGeneric(p, vectors[i], vectors[j], scale);
-    //             }
-    //         }
-    //     }
-    // } else {
-    //     printf("Comparison\n");
-    //     for(uint repeats = 0; repeats < num_repeats; repeats ++){
-    //         for(uint i = 0; i < num_vectors; i++){
-    //             for(uint j = 0; j < num_vectors; j++){
-    //                 if(i==j){
-    //                     continue;
-    //                 }
-    //                 for(uint k = 0; k < dim; k++){
-    //                     arrays[i][k] += arrays[j][k] * scale;
-    //                     arrays[i][k] = arrays[i][k] % p;
-    //                 }
-    //             }
-    //         }   
-    //     }
-    // }
-
-    // array_to_string(buffer, arrays[0], 10);
-    // printf("%s\n\n", buffer);
-    // vectorToString(buffer, p, vectors[0]);
-    // printf("%s\n\n", buffer);
-    
-    // #define ROWS 5
-    // #define COLS 10
-    // uint p = 5;
-
-    #define ROWS 2
-    #define COLS 3
-    uint p = 3;
-    initializePrime(p);
-    Matrix *M = constructMatrix(&VectorGenericInterface, p, ROWS, COLS);
-    uint array[ROWS][COLS] = {{1,2,1},{1,1,0}};
-    // uint array[ROWS][COLS] = {
-    //     {1, 0, 0, 4, 0, 2, 1, 3, 0, 0},
-    //     {4, 3, 2, 3, 4, 3, 4, 2, 4, 4},
-    //     {3, 0, 1, 2, 3, 4, 4, 3, 1, 3},
-    //     {0, 1, 3, 0, 2, 1, 3, 0, 2, 3},
-    //     {4, 4, 3, 4, 2, 4, 0, 0, 0, 3}
-    // };
-    for(uint i = 0; i < ROWS; i++){
-        packVector(M->matrix[i], array[i]);
-    }        
-    printMatrix(M);  
-
-
-    int pivots[COLS];
-    rowReduce(M, pivots);
-    printf("M: ");
-    printMatrix(M);
-    return 0;
-}
-/**/
 
 uint getMatrixSize(VectorInterface * vectImpl, uint p, uint rows, uint cols){
     return sizeof(Matrix) + rows 
@@ -820,3 +686,140 @@ void rowReduce(Matrix *M, int *column_to_pivot_row){
     }
     return;
 }
+
+
+/**
+int main(int argc, char *argv[]){
+    // uint p = 3;
+    // uint bitmask = 3;
+    // uint dim = 49;
+    // uint num_vectors = 100;
+    // uint scale = 3;    
+    // uint num_repeats = 400;
+    
+    // initializePrime(p);
+    // uint arrays[num_vectors][dim];
+    // uint container_size = VectorGenericInterface.container_size;
+    // uint contents_size = VectorGenericInterface.getSize(p, dim, 0);
+    // uint64 vector_container_memory[container_size * num_vectors];
+    // uint64 vector_contents_memory[contents_size * num_vectors];
+    // uint64 * vector_container_ptr = vector_container_memory;
+    // uint64 * vector_contents_ptr = vector_contents_memory;
+    // Vector * vectors[num_vectors];
+    // for(uint i = 0; i < num_vectors; i++){
+    //     for(uint j = 0; j < dim; j++){
+    //         arrays[i][j] = modPLookup(p, rand() & bitmask);
+    //     }
+    // }
+    // for(uint i = 0; i < num_vectors; i++){
+    //     vectors[i] = VectorGenericInterface.initialize(p, vector_container_ptr, vector_contents_ptr, dim, 0);
+    //     vector_container_ptr += container_size;
+    //     vector_contents_ptr += contents_size;
+    // }
+    
+    // // for(uint i = 0; i < num_vectors; i++){
+    // //     packVector(vectors[i], arrays[i]);
+    // // }
+
+    // char buffer[1000];
+    // array_to_string(buffer, arrays[1], dim);
+    // printf("array:     %s\n", buffer);
+
+    // printf("Packing    ");
+    // packVector(vectors[1], arrays[1]);
+    // printf("\n");
+    // for(uint i = 0; i < dim; i++){
+    //     printf("%d ", getVectorEntry(vectors[1], i));
+    // }
+    // printf("\n");
+    // vectorToString(buffer, vectors[1]);
+    // printf("vector:    %s\n", buffer);
+    // unpackVector(arrays[1], vectors[1]);
+    // array_to_string(buffer, arrays[1], dim);
+    // printf("unpacked:  %s\n", buffer);
+
+    // return 0;
+    // sliceVector(vectors[1], vectors[0], 2, 4);
+
+
+    // Vector * v = constructVector(&VectorGenericInterface, p, 4 - 2, vectors[1]->offset);
+    // packVector(v, arrays[3]);
+    // vectorToString(buffer, v);
+    // printf("v:               %s\n", buffer);
+
+    // vectorToString(buffer, vectors[0]);
+    // printf("vector: %s\n", buffer);
+    // vectorToString(buffer, vectors[1]);
+    // printf("slice:           %s\n", buffer);
+    
+    // addVectorsGeneric(vectors[1], v, 1);
+    // vectorToString(buffer, vectors[1]);
+    // printf("sum:             %s\n", buffer);
+    // vectorToString(buffer, vectors[0]);
+    // printf("vector: %s\n", buffer);    
+
+    // printf("argc : %d\n", argc);
+    // if(argc > 1){
+    //     printf("Testing addVectors\n");
+    //     for(uint repeats = 0; repeats < num_repeats; repeats ++){
+    //         for(uint i = 0; i < num_vectors; i++){
+    //             for(uint j = 0; j < num_vectors; j++){
+    //                 if(i==j){
+    //                     continue;
+    //                 }
+    //                 addVectorsGeneric(p, vectors[i], vectors[j], scale);
+    //             }
+    //         }
+    //     }
+    // } else {
+    //     printf("Comparison\n");
+    //     for(uint repeats = 0; repeats < num_repeats; repeats ++){
+    //         for(uint i = 0; i < num_vectors; i++){
+    //             for(uint j = 0; j < num_vectors; j++){
+    //                 if(i==j){
+    //                     continue;
+    //                 }
+    //                 for(uint k = 0; k < dim; k++){
+    //                     arrays[i][k] += arrays[j][k] * scale;
+    //                     arrays[i][k] = arrays[i][k] % p;
+    //                 }
+    //             }
+    //         }   
+    //     }
+    // }
+
+    // array_to_string(buffer, arrays[0], 10);
+    // printf("%s\n\n", buffer);
+    // vectorToString(buffer, p, vectors[0]);
+    // printf("%s\n\n", buffer);
+    
+    // #define ROWS 5
+    // #define COLS 10
+    // uint p = 5;
+
+    #define ROWS 2
+    #define COLS 3
+    uint p = 3;
+    initializePrime(p);
+    Matrix *M = constructMatrix(&VectorGenericInterface, p, ROWS, COLS);
+    uint array[ROWS][COLS] = {{1,2,1},{1,1,0}};
+    // uint array[ROWS][COLS] = {
+    //     {1, 0, 0, 4, 0, 2, 1, 3, 0, 0},
+    //     {4, 3, 2, 3, 4, 3, 4, 2, 4, 4},
+    //     {3, 0, 1, 2, 3, 4, 4, 3, 1, 3},
+    //     {0, 1, 3, 0, 2, 1, 3, 0, 2, 3},
+    //     {4, 4, 3, 4, 2, 4, 0, 0, 0, 3}
+    // };
+    for(uint i = 0; i < ROWS; i++){
+        packVector(M->matrix[i], array[i]);
+    }        
+    printMatrix(M);  
+
+
+    int pivots[COLS];
+    rowReduce(M, pivots);
+    printf("M: ");
+    printMatrix(M);
+    return 0;
+}
+**/
