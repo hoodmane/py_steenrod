@@ -70,22 +70,19 @@ def c_constructMatrix(p, rows, columns):
         M = CSteenrod.constructMatrix2(p, rows, columns)
     else:
         M = CSteenrod.constructMatrixGeneric(p, rows, columns)
-    M.p = p
-    M.rows = rows
-    M.columns = columns
     return M
 
 def c_packMatrix(c_M, py_M):
-    for i in range(c_M.rows):
-        c_packVector(c_M[i], py_M[i])
+    for i in range(c_M.contents.rows):
+        c_packVector(c_M.contents.matrix[i], py_M[i])
 
 def c_unpackMatrix(c_M):
-    return [c_unpackVector(c_M[i]) for i in range(c_M.rows)]
+    return [c_unpackVector(c_M.contents.matrix[i]) for i in range(c_M.contents.rows)]
 
 def c_row_reduce(c_M):
-    array_type = c_int * c_M.columns
+    array_type = c_int * c_M.contents.columns
     pivots_array = array_type()
-    CSteenrod.rowReduce(c_M, pivots_array, c_M.rows)
+    CSteenrod.rowReduce(c_M, pivots_array, c_M.contents.rows)
     c_M.pivots = pivots_array
 
 def vector_to_C(p, vector):
@@ -100,15 +97,11 @@ def matrix_to_C(p, matrix):
     rows = len(matrix)
     columns = len(matrix[0])
     c_M = c_constructMatrix(p, rows, columns)
-    for i in range(rows):
-        c_M[i].dimension = columns
     c_packMatrix(c_M, matrix)
     return c_M
 
 def matrix_from_C(matrix):
     return c_unpackMatrix(matrix)
-
-
 
     
 def test_c_vector(p, dim):

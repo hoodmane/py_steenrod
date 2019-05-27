@@ -36,6 +36,20 @@ class c_VectorIterator(Structure):
         ("_bit_index", c_uint)
     ]
 
+# typedef struct {
+#     uint p;
+#     uint rows;
+#     uint columns;
+#     Vector ** matrix;
+# } Matrix;
+class c_Matrix(Structure):
+    _fields_ = [
+        ("p", c_uint),
+        ("rows", c_uint),
+        ("columns", c_uint),
+        ("matrix", POINTER(POINTER(c_Vector)))
+    ]
+
 def wrap_FpVector(CSteenrod):        
     # Vector * initializeVectorGeneric(uint p, uint64 * vector_container, uint64 * memory, uint dimension, uint offset);
     # Vector * constructVectorGeneric(uint p, uint dimension, uint offset);
@@ -106,12 +120,12 @@ def wrap_FpVector(CSteenrod):
     
     #Vector* constructMatrixGeneric(uint p, uint rows, uint cols);
     CSteenrod.constructMatrixGeneric.argtypes = [c_uint, c_uint, c_uint]
-    CSteenrod.constructMatrixGeneric.restype = POINTER(POINTER(c_Vector))
+    CSteenrod.constructMatrixGeneric.restype = POINTER(c_Matrix)
     
     #Vector* constructMatrix2(uint p, uint rows, uint cols);
     CSteenrod.constructMatrix2.argtypes = [c_uint, c_uint, c_uint]
-    CSteenrod.constructMatrix2.restype = POINTER(POINTER(c_Vector))
+    CSteenrod.constructMatrix2.restype = POINTER(c_Matrix)
 
 
     #void rowReduce(Vector **matrix, int * column_to_pivot_row, uint rows);
-    CSteenrod.rowReduce.argtypes = [POINTER(POINTER(c_Vector)), POINTER(c_int)]
+    CSteenrod.rowReduce.argtypes = [POINTER(c_Matrix), POINTER(c_int)]

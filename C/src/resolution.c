@@ -45,22 +45,29 @@ void generateOldKernelAndComputeNewKernel(Resolution * resolution, uint degree){
     uint rows = max(source_dimension, target_dimension);
     uint columns = padded_target_dimension + source_dimension + target_dimension;
     uint64 matrix_memory[getMatrixSize(vectImpl, p, rows, columns)];
-    Vector ** full_matrix = initializeMatrix(matrix_memory, vectImpl, p, rows, columns);
-    Vector * matrix[rows];
-    // For the first stage we just want the part of size padded_target_dimension + source_dimension.
-    for(uint i = 0; i < rows; i++){
-        vectImpl->slice(matrix[i], full_matrix[i], 0, padded_target_dimension + source_dimension);
+    Matrix *full_matrix = initializeMatrix(matrix_memory, vectImpl, p, rows, columns);
+    // For the first stage we just want the part of size source_dimension x (padded_target_dimension + source_dimension).
+    // Slice matrix out of full_matrix.
+    Matrix matrix_contents;
+    Matrix *matrix = &matrix_contents;
+    matrix->rows = source_dimension;
+    matrix->columns = padded_target_dimension + source_dimension; 
+    Vector *slice_matrix[rows];
+    matrix->matrix = slice_matrix;
+    for(uint i = 0; i < matrix->columns; i++){
+        vectImpl->slice(slice_matrix[i], full_matrix->matrix[i], 0, matrix->rows);
     }
+    FreeModuleConstructBlockOffsetTable(source, degree);
     getHomomorphismMatrix(matrix, current_differential, degree);
     // Write the identity matrix into the right block
     for(int i = 0; i < source_dimension; i++){
-       vectImpl->setEntry(matrix[i], target_dimension + i, 1);
+       vectImpl->setEntry(matrix->matrix[i], target_dimension + i, 1);
     }
     // Row reduce
     rows = source_dimension;
     columns = target_dimension + rows;
     int column_to_pivot_row[columns];
-    rowReduce(matrix, column_to_pivot_row, rows);
+    rowReduce(matrix, column_to_pivot_row);
 
     // Stage 1: Find kernel of current differential
     // Locate first kernel row
@@ -79,11 +86,10 @@ void generateOldKernelAndComputeNewKernel(Resolution * resolution, uint degree){
     }
 
     // Copy kernel matrix into kernel
-    kernel->dimension = kernel_size;
     for(uint row = 0; row < kernel_size; row++){
         Vector slice;
-        vectImpl->slice(&slice, matrix[first_kernel_row + row], padded_target_dimension, padded_target_dimension + source_dimension);
-        vectImpl->assign(kernel->kernel[row], &slice);
+        vectImpl->slice(&slice, matrix->matrix[first_kernel_row + row], padded_target_dimension, padded_target_dimension + source_dimension);
+        vectImpl->assign(kernel->kernel->matrix[row], &slice);
     }
     current_differential->kernel[degree] = kernel;
 
@@ -97,12 +103,12 @@ void generateOldKernelAndComputeNewKernel(Resolution * resolution, uint degree){
     for(uint i = 0; i < target_dimension; i++){
         if(column_to_pivot_row[i] < 0 && previous_kernel->column_to_pivot_row[i] >= 0){
             // Look up the vector that we're missing and add a generator hitting it.
-            Vector * kernel_vector = previous_kernel->kernel[i];
+            Vector * kernel_vector = previous_kernel->kernel->matrix[i];
             Vector slice; 
-            vectImpl->slice(&slice, full_matrix[current_target_row], 0, target_dimension);
+            vectImpl->slice(&slice, full_matrix->matrix[current_target_row], 0, target_dimension);
             vectImpl->assign(&slice, kernel_vector);
 
-            vectImpl->slice(&slice, full_matrix[current_target_row], padded_target_dimension, columns);
+            vectImpl->slice(&slice, full_matrix->matrix[current_target_row], padded_target_dimension, columns);
             vectImpl->setToZero(&slice);        
             vectImpl->setEntry(&slice, source_dimension + homology_size, 1);
             current_target_row++;
@@ -112,27 +118,28 @@ void generateOldKernelAndComputeNewKernel(Resolution * resolution, uint degree){
     free(previous_kernel); // This information can now be found in this differential's coimage_to_image_matrix.
     
     // TODO: make a FreeModule function that increments degree and mallocs space for these vectors.
-    FreeModuleAllocateSpaceForNewGenerators(current_differential, homology_size);
+    FreeModuleHomomorphismAllocateSpaceForNewGenerators(current_differential, homology_size);
     for(uint i = 0; i < homology_size; i++){
         Vector slice; 
-        vectImpl->slice(&slice, full_matrix[first_kernel_row + i], 0, target_dimension);
+        vectImpl->slice(&slice, full_matrix->matrix[first_kernel_row + i], 0, target_dimension);
         addGeneratorToFreeModuleHomomorphism(current_differential, degree,  &slice);
     }
+    FreeModuleConstructBlockOffsetTable(source, degree);
 
     // Now the part of the matrix that contains interesting information is current_target_row * (target_dimension + source_dimension + kernel_size).
     // Allocate a matrix coimage_to_image with these dimensions.
     uint coimage_to_image_rows = current_target_row;
     uint coimage_to_image_columns = padded_target_dimension + source_dimension + kernel_size;
-    Vector** coimage_to_image = constructMatrix(vectImpl, p, coimage_to_image_rows, coimage_to_image_columns);
+    Matrix *coimage_to_image = constructMatrix(vectImpl, p, coimage_to_image_rows, coimage_to_image_columns);
     current_differential->coimage_to_image_isomorphism[degree] = coimage_to_image;
     // Copy matrix contents to coimage_to_image
     for(uint i = 0; i < coimage_to_image_rows; i++) {
         Vector slice;
-        vectImpl->slice(&slice, full_matrix[i], 0, coimage_to_image_columns);
-        vectImpl->assign(coimage_to_image[i], &slice);
+        vectImpl->slice(&slice, full_matrix->matrix[i], 0, coimage_to_image_columns);
+        vectImpl->assign(coimage_to_image->matrix[i], &slice);
     }
     int useless_pivot_row_info[coimage_to_image_columns];
-    rowReduce(coimage_to_image, useless_pivot_row_info, coimage_to_image_rows);
+    rowReduce(coimage_to_image, useless_pivot_row_info);
     // TODO: assertion about contents of useless_pivot_row_info?
     // Should contain [0,1,2,3,...,n,-1,-1,-1,..., -1].
     resolution->internal_degree_to_resolution_stage[degree] ++;

@@ -14,26 +14,32 @@ def FiniteSteenrodModule_to_C(module):
     for (b, degree) in module.gens.items():
         basis_element_indices[b] = number_of_basis_elements_in_degree[degree]
         number_of_basis_elements_in_degree[degree] += 1
-    
-    c_list_of_ulongs_type = (max_degree + 1) * c_ulong
-    c_number_of_basis_elements_in_degree = c_list_of_ulongs_type(*number_of_basis_elements_in_degree)
-    
+    print("py: ", number_of_basis_elements_in_degree)
+    c_list_of_uints_type = (max_degree + 1) * c_uint
+    c_number_of_basis_elements_in_degree = c_list_of_uints_type(*number_of_basis_elements_in_degree)
+    print("num_deg:", [c_number_of_basis_elements_in_degree[i] for i in range(max_degree+1)])
+
+    print("Constructing Algebra")
     algebra = module.milnor_algebra
     cmilnor.construct_C_algebra(algebra)
     c_algebra = cast(module.milnor_algebra.c_algebra, POINTER(c_Algebra))
+    print("Generating Milnor Basis")
     cmilnor.c_GenerateMilnorBasis(module.milnor_algebra, max_degree)
+    print("Constructing Module")
     c_module = CSteenrod.constructFiniteDimensionalModule(c_algebra, max_degree, c_number_of_basis_elements_in_degree)
+    print("Adding actions to Module")
     for ((op, input), output) in M.milnor_actions.items():
         input_degree = M.gens[input]
         input_index = basis_element_indices[input]
         output_degree = output.degree()
-        output_vector_type = number_of_basis_elements_in_degree[output_degree] * c_ulong
+        output_vector_type = number_of_basis_elements_in_degree[output_degree] * c_uint
         output_vector = output_vector_type()
         for (b, coeff) in output.items():
             output_vector[basis_element_indices[b]] = coeff
         
         op_degree = output_degree - input_degree
         op_index = cmilnor.milnor_basis_elt_to_C_index(algebra, op)
+        print("Add action")
         CSteenrod.addActionToFiniteDimensionalModule(
             c_module, 
             op_degree, op_index,

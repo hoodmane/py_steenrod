@@ -108,16 +108,23 @@ void scaleVector2(Vector * target, uint c);
 uint vectorToString(char * buffer, Vector * v);
 void printVector(uint p, Vector * v);
 
+typedef struct {
+    uint p;
+    uint rows;
+    uint columns;
+    Vector ** matrix;
+} Matrix;
+
 uint getMatrixSize(VectorInterface * interface, uint p, uint rows, uint cols);
-Vector** initializeMatrix(uint64 * memory, VectorInterface * interface, uint p, uint rows, uint cols);
-Vector** constructMatrix(VectorInterface * interface, uint p, uint rows, uint cols);
+Matrix *initializeMatrix(uint64 * memory, VectorInterface * interface, uint p, uint rows, uint cols);
+Matrix *constructMatrix(VectorInterface * interface, uint p, uint rows, uint cols);
 
-Vector** constructMatrixGeneric(uint p, uint rows, uint cols);
-Vector** constructMatrix2(uint p, uint rows, uint cols);
+Matrix *constructMatrixGeneric(uint p, uint rows, uint cols);
+Matrix *constructMatrix2(uint p, uint rows, uint cols);
 
-uint matrixToString(char * buffer, Vector **M, uint rows);
-void printMatrix(Vector **matrix, uint rows);
+uint matrixToString(char * buffer, Matrix *M);
+void printMatrix(Matrix *matrix);
 
-void rowReduce(Vector **matrix, int * column_to_pivot_row, uint rows);
+void rowReduce(Matrix *M, int * column_to_pivot_row);
 
 #endif //C_FPVECTOR_H

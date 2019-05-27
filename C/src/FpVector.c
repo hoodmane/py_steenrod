@@ -511,7 +511,7 @@ void scaleVector2(Vector * target, uint coeff){
 }
 
 VectorInterface VectorGenericInterface = {
-    (sizeof(VectorStd) + 7)/8,
+    (sizeof(VectorStd) + sizeof(uint64) - 1)/sizeof(uint64),
     getEntriesPer64Bits, getVectorSize, initializeVectorGeneric,
     constructVectorGeneric, freeVector,    
     assignVector, setVectorToZero, packVector, unpackVector,
@@ -521,7 +521,7 @@ VectorInterface VectorGenericInterface = {
 };
 
 VectorInterface Vector2Interface = {
-    (sizeof(VectorStd) + 7)/8,
+    (sizeof(VectorStd) + sizeof(uint64) - 1)/sizeof(uint64),
     getEntriesPer64Bits, getVectorSize, initializeVector2,    
     constructVector2, freeVector,    
     assignVector, setVectorToZero, packVector, unpackVector,
@@ -661,7 +661,7 @@ int main(int argc, char *argv[]){
     #define COLS 3
     uint p = 3;
     initializePrime(p);
-    Vector ** M = constructMatrix(&VectorGenericInterface, p, ROWS, COLS);
+    Matrix *M = constructMatrix(&VectorGenericInterface, p, ROWS, COLS);
     uint array[ROWS][COLS] = {{1,2,1},{1,1,0}};
     // uint array[ROWS][COLS] = {
     //     {1, 0, 0, 4, 0, 2, 1, 3, 0, 0},
@@ -671,80 +671,90 @@ int main(int argc, char *argv[]){
     //     {4, 4, 3, 4, 2, 4, 0, 0, 0, 3}
     // };
     for(uint i = 0; i < ROWS; i++){
-        packVector(M[i], array[i]);
+        packVector(M->matrix[i], array[i]);
     }        
-    printMatrix(M, ROWS);  
+    printMatrix(M);  
 
 
     int pivots[COLS];
-    rowReduce(M, pivots, ROWS);
+    rowReduce(M, pivots);
     printf("M: ");
-    printMatrix(M, ROWS);
+    printMatrix(M);
     return 0;
 }
 /**/
 
 uint getMatrixSize(VectorInterface * vectImpl, uint p, uint rows, uint cols){
-    return rows 
+    return sizeof(Matrix) + rows 
         + rows * vectImpl->container_size 
         + rows * vectImpl->getSize(p, cols, 0);
 }
 
-Vector** initializeMatrix(uint64 * memory, VectorInterface * vectImpl, uint p, uint rows, uint cols)  {
+Matrix* initializeMatrix(uint64 * memory, VectorInterface * vectImpl, uint p, uint rows, uint columns)  {
     uint container_size = vectImpl->container_size;
-    uint vector_size = vectImpl->getSize(p, cols, 0);
-    Vector ** vector_ptr = (Vector**)memory;
-    uint64 * container_ptr = (uint64*)(memory + rows);
+    uint vector_size = vectImpl->getSize(p, columns, 0);
+    Matrix * matrix = (Matrix*)memory;
+    Vector ** vector_ptr = (Vector**)(matrix+1);
+    uint64 * container_ptr = (uint64*)(vector_ptr + rows);
     uint64 * values_ptr = container_ptr + rows * container_size;
+    matrix->p = p;
+    matrix->rows = rows;
+    matrix->columns = columns;
+    matrix->matrix = vector_ptr;
     for(int row = 0; row < rows; row++){
-        *vector_ptr = vectImpl->initialize(p, container_ptr, values_ptr, cols, 0);
+        *vector_ptr = vectImpl->initialize(p, container_ptr, values_ptr, columns, 0);
         vector_ptr ++;
         container_ptr += container_size;
         values_ptr += vector_size;
     }
-    return (Vector**)memory;
+    return matrix;
 }
 
-Vector** constructMatrix(VectorInterface * vectorImplementation, uint p, uint rows, uint cols)  {
-    uint64 * M = malloc(getMatrixSize(vectorImplementation, p, rows, cols) * sizeof(uint64));
-    return initializeMatrix(M, vectorImplementation, p, rows, cols);
+Matrix* constructMatrix(VectorInterface * vectorImplementation, uint p, uint rows, uint columns)  {
+    uint64 * M = malloc(getMatrixSize(vectorImplementation, p, rows, columns) * sizeof(uint64));
+    return initializeMatrix(M, vectorImplementation, p, rows, columns);
 }
 
-Vector** constructMatrixGeneric(uint p, uint rows, uint cols)  {
-    return constructMatrix(&VectorGenericInterface, p, rows, cols);
+Matrix* constructMatrixGeneric(uint p, uint rows, uint columns)  {
+    return constructMatrix(&VectorGenericInterface, p, rows, columns);
 }
 
-Vector** constructMatrix2(uint p, uint rows, uint cols)  {
-    return constructMatrix(&Vector2Interface, p, rows, cols);
+Matrix* constructMatrix2(uint p, uint rows, uint columns)  {
+    return constructMatrix(&Vector2Interface, p, rows, columns);
 }
 
-uint matrixToString(char * buffer, Vector **M, uint rows){
+uint matrixToString(char * buffer, Matrix *M){
     int len = 0;
     len += sprintf(buffer + len, "    [\n");
-    for(int i = 0; i < rows; i++){
+    for(int i = 0; i < M->rows; i++){
         len += sprintf(buffer + len, "        ");
-        len += vectorToString(buffer + len, M[i]);
+        len += vectorToString(buffer + len, M->matrix[i]);
         len += sprintf(buffer + len, ",\n");
     }
     len += sprintf(buffer + len, "    ]\n");
     return len;
 }
 
-void printMatrix(Vector **matrix, uint rows){
+void printMatrix(Matrix *matrix){
     char buffer[10000];
-    matrixToString(buffer, matrix, rows);
+    matrixToString(buffer, matrix);
     printf("%s\n", buffer);
 }
 
-void rowReduce(Vector ** matrix, int * column_to_pivot_row, uint rows){
-    VectorInterface * vectorImpl = matrix[0]->interface;
-    uint p = matrix[0]->p;
-    uint columns = matrix[0]->dimension;
+void rowReduce(Matrix *M, int *column_to_pivot_row){
+    Vector ** matrix = M->matrix;
+    uint p = M->p;
+    uint columns = M->columns;
+    uint rows = M->rows;
+    memset(column_to_pivot_row, -1, columns * sizeof(uint));
+    if(rows == 0){
+        return;
+    }
+    VectorInterface *vectorImpl = M->matrix[0]->interface;    
     VectorIterator rowIterators[rows];
     for(uint i = 0; i < rows; i++){
         rowIterators[i] = vectorImpl->getIterator(matrix[i]);
     }
-    memset(column_to_pivot_row, -1, columns * sizeof(uint));
     uint pivot = 0;
     for(uint pivot_column = 0; pivot_column < columns; pivot_column++){
         // Search down column for a nonzero entry.
@@ -764,7 +774,7 @@ void rowReduce(Vector ** matrix, int * column_to_pivot_row, uint rows){
         // Record position of pivot.
         column_to_pivot_row[pivot_column] = pivot_row;
 
-        printMatrix(matrix, rows);
+        // printMatrix(matrix, rows);
 
         // Pivot_row contains a row with a pivot in current column.
         // Swap pivot row up.
@@ -776,16 +786,16 @@ void rowReduce(Vector ** matrix, int * column_to_pivot_row, uint rows){
         rowIterators[pivot] = rowIterators[pivot_row];
         rowIterators[pivot_row] = temp_it;
 
-        printf("row(%d) <==> row(%d)\n", pivot, pivot_row);
-        printMatrix(matrix, rows);
+        // printf("row(%d) <==> row(%d)\n", pivot, pivot_row);
+        // printMatrix(matrix, rows);
 
         // Divide pivot row by pivot entry
         int c = rowIterators[pivot].value;
         int c_inv = inverse(p, c);
         vectorImpl->scale(matrix[pivot], c_inv);
 
-        printf("row(%d) *= %d\n", pivot, c_inv);
-        printMatrix(matrix, rows);
+        // printf("row(%d) *= %d\n", pivot, c_inv);
+        // printMatrix(matrix, rows);
         for(int i = 0; i < rows; i++){
             // Between pivot and pivot_row, we already checked that the pivot column is 0, so skip ahead a bit.
             if(i == pivot){
@@ -800,8 +810,8 @@ void rowReduce(Vector ** matrix, int * column_to_pivot_row, uint rows){
             // Do row operation
             vectorImpl->add(matrix[i], matrix[pivot], row_op_coeff);
 
-            printf("row(%d) <== row(%d) + %d * row(%d)\n", i, i, row_op_coeff, pivot);
-            printMatrix(matrix, rows);
+            // printf("row(%d) <== row(%d) + %d * row(%d)\n", i, i, row_op_coeff, pivot);
+            // printMatrix(matrix, rows);
         }
         pivot ++;
         for(uint i = 0; i < rows; i++){
