@@ -125,7 +125,7 @@ class Vector(dict):
         elif getattr(self, 'milnor_element', False) and callable(getattr(v, "milnor_act", None)):
             return v.milnor_act(self)
         else:
-            raise TypeError()
+            raise TypeError("Don't know how to multiply types %s and %s." % (type(self), type(v)))
 
     def __rmul__(self, v):
         """
@@ -209,7 +209,7 @@ class Vector(dict):
         """
         return str(self) == str(other)
 
-    def basis_elt_to_string(self, basis_elt):
+    def basis_elt_to_string(self, module, basis_elt):
         """
             This is overloaded by subclasses
         """

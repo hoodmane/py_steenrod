@@ -57,7 +57,7 @@ void generateOldKernelAndComputeNewKernel(Resolution * resolution, uint degree){
     for(uint i = 0; i < matrix->columns; i++){
         vectImpl->slice(slice_matrix[i], full_matrix->matrix[i], 0, matrix->rows);
     }
-    FreeModuleHomomorphism_getMatrix(matrix, current_differential, degree);
+    FreeModuleHomomorphism_getMatrix(current_differential, matrix, degree);
     // Write the identity matrix into the right block
     for(int i = 0; i < source_dimension; i++){
        vectImpl->setEntry(matrix->matrix[i], target_dimension + i, 1);

@@ -167,13 +167,6 @@ void FiniteDimensionalModule_actOnBasis(Module * this, Vector *result, uint coef
 }
 
 typedef struct {
-    uint operation_degree;
-    uint operation_index;
-    uint generator_degree;
-    uint generator_index;
-} FreeModuleOperationGeneratorPair;
-
-typedef struct {
     Module module;
     uint max_generator_degree;
     uint max_degree;
@@ -253,38 +246,6 @@ void FreeModule_actOnBasis(Module *this, Vector * result, uint coeff, uint op_de
     algebra_multiplyBasisElements(module->module.algebra, output_block, coeff, op_deg, op_idx, module_operation_degree, module_operation_index);
 }
 
-uint FreeModule_operationGeneratorToIndex(FreeModule *this, uint op_deg, uint op_idx, uint gen_deg, uint gen_idx){
-    FreeModuleInternal *module = (FreeModuleInternal *)this;
-    uint deg = op_deg + gen_deg;
-    assert(module->generator_to_index_table[deg]!=NULL);
-    uint block_idx = module->generator_to_index_table[deg][gen_deg][gen_idx];
-    return block_idx + op_idx;
-}
-
-// Run FreeModule_ConstructBlockOffsetTable(source, degree) before using this on an input in that degree
-void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism * f, Vector * result, uint coeff, uint input_degree, uint input_index){
-    VectorInterface * vectImpl = result->interface;
-    FreeModuleOperationGeneratorPair operation_generator = 
-        ((FreeModuleInternal*)f->source)->basis_element_to_opgen_table[input_degree][input_index];
-    uint operation_degree = operation_generator.operation_degree;
-    uint operation_index = operation_generator.operation_degree;
-    uint generator_degree = operation_generator.generator_degree;
-    uint generator_index = operation_generator.generator_index;
-
-    Vector * output_on_generator = f->outputs[generator_degree][generator_index];
-    for(
-        VectorIterator it = vectImpl->getIterator(output_on_generator);
-        it.has_more; 
-        it = vectImpl->stepIterator(it)
-    ){
-        if(it.value != 0){
-            uint c = modPLookup( output_on_generator->p, it.value*coeff);
-            module_actOnBasis(f->target, result, c, operation_degree, operation_index, generator_degree, it.index);
-        }
-    }
-
-}
-
 // Compute tables:
 //    basis element index     --> operator, generator pair
 //    a generator  --> where does that generator's block start?
@@ -337,6 +298,39 @@ void FreeModule_ConstructBlockOffsetTable(FreeModule * M, uint degree){
     assert((char*)basis_element_to_opgen_table == memory + total_size);
 }
 
+uint FreeModule_operationGeneratorToIndex(FreeModule *this, uint op_deg, uint op_idx, uint gen_deg, uint gen_idx){
+    FreeModuleInternal *module = (FreeModuleInternal *)this;
+    uint deg = op_deg + gen_deg;
+    assert(module->generator_to_index_table[deg]!=NULL);
+    uint block_idx = module->generator_to_index_table[deg][gen_deg][gen_idx];
+    return block_idx + op_idx;
+}
+
+FreeModuleOperationGeneratorPair FreeModule_indexToOpGen(FreeModule *this, uint degree, uint index){
+    FreeModuleInternal *module = (FreeModuleInternal*) this;
+    return module->basis_element_to_opgen_table[degree][index];
+}
+
+
+
+// FreeModuleHomomorphisms
+
+FreeModuleHomomorphism* FreeModuleHomomorphism_construct(FreeModule *source, Module *target, uint max_degree){
+    FreeModuleHomomorphism *f = malloc(
+        sizeof(FreeModuleHomomorphism) 
+        + (max_degree + 1) * sizeof(Vector**) // outputs
+        + (max_degree + 1) * sizeof(Matrix*)  // coimage_to_image_iso
+        + (max_degree + 1) * sizeof(Kernel*)  // kernel
+    );
+    f->source = source;
+    f->target = target;
+    f->max_computed_degree = -1;
+    f->outputs = (Vector***)(f + 1);
+    f->coimage_to_image_isomorphism = (Matrix**)(f->outputs + max_degree + 1);
+    f->kernel = (Kernel**)(f->outputs + max_degree + 1);
+    return f;
+}
+
 void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism * f, uint num_gens){
     FreeModuleInternal * module = (FreeModuleInternal*) f->source;
     VectorInterface * vectImpl = &module->module.algebra->vectorInterface;
@@ -361,8 +355,6 @@ void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism
     }
 }
 
-
-
 void FreeModuleHomomorphism_addGenerator(FreeModuleHomomorphism * f, uint degree, Vector * output){
     assert(f->max_computed_degree == degree);
     assert(output->dimension == module_getDimension(f->target, degree));
@@ -374,10 +366,37 @@ void FreeModuleHomomorphism_addGenerator(FreeModuleHomomorphism * f, uint degree
     f->source->number_of_generators_in_degree[degree]++;
 }
 
+// Run FreeModule_ConstructBlockOffsetTable(source, degree) before using this on an input in that degree
+void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism * f, Vector * result, uint coeff, uint input_degree, uint input_index){
+
+    VectorInterface * vectImpl = result->interface;
+    FreeModuleOperationGeneratorPair operation_generator = 
+        ((FreeModuleInternal*)f->source)->basis_element_to_opgen_table[input_degree][input_index];
+    uint operation_degree = operation_generator.operation_degree;
+    uint operation_index = operation_generator.operation_degree;
+    uint generator_degree = operation_generator.generator_degree;
+    uint generator_index = operation_generator.generator_index;
+
+    Vector * output_on_generator = f->outputs[generator_degree][generator_index];
+    for(
+        VectorIterator it = vectImpl->getIterator(output_on_generator);
+        it.has_more; 
+        it = vectImpl->stepIterator(it)
+    ){
+        if(it.value != 0){
+            uint c = modPLookup( output_on_generator->p, it.value*coeff);
+            module_actOnBasis(f->target, result, c, operation_degree, operation_index, generator_degree, it.index);
+        }
+    }
+}
+
+
 // result should be big enough to hold output (how big is that?)
-void FreeModuleHomomorphism_getMatrix(Matrix *result, FreeModuleHomomorphism *f, uint degree){
+// Well it should have dim(target) columns and dim(source) rows. I guess this is 
+// the transpose of the usual convention.
+void FreeModuleHomomorphism_getMatrix(FreeModuleHomomorphism *f, Matrix *result, uint degree){
     assert(module_getDimension(&f->source->module, degree) <= result->rows);
-    assert(module_getDimension(f->target, degree) <= result->rows);
+    assert(module_getDimension(f->target, degree) <= result->columns);
     // The shorter implementation if we do FreeModuleConstructBlockOffsetTable first.
     // Maybe we ought to do that...
     // for(int i = 0; i < module_getDimension(&f->source->module, degree); i++){

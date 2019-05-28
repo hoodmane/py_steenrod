@@ -59,6 +59,20 @@ class c_FreeModule(Structure):
     ]    
 
 # typedef struct {
+#     uint operation_degree;
+#     uint operation_index;
+#     uint generator_degree;
+#     uint generator_index;
+# } FreeModuleOperationGeneratorPair;
+class c_FreeModuleOperationGeneratorPair(Structure):
+    _fields_ = [
+        ("operation_degree", c_uint),
+        ("operation_index" , c_uint),
+        ("generator_degree", c_uint),
+        ("generator_index" , c_uint)
+    ]
+
+# typedef struct {
 #     uint dimension;
 #     uint * column_to_pivot_row;
 #     Vector ** kernel;
@@ -140,11 +154,25 @@ def wrap_modules(CSteenrod):
         = [POINTER(c_FreeModule), c_uint, c_uint, c_uint, c_uint]
     CSteenrod.FreeModule_operationGeneratorToIndex.restype = c_uint
 
-    # FreeModuleHomomorphism * constructFreeModuleHomomorphism(FreeModule * source, Module * target);
-    # void addGeneratorToFreeModuleHomomorphism(FreeModuleHomomorphism * f, uint gen_degree, Vector * output);
-    # void FreeModuleHomomorphism_apply_to_basis_element(FreeModuleHomomorphism * f, Vector * result, uint coeff, uint input_degree, uint input_index);
+    # FreeModuleOperationGeneratorPair FreeModule_indexToOpGen(FreeModule *this, uint degree, uint index)
+    CSteenrod.FreeModule_indexToOpGen.argtypes = [POINTER(c_FreeModule), c_uint, c_uint]
+    CSteenrod.FreeModule_indexToOpGen.restype  = c_FreeModuleOperationGeneratorPair
 
-    # void FreeModuleAllocateSpaceForNewGenerators(FreeModuleHomomorphism * f, uint num_gens);
+    # FreeModuleHomomorphism *FreeModuleHomomorphism_construct(FreeModule * source, Module * target, uint max_degree);
+    CSteenrod.FreeModuleHomomorphism_construct.argtypes = [POINTER(c_FreeModule), POINTER(c_Module), c_uint]
+    CSteenrod.FreeModuleHomomorphism_construct.restype = POINTER(c_FreeModuleHomomorphism)
+    
+    # void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism * f, uint num_gens);
+    CSteenrod.FreeModuleHomomorphism_AllocateSpaceForNewGenerators.argtypes = [POINTER(c_FreeModuleHomomorphism), c_uint]
 
-    # void getHomomorphismMatrix(Vector ** result, FreeModuleHomomorphism * f, uint degree);
-    # Kernel * constructKernel(VectorInterface * vectImpl, uint p, uint rows, uint columns);
+    # void FreeModuleHomomorphism_addGenerator(FreeModuleHomomorphism * f, uint gen_degree, Vector * output);
+    CSteenrod.FreeModuleHomomorphism_addGenerator.argtypes = [POINTER(c_FreeModuleHomomorphism), c_uint, POINTER(c_Vector)]
+
+    # void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism * f, Vector * result, uint coeff, uint input_degree, uint input_index);
+    CSteenrod.FreeModuleHomomorphism_applyToBasisElement.argtypes = [POINTER(c_FreeModuleHomomorphism), POINTER(c_Vector), c_uint, c_uint, c_uint]
+
+    # void FreeModuleHomomorphism_getMatrix(FreeModuleHomomorphism * f, Matrix *result, uint degree);
+    CSteenrod.FreeModuleHomomorphism_getMatrix.argtypes = [POINTER(c_FreeModuleHomomorphism), POINTER(c_Matrix), c_uint]
+
+    # Kernel * Kernel_construct(VectorInterface * vectImpl, uint p, uint rows, uint columns);
+    CSteenrod.Kernel_construct.argtypes = [c_void_p, c_uint, c_uint, c_uint]

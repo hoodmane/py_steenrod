@@ -53,15 +53,23 @@ typedef struct {
     uint *number_of_generators_in_degree;
 } FreeModule;
 
+typedef struct {
+    uint operation_degree;
+    uint operation_index;
+    uint generator_degree;
+    uint generator_index;
+} FreeModuleOperationGeneratorPair;
+
 FreeModule *FreeModule_construct(Algebra * algebra, uint max_generator_degree, uint max_degree);
 void FreeModule_free(FreeModule * module);
-
-void FreeModule_ConstructBlockOffsetTable(FreeModule * M, uint degree);
-uint FreeModule_operationGeneratorToIndex(FreeModule *this, uint op_deg, uint op_idx, uint gen_deg, uint gen_idx);
 
 bool FreeModule_computeBasis(Module* this, uint degree);
 uint FreeModule_getDimension(Module* this, uint degree);
 void FreeModule_actOnBasis(Module * this, Vector * result, uint coeff, uint op_degree, uint op_index, uint mod_degree, uint mod_idx);
+
+void FreeModule_ConstructBlockOffsetTable(FreeModule * M, uint degree);
+uint FreeModule_operationGeneratorToIndex(FreeModule *this, uint op_deg, uint op_idx, uint gen_deg, uint gen_idx);
+FreeModuleOperationGeneratorPair FreeModule_indexToOpGen(FreeModule * this, uint degree, uint index);
 
 typedef struct {
     uint *column_to_pivot_row;
@@ -71,20 +79,20 @@ typedef struct {
 typedef struct {
     FreeModule *source;
     Module *target;
-    Vector ***outputs;
+    Vector ***outputs; // degree --> input_idx --> output
     uint max_computed_degree;
     Matrix **coimage_to_image_isomorphism;
     Kernel **kernel; // This is redundant with the next module's coimage_to_image_iso
 } FreeModuleHomomorphism;
 //void initializeFreeModuleHomomorphism(FreeModuleHomomorphism * f, )
 
-FreeModuleHomomorphism *constructFreeModuleHomomorphism(FreeModule *source, Module *target);
+FreeModuleHomomorphism *FreeModuleHomomorphism_construct(FreeModule *source, Module *target, uint max_degree);
 void FreeModuleHomomorphism_addGenerator(FreeModuleHomomorphism *f, uint gen_degree, Vector *output);
 void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism *f, Vector *result, uint coeff, uint input_degree, uint input_index);
 
 void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism *f, uint num_gens);
 
-void FreeModuleHomomorphism_getMatrix(Matrix *result, FreeModuleHomomorphism *f, uint degree);
+void FreeModuleHomomorphism_getMatrix(FreeModuleHomomorphism *f, Matrix *result, uint degree);
 Kernel *Kernel_construct(VectorInterface *vectImpl, uint p, uint rows, uint columns);
 
 #endif //CSTEENROD_MODULES_H

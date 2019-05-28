@@ -568,179 +568,7 @@ class FiniteSteenrodModule:
         obj = self.to_json_obj()
         json_str = json.dumps(obj)
         write_file(file, json_str)
-
-
-class FreeSteenrodModuleElement(Vector):
-    def __init__(self, dictionary=None, *, module):
-        self.module = module
-        super(FreeSteenrodModuleElement, self).__init__(module.p, dictionary)
-
-    def adem_act(self, adem_elt):
-        return self.__ensure_adem().__adem_act_helper(adem_elt)
-
-    def milnor_act(self, milnor_elt):
-        return self.__ensure_milnor().__milnor_act_helper(milnor_elt)
-        
-    @linearextension    
-    def adem_to_milnor(module_basis_elt, *, module):
-        result = {}
-        (op, gen) = module_basis_elt
-        for (k, v) in op.items():
-            result[(k, gen)] = v
-        return result        
-
-    @linearextension    
-    def milnor_to_adem(module_basis_elt, *, module):
-        result = {}
-        (op, gen) = module_basis_elt
-        for (k, v) in op.items():
-            result[(k, gen)] = v
-        return result
-    
-    def __ensure_milnor(self):
-        if len(self) == 0:
-            return self
-        op = next(iter(self))
-        if isinstance(op, steenrod.MilnorElement):
-            return self
-        else:
-            return self.adem_to_milnor()    
-    
-    def __ensure_adem(self):
-        if len(self) == 0:
-            return self
-        op = next(iter(self))
-        if isinstance(op, steenrod.AdemElement):
-            return self
-        else:
-            return self.milnor_to_adem()
-
-
-    @linearextension
-    def __adem_act_helper(module_basis_elt, adem_basis_elt, *, module):
-        result = {}
-        (op, gen) = module_basis_elt
-        for (k, v) in (module.adem_algebra.get_basis_element(adem_basis_elt) * module.adem_algebra.get_basis_element(op)).items():
-            result[(module.adem_algebra.get_basis_element(k), gen)] = v
-        return result
-
-    @linearextension
-    def __milnor_act_helper(module_basis_elt, milnor_basis_elt, *, module):
-        result = {}
-        (op, gen) = module_basis_elt
-        for (k, v) in (module.milnor_algebra.get_basis_element(milnor_basis_elt) * op).items():
-            result[(module.milnor_algebra.get_basis_element(k), gen)] = v
-        return result
-
-    def basis_degree(self, b):
-        return self.module.gens[b[1]] + b[0].degree()
-        
-    def basis_elt_to_string(self, module, basis_elt):
-        result = ""
-        if basis_elt[0] != module.unit():
-            result += str(basis_elt[0]) + " "
-        result += basis_elt[1]        
-        return result
-        
-    
-class FreeSteenrodModule:
-    def __init__(self, *, p, name=None, generic=None):
-        self.p = p
-        self.name = name
-        if generic is None:
-            generic = p != 2
-        self.generic = generic
-        self.adem_algebra = steenrod.AdemAlgebra.getInstanceFromAlgebra(self)
-        self.milnor_algebra = steenrod.MilnorAlgebra.getInstanceFromAlgebra(self)
-        self.gens = {}
-    
-    def basis_degree(self, b):
-        return self.gens[b[1]] + b[0].degree()
-    
-    def add_generator(self, name, degree):
-        self.gens[name] = degree
-        elt = self.get_generator(name)
-        return elt
-
-    def get_generator(self, gen):
-        return FreeSteenrodModuleElement({(self.adem_algebra.unit(), gen) : 1}, module=self)
-    
-    def get_basis_element(self, op, gen):
-        if b not in self.gens:
-            raise ValueError("%s is not the name of a basis element" % b)
-        return FreeSteenrodModuleElement({(op, gen) : 1}, module=self)
-
-    def get_element(self, d):
-        return FreeSteenrodModuleElement(d, module=self)
-
-    def zero(self):
-        return FreeSteenrodModuleElement({}, module=self)
-
-    def __sq_act_on_basis(self, module_basis_elt, sq):
-        """Used for adem_basis_act which is extended to the general action."""
-        if sq == 0:
-            return self.get_element({ module_basis_elt : 1 })
-        actions = self.sq_actions
-        key = (sq, module_basis_elt)
-        return actions[key] if key in actions else {}
-
-    def __sq_act_on_vector(self, module_element, sq):
-        """Used for adem_basis_act which is extended to the general action."""
-        if sq == 0:
-            return module_element
-        result = module_element.module.zero()
-        for (module_basis_elt, coeff) in module_element.items():
-            output = self.__sq_act_on_basis(module_basis_elt, sq)
-            result.add_in_place(output, coeff)
-        return result
-
-    @staticmethod
-    def adem_basis_act(module_basis_elt, adem_basis_elt, *, module):
-        """
-            This is for handing to linearly_extend_map. The argument module will be filled by
-            basis_elt.algebra which will be a Steenrod_Module.
-            algebra -- will be this.
-        """
-        sqs = adem_basis_elt
-        if module.generic:
-            sqs = adem.adem_basis_elt_generic_map(
-                P_fn=lambda P: P,
-                b='b',
-                basis_elt=adem_basis_elt
-            )
-        sqs = sqs[::-1] # Reverse
-        module_vector = module.get_basis_element(module_basis_elt)
-        result = reduce(module.__sq_act_on_vector, sqs, module_vector)
-        return result
-
-
-class ModuleHomomorphism:
-    def __init__(self, source, target):
-        self.source = source
-        self.target = target
-        self.adem_algebra = source.adem_algebra
-        self.milnor_algebra = source.milnor_algebra
-        self.p = self.adem_algebra.p
-        self.generic = self.adem_algebra.generic
-        self.map = {}
-
-    def add_value(self, input, output):
-        if input not in self.source.gens:
-            raise ValueError("%s not a generator of source module %s" % (input,self.source))
-            
-        input_degree = self.source.gens[input]
-        output_degree = output.degree()
-        if input_degree != output_degree:
-            raise ValueError("Target %s not in the appropriate degree. Source %s is in degree %s but target %s is in degree %s" %
-                (output, input, input_degree, output, output_degree))
-        self.map[input] = output
-        
-    def __call__(self, input):
-        return ModuleHomomorphism.__apply(input, output_module = self.target, map = self.map)
-    
-    @linearextension
-    def __apply(input_basis_vector, *, module, map):
-        return input_basis_vector[0] * map[input_basis_vector[1]] 
+ 
 
 #    def ker(self, dim):
 #        for 
@@ -791,15 +619,15 @@ if __name__ == "__main__":
     M3.add_b_action("y4", y5)
     M3.validate()
     
-    M0 = FreeSteenrodModule(p=2)
-    x00 = M0.add_generator("x00", 0)
-    M1 = FreeSteenrodModule(p=2)
-    x11 = M1.add_generator("x11", 1)
-    x12 = M1.add_generator("x12", 2)
-    x14 = M1.add_generator("x14", 4)
-    x18 = M1.add_generator("x18", 8)
-    d1 = ModuleHomomorphism(M1, M0)
-    d1.add_value("x11", A.Sq(1)*x00)
-    d1.add_value("x12", A.Sq(2)*x00)
-    d1.add_value("x14", A.Sq(4)*x00)
-    d1.add_value("x18", A.Sq(8)*x00)
+    # M0 = FreeSteenrodModule(p=2)
+    # x00 = M0.add_generator("x00", 0)
+    # M1 = FreeSteenrodModule(p=2)
+    # x11 = M1.add_generator("x11", 1)
+    # x12 = M1.add_generator("x12", 2)
+    # x14 = M1.add_generator("x14", 4)
+    # x18 = M1.add_generator("x18", 8)
+    # d1 = ModuleHomomorphism(M1, M0)
+    # d1.add_value("x11", A.Sq(1)*x00)
+    # d1.add_value("x12", A.Sq(2)*x00)
+    # d1.add_value("x14", A.Sq(4)*x00)
+    # d1.add_value("x18", A.Sq(8)*x00)

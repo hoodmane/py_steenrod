@@ -43,7 +43,7 @@ def milnor_basis_elt_to_C_index(algebra, b):
     c_MBE = milnor_basis_elt_to_C(algebra, b)
     return CSteenrod.GetIndexFromMilnorBasisElement(algebra.c_algebra, c_MBE)
 
-def milnor_basis_elt_from_C(algebra, b):
+def milnor_basis_elt_from_C_MBE(algebra, b):
     bitstring = b.q_part
     q_part = ()
     i = 0
@@ -62,16 +62,18 @@ def milnor_basis_elt_from_C(algebra, b):
         b = tuple(p_part)
     return b
 
+def milnor_basis_elt_from_C_idx(algebra, degree, idx):
+    b = CSteenrod.GetMilnorBasisElementFromIndex(algebra.c_algebra, degree, idx)
+    return milnor_basis_elt_from_C_MBE(algebra, b)
+
 def milnor_elt_from_C(algebra, m):
     result = {}
     for i in range(m.dimension):
         entry = c_getVectorEntry(m, i)
         if entry == 0:
             continue
-        b = CSteenrod.GetMilnorBasisElementFromIndex(algebra.c_algebra, m.degree, i)
-        result[milnor_basis_elt_from_C(algebra, b)] = entry
+        result[milnor_basis_elt_from_C_idx(algebra, m.degree, b)] = entry
     return algebra.get_element(result)
-
 
 def C_basis(algebra, degree):
     if degree > algebra.c_max_degree:

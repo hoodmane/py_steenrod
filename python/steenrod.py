@@ -149,7 +149,11 @@ class AdemAlgebra:
         self.unit_monomial = (0,) if generic else ()
 
     def __repr__(self):
-        return "AdemAlgebra(p=%s, generic=%s)" % self.p, self.generic
+        result = "AdemAlgebra(p=%s" % self.p
+        if self.generic != (self.p != 2):
+            result += ", generic=" + self.generic
+        result += ")"
+        return result
         
     @staticmethod
     def getInstance(p, generic=None):
