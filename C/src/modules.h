@@ -57,6 +57,7 @@ FreeModule *FreeModule_construct(Algebra * algebra, uint max_generator_degree, u
 void FreeModule_free(FreeModule * module);
 
 void FreeModule_ConstructBlockOffsetTable(FreeModule * M, uint degree);
+uint FreeModule_operationGeneratorToIndex(FreeModule *this, uint op_deg, uint op_idx, uint gen_deg, uint gen_idx);
 
 bool FreeModule_computeBasis(Module* this, uint degree);
 uint FreeModule_getDimension(Module* this, uint degree);

@@ -186,7 +186,6 @@ typedef struct {
 } FreeModuleInternal;
 
 FreeModule * FreeModule_construct(Algebra * algebra, uint max_generator_degree, uint max_degree){
-    printf("FMC. max_gen_deg: %d, max_deg: %d\n", max_generator_degree, max_degree);
     FreeModuleInternal * module = malloc(
         sizeof(FreeModuleInternal) 
         + (max_degree + 1) * sizeof(uint) // number_of_generators_in_degree
@@ -242,11 +241,11 @@ void FreeModule_actOnBasis(Module *this, Vector * result, uint coeff, uint op_de
     uint module_operation_index = operation_generator.operation_index;
     uint generator_degree = operation_generator.generator_degree; 
     uint generator_index  = operation_generator.generator_index;
-
     // Now all of the output elements are going to be of the form s * x. Find where such things go in the output vector.
+    uint num_ops = algebra_getDimension(this->algebra, module_operation_degree + op_deg);
     uint output_block_min = module->generator_to_index_table[module_degree + op_deg][generator_degree][generator_index];
-    uint output_block_max = module->generator_to_index_table[module_degree + op_deg][generator_degree][generator_index + 1];
-    
+    uint output_block_max = output_block_min + num_ops;
+
     uint64 output_block_memory[this->algebra->vectorInterface.container_size];
     Vector *output_block = (Vector*)output_block_memory; 
     result->interface->slice(output_block, result, output_block_min, output_block_max);
@@ -257,6 +256,7 @@ void FreeModule_actOnBasis(Module *this, Vector * result, uint coeff, uint op_de
 uint FreeModule_operationGeneratorToIndex(FreeModule *this, uint op_deg, uint op_idx, uint gen_deg, uint gen_idx){
     FreeModuleInternal *module = (FreeModuleInternal *)this;
     uint deg = op_deg + gen_deg;
+    assert(module->generator_to_index_table[deg]!=NULL);
     uint block_idx = module->generator_to_index_table[deg][gen_deg][gen_idx];
     return block_idx + op_idx;
 }

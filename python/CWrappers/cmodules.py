@@ -94,30 +94,26 @@ def FreeModule_to_c(module, max_degree=None):
     c_module.py_module = module
     c_module.generator_indices = generator_indices
     c_module.index_to_generator = index_to_generator
-    c_module.c_milnor_algebra = cmilnor.makeCMilnorAlgebra(p=module.milnor_algebra.p, degree=max_degree+10)    
+    c_module.c_milnor_algebra = cmilnor.makeCMilnorAlgebra(p=module.milnor_algebra.p, degree=100)    
     return c_module
 
 def c_act_on_free_module(module, op, elt_op, element):
-    CSteenrod.FreeModule_ConstructBlockOffsetTable(module, element.degree())
     op_deg = op.degree()
+    elt_deg = element.degree() + elt_op.degree()
+    out_deg = elt_deg + op_deg
+    CSteenrod.FreeModule_ConstructBlockOffsetTable(module, elt_deg)
+    CSteenrod.FreeModule_ConstructBlockOffsetTable(module, out_deg)
     op_idx = cmilnor.milnor_basis_elt_to_C_index(module.c_milnor_algebra, next(iter(op)))
     (_, gen) = next(iter(element))
     elt_op_deg = elt_op.degree()
-    elt_op_idx = cmilnor.milnor_basis_elt_to_C_index(module.c_milnor_algebra, next(iter(op)))
+    elt_op_idx = cmilnor.milnor_basis_elt_to_C_index(module.c_milnor_algebra, next(iter(elt_op)))
     gen_deg = module.py_module.gens[gen]
     gen_idx = module.generator_indices[gen]
     elt_idx = CSteenrod.FreeModule_operationGeneratorToIndex(module, elt_op_deg, elt_op_idx, gen_deg, gen_idx)
-    elt_deg = elt_op_deg + gen_deg
-    output_degree = op_deg + elt_deg
-    
     module_cast = cast(module, POINTER(c_Module))
-    output_dimension = CSteenrod.FreeModule_getDimension(module_cast, output_degree)
-    print("hi")
-    print(output_degree, output_dimension)
+    output_dimension = CSteenrod.FreeModule_getDimension(module_cast, out_deg)
     c_result = cFpVector.construct_c_vector(module.py_module.p, output_dimension)
-    print(op_deg, op_idx, elt_deg, elt_idx)
     CSteenrod.FreeModule_actOnBasis(module_cast, c_result, 1, op_deg, op_idx, elt_deg, elt_idx)    
-    print("hi")
     result = cFpVector.vector_from_C(c_result)
     CSteenrod.freeVector(c_result)
     return result
