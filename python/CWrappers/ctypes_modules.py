@@ -86,12 +86,12 @@ class c_Kernel(Structure):
     ]
 
 # typedef struct {
-#     FreeModule * source;
-#     Module * target;
-#     Vector *** outputs;
+#     FreeModule *source;
+#     Module *target;
+#     Vector ***outputs; // degree --> input_idx --> output
 #     uint max_computed_degree;
-#     Vector *** coimage_to_image_isomorphism;
-#     Kernel ** kernel; // This is redundant with the next module's coimage_to_image_iso
+#     Matrix **coimage_to_image_isomorphism;
+#     Kernel **kernel; // This is redundant with the next module's coimage_to_image_iso
 # } FreeModuleHomomorphism;
 
 class c_FreeModuleHomomorphism(Structure):
@@ -100,7 +100,7 @@ class c_FreeModuleHomomorphism(Structure):
         ("target", POINTER(c_Module)),
         ("outputs", POINTER(POINTER(POINTER(c_Vector)))),
         ("max_computed_degree", c_uint),
-        ("coimage_to_image_isomorphism", POINTER(POINTER(POINTER(c_Vector)))),
+        ("coimage_to_image_isomorphism", POINTER(POINTER(c_Matrix))),
         ("kernel", POINTER(POINTER(c_Kernel)))
     ]
 

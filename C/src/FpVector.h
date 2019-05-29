@@ -129,6 +129,6 @@ void printMatrix(Matrix *matrix);
 uint Matrix_getSliceSize(uint rows);
 Matrix *Matrix_slice(Matrix *M, char *memory, uint row_min, uint row_max, uint column_min, uint column_max);
 
-void rowReduce(Matrix *M, int *column_to_pivot_row);
+void rowReduce(Matrix *M, int *column_to_pivot_row, uint, uint);
 
 #endif //C_FPVECTOR_H

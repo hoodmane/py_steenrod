@@ -20,6 +20,6 @@ typedef struct {
 
 Resolution *Resolution_construct(FiniteDimensionalModule *module, uint max_filtration, uint max_degree);
 void Resolution_step(Resolution *resolution, uint homological_degree, uint degree);
-void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uint homological_degree, uint degree);
+void Resolution_resolveThroughDegree(Resolution *res, uint degree);
 
 #endif // CSTEENROD_RESOLUTION_H

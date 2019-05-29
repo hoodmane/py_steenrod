@@ -156,7 +156,6 @@ Vector *initializeVectorGeneric(uint p, char *container, char *memory, uint dime
 // There is no case distinction between Vector2 and VectorGeneric for the functions that just 
 // get and set values.
 Vector *constructVector(VectorInterface *interface, uint p, uint dimension, uint offset){
-    uint bit_length = getBitlength(p);
     uint size = getVectorSize(p, dimension, offset);
     char *memory = malloc(
         sizeof(VectorStd) + size
@@ -627,7 +626,8 @@ Matrix *Matrix_slice(Matrix *M, char *memory, uint row_min, uint row_max, uint c
         matrix_ptr ++;
         vector_ptr++;
     }
-    assert(matrix_ptr == result->matrix + num_rows);
+    assert(matrix_ptr == (VectorStd **)(result->matrix + num_rows));
+    assert(vector_ptr == (VectorStd*)matrix_ptr + num_rows);
     return result;
 }
 
@@ -649,7 +649,24 @@ void printMatrix(Matrix *matrix){
     printf("%s\n", buffer);
 }
 
-void rowReduce(Matrix *M, int *column_to_pivot_row){
+void printMatrixSlice(Matrix *M, uint col_end, uint col_start){
+    for(uint i = 0; i < M->rows; i++){
+        char buffer[2000];
+        uint len = 0;
+        char slice_memory[Vector2Interface.container_size];
+        Vector *slice = (Vector*)slice_memory;
+        len += sprintf(buffer + len, "    ");
+        sliceVector(slice, M->matrix[i], 0, col_end);
+        len += vectorToString(buffer + len, slice);
+        len += sprintf(buffer + len, "; ");
+        sliceVector(slice, M->matrix[i], col_start, M->columns);
+        len += vectorToString(buffer + len, slice);
+        printf("%s\n", buffer);
+    }
+    printf("\n");
+}
+
+void rowReduce(Matrix *M, int *column_to_pivot_row, uint col_end, uint col_start){
     Vector **matrix = M->matrix;
     uint p = M->p;
     uint columns = M->columns;
@@ -680,9 +697,11 @@ void rowReduce(Matrix *M, int *column_to_pivot_row){
             continue;
         }
         // Record position of pivot.
-        column_to_pivot_row[pivot_column] = pivot_row;
+        column_to_pivot_row[pivot_column] = pivot;
 
-        // printMatrix(matrix, rows);
+        if(col_end > 0){
+            printMatrixSlice(M, col_end, col_start);
+        }
 
         // Pivot_row contains a row with a pivot in current column.
         // Swap pivot row up.
@@ -694,16 +713,20 @@ void rowReduce(Matrix *M, int *column_to_pivot_row){
         rowIterators[pivot] = rowIterators[pivot_row];
         rowIterators[pivot_row] = temp_it;
 
-        // printf("row(%d) <==> row(%d)\n", pivot, pivot_row);
-        // printMatrix(matrix, rows);
+        if(col_end > 0){
+            printf("row(%d) <==> row(%d)\n", pivot, pivot_row);
+            printMatrixSlice(M, col_end, col_start);
+        }
 
         // Divide pivot row by pivot entry
         int c = rowIterators[pivot].value;
         int c_inv = inverse(p, c);
         vectorImpl->scale(matrix[pivot], c_inv);
 
-        // printf("row(%d) *= %d\n", pivot, c_inv);
-        // printMatrix(matrix, rows);
+        if(col_end > 0){
+            printf("row(%d) *= %d\n", pivot, c_inv);
+            printMatrixSlice(M, col_end, col_start);
+        }
         for(int i = 0; i < rows; i++){
             // Between pivot and pivot_row, we already checked that the pivot column is 0, so skip ahead a bit.
             if(i == pivot){
@@ -717,9 +740,10 @@ void rowReduce(Matrix *M, int *column_to_pivot_row){
             }
             // Do row operation
             vectorImpl->add(matrix[i], matrix[pivot], row_op_coeff);
-
-            // printf("row(%d) <== row(%d) + %d * row(%d)\n", i, i, row_op_coeff, pivot);
-            // printMatrix(matrix, rows);
+            if(col_end > 0){
+                printf("row(%d) <== row(%d) + %d * row(%d)\n", i, i, row_op_coeff, pivot);
+                printMatrixSlice(M, col_end, col_start);
+            }
         }
         pivot ++;
         for(uint i = 0; i < rows; i++){
@@ -839,12 +863,17 @@ int main(int argc, char *argv[]){
     // #define COLS 10
     // uint p = 5;
 
-    #define ROWS 2
-    #define COLS 3
-    uint p = 3;
+    #define ROWS 4
+    #define COLS 9
+    uint p = 2;
     initializePrime(p);
     Matrix *M = constructMatrix(&VectorGenericInterface, p, ROWS, COLS);
-    uint array[ROWS][COLS] = {{1,2,1},{1,1,0}};
+    uint array[ROWS][COLS] =     {
+        {1, 1, 0, 0, 0,   1, 0, 0, 0},
+        {0, 0, 0, 0, 0,   0, 1, 0, 0},
+        {0, 0, 0, 1, 0,   0, 0, 1, 0},
+        {1, 0, 0, 0, 0,   0, 0, 0, 1}
+    };
     // uint array[ROWS][COLS] = {
     //     {1, 0, 0, 4, 0, 2, 1, 3, 0, 0},
     //     {4, 3, 2, 3, 4, 3, 4, 2, 4, 4},
@@ -859,9 +888,9 @@ int main(int argc, char *argv[]){
 
 
     int pivots[COLS];
-    rowReduce(M, pivots);
+    rowReduce(M, pivots, COLS - ROWS, COLS - ROWS);
     printf("M: ");
     printMatrix(M);
     return 0;
 }
-**/
+/**/

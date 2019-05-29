@@ -795,7 +795,7 @@ void MilnorProduct(Algebra *public_algebra, Vector *result, uint coeff, uint r_d
     } else {
         MilnorProductEven(algebra, product_array, r, s);
     }
-    public_algebra->vectorInterface.pack(result, product_array);
+    public_algebra->vectorInterface.addArray(result, product_array, 1);
 }
 /**/
 

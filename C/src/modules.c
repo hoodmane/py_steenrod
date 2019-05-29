@@ -181,6 +181,7 @@ typedef struct {
     uint ***generator_to_index_table;
 } FreeModuleInternal;
 
+// TODO: figure out why number_of_generators_in_degree sometimes contains garbage.
 FreeModule *FreeModule_construct(Algebra *algebra, uint max_generator_degree, uint max_degree){
     FreeModuleInternal *module = malloc(
         sizeof(FreeModuleInternal) 
@@ -207,6 +208,7 @@ FreeModule *FreeModule_construct(Algebra *algebra, uint max_generator_degree, ui
     module->basis_element_to_opgen_table = (FreeModuleOperationGeneratorPair**)(
         module->generator_to_index_table + (max_degree + 1)
     );
+    memset(module->number_of_generators_in_degree, 0, (max_generator_degree + 1) * sizeof(uint));
     return (FreeModule*)module;
 }
 
@@ -230,6 +232,7 @@ uint FreeModule_getDimension(Module *this, uint degree){
 
 // Run FreeModule_ConstructBlockOffsetTable(module, degree) before using this on an input in that degree
 void FreeModule_actOnBasis(Module *this, Vector *result, uint coeff, uint op_deg, uint op_idx, uint module_degree, uint module_idx){
+    assert(op_idx < algebra_getDimension(this->algebra, op_deg));
     assert(FreeModule_getDimension(this, op_deg + module_degree) <= result->dimension);
     FreeModuleInternal *module = (FreeModuleInternal *) this;
     FreeModuleOperationGeneratorPair operation_generator = module->basis_element_to_opgen_table[module_degree][module_idx];
@@ -370,14 +373,15 @@ void FreeModuleHomomorphism_setOutput(FreeModuleHomomorphism *f, uint input_degr
 
 // Run FreeModule_ConstructBlockOffsetTable(source, degree) before using this on an input in that degree
 void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism *f, Vector *result, uint coeff, uint input_degree, uint input_index){
+    assert(((FreeModuleInternal*)f->source)->basis_element_to_opgen_table[input_degree] != NULL);
+    assert(input_index < FreeModule_getDimension((Module*)f->source, input_degree));
     VectorInterface *vectImpl = result->interface;
     FreeModuleOperationGeneratorPair operation_generator = 
         ((FreeModuleInternal*)f->source)->basis_element_to_opgen_table[input_degree][input_index];
     uint operation_degree = operation_generator.operation_degree;
-    uint operation_index = operation_generator.operation_degree;
+    uint operation_index = operation_generator.operation_index;
     uint generator_degree = operation_generator.generator_degree;
     uint generator_index = operation_generator.generator_index;
-
     Vector *output_on_generator = f->outputs[generator_degree][generator_index];
     for(
         VectorIterator it = vectImpl->getIterator(output_on_generator);
@@ -401,7 +405,7 @@ void FreeModuleHomomorphism_getMatrix(FreeModuleHomomorphism *f, Matrix *result,
     // The shorter implementation if we do FreeModuleConstructBlockOffsetTable first.
     // Maybe we ought to do that...
     // for(int i = 0; i < module_getDimension(&f->source->module, degree); i++){
-    //     FreeModuleHomomorphism_apply_to_basis_element(f, result->matrix[i], 1, degree, i);
+    //     FreeModuleHomomorphism_applyToBasisElement(f, result->matrix[i], 1, degree, i);
     // }    
     FreeModule *source = f->source;
     Algebra *algebra = source->module.algebra;
