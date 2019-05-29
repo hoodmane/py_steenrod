@@ -17,14 +17,14 @@
 #define MAX_DIMENSION 10000
 
 
-void printMilnorBasisElement(MilnorBasisElement * b){
+void printMilnorBasisElement(MilnorBasisElement *b){
     char buffer[1000];
     milnor_basis_element_to_string(buffer, b);
 }
 
 
-MilnorAlgebra * constructMilnorAlgebra(uint p, bool generic, Profile *profile){
-    MilnorAlgebraInternal * algebra = malloc(sizeof(MilnorAlgebraInternal));
+MilnorAlgebra *constructMilnorAlgebra(uint p, bool generic, Profile *profile){
+    MilnorAlgebraInternal *algebra = malloc(sizeof(MilnorAlgebraInternal));
     initializePrime(p);
     algebra->public_algebra.p = p;
     algebra->public_algebra.algebra.p = p;
@@ -56,18 +56,18 @@ MilnorAlgebra * constructMilnorAlgebra(uint p, bool generic, Profile *profile){
     return (MilnorAlgebra*)algebra;
 }
 
-void freeMilnorAlgebra(MilnorAlgebra* algebra){
+void freeMilnorAlgebra(MilnorAlgebra *algebra){
     freeMilnorBasis(algebra);
     free(algebra);
 }
 
-uint GetMilnorAlgebraDimension(Algebra * public_algebra, uint degree) {
-    MilnorAlgebraInternal * algebra = (MilnorAlgebraInternal *) public_algebra;
+uint GetMilnorAlgebraDimension(Algebra *public_algebra, uint degree) {
+    MilnorAlgebraInternal *algebra = (MilnorAlgebraInternal *) public_algebra;
     return algebra->basis_table[degree].length;
 }
 
-MilnorBasisElement_list GetMilnorAlgebraBasis(MilnorAlgebra * public_algebra, uint degree){
-    MilnorAlgebraInternal * algebra = (MilnorAlgebraInternal *) public_algebra;
+MilnorBasisElement_list GetMilnorAlgebraBasis(MilnorAlgebra *public_algebra, uint degree){
+    MilnorAlgebraInternal *algebra = (MilnorAlgebraInternal *) public_algebra;
     return algebra->basis_table[degree];
 }
 
@@ -77,9 +77,9 @@ MilnorBasisElement_list GetMilnorAlgebraBasis(MilnorAlgebra * public_algebra, ui
 // Generate the PTable through degree new_max_degree.
 // This is only needed in order to help generate the basis table, so it can in principle be deallocated immediately afterwards.
 // However, we keep it around so that if we need to extend the table we don't have to redo our work.
-void generateMilnorBasisPpartTable(MilnorAlgebraInternal * algebra, uint new_max_degree) {
+void generateMilnorBasisPpartTable(MilnorAlgebraInternal *algebra, uint new_max_degree) {
     uint p = algebra->public_algebra.p;
-    uint * xi_degrees = getXiDegrees(p);
+    uint *xi_degrees = getXiDegrees(p);
 
     uint profile_list[MAX_XI_TAU];
     for(uint idx = 0;  idx < MAX_XI_TAU; idx ++){
@@ -93,13 +93,13 @@ void generateMilnorBasisPpartTable(MilnorAlgebraInternal * algebra, uint new_max
     algebra -> P_table_max_degree = new_max_degree;
     algebra -> P_table = realloc(algebra -> P_table , (new_max_degree + 1) * sizeof(P_part_list));
     algebra -> P_table_by_P_length = realloc(algebra -> P_table_by_P_length, (new_max_degree + 1) * sizeof(P_part_list[MAX_XI_TAU]));
-    P_part_list* degree_table = algebra->P_table;
-    P_part_list** tau_table = algebra->P_table_by_P_length;
+    P_part_list *degree_table = algebra->P_table;
+    P_part_list **tau_table = algebra->P_table_by_P_length;
 
     // If old_max_degree is 0 we need to set up the base case for our recursion.
     // In degree 0 there's a single partition of length 0.
     if(old_max_degree == 0){
-        uint * p_part = calloc(1, sizeof(uint));
+        uint *p_part = calloc(1, sizeof(uint));
         // In order to deallocate correctly, the zero dimensional part has to be the same as the rest.
         // degree_table and tau_table share P_parts, each P_part appears once in degree_table and once in tau_table/
         // degree_table and tau_table DO NOT share P_part_lists, so even though the same list appears in each,
@@ -175,13 +175,13 @@ void generateMilnorBasisPpartTable(MilnorAlgebraInternal * algebra, uint new_max
 }
 
 // Free the PpartTable.
-void freeMilnorBasisPpartTable(MilnorAlgebraInternal * algebra){
+void freeMilnorBasisPpartTable(MilnorAlgebraInternal *algebra){
     if(algebra->P_table == NULL){
         return;
     }
     uint max_degree = algebra -> P_table_max_degree;
-    P_part_list* degree_table = algebra->P_table;
-    P_part_list** tau_table = algebra->P_table_by_P_length;
+    P_part_list *degree_table = algebra->P_table;
+    P_part_list **tau_table = algebra->P_table_by_P_length;
     for(uint current_degree = 0; current_degree <= max_degree; current_degree++){
         // Now populate the tables.
         // Loop over the highest degree xi_i in the new monomial
@@ -207,10 +207,10 @@ void freeMilnorBasisPpartTable(MilnorAlgebraInternal * algebra){
 // Generate the QTable through degree new_max_degree.
 // This is only needed in order to help generate the basis table, so it could in principle be deallocated immediately afterwards.
 // However, we keep it around so that if we need to extend the table we don't have to redo our work.
-void generateMilnorBasisQpartTable(MilnorAlgebraInternal * algebra, uint new_max_degree){
+void generateMilnorBasisQpartTable(MilnorAlgebraInternal *algebra, uint new_max_degree){
     uint p = algebra->public_algebra.p;
     uint q = 2*(p-1);
-    uint * tau_degrees = getTauDegrees(p);
+    uint *tau_degrees = getTauDegrees(p);
     uint profile = algebra->public_algebra.profile.q_part;
 
     uint old_max_tau = algebra->Q_table_max_tau;
@@ -238,7 +238,7 @@ void generateMilnorBasisQpartTable(MilnorAlgebraInternal * algebra, uint new_max
     // of length i and these land in residue class i % q.
     // We could replace this with a buffer...
     uint residue_bin_length[q];
-    memset(residue_bin_length, 0, q* sizeof(uint));
+    memset(residue_bin_length, 0, q * sizeof(uint));
     Q_part residue_bin_buffer[q][MAX_DIMENSION];
 
     if(old_max_tau == 0) {
@@ -279,9 +279,9 @@ void generateMilnorBasisQpartTable(MilnorAlgebraInternal * algebra, uint new_max
         residue_bin_length[residue]++;
     }
 
-    Q_part_list* table = algebra->Q_table;
+    Q_part_list *table = algebra->Q_table;
     for (int residue = 0; residue < q; residue++) {
-        table[residue].list = (Q_part*) realloc(table[residue].list, (table[residue].length + residue_bin_length[residue])* sizeof(Q_part));
+        table[residue].list = (Q_part*) realloc(table[residue].list, (table[residue].length + residue_bin_length[residue]) * sizeof(Q_part));
         memcpy(
                 table[residue].list + table[residue].length,
                 residue_bin_buffer[residue],
@@ -293,10 +293,10 @@ void generateMilnorBasisQpartTable(MilnorAlgebraInternal * algebra, uint new_max
 
 // Free the QpartTable.
 // Thankfully a lot less elaborate than freeing PpartTable.
-void freeMilnorBasisQPartTable(MilnorAlgebraInternal * algebra){
+void freeMilnorBasisQPartTable(MilnorAlgebraInternal *algebra){
     uint p = algebra->public_algebra.p;
     uint q = 2*p - 2;
-    Q_part_list * table = algebra->Q_table;
+    Q_part_list *table = algebra->Q_table;
     for (int residue = 0; residue < q; residue++) {
         free(table[residue].list);
     }
@@ -305,8 +305,8 @@ void freeMilnorBasisQPartTable(MilnorAlgebraInternal * algebra){
     algebra->Q_table = NULL;
 }
 
-bool GenerateMilnorBasis(Algebra * public_algebra, uint max_degree) {
-    MilnorAlgebraInternal * algebra = (MilnorAlgebraInternal*) public_algebra;
+bool GenerateMilnorBasis(Algebra *public_algebra, uint max_degree) {
+    MilnorAlgebraInternal *algebra = (MilnorAlgebraInternal*) public_algebra;
     uint p = algebra->public_algebra.p;
     initializePrime(p);
     uint old_max_degree = algebra->public_algebra.max_degree;
@@ -319,7 +319,7 @@ bool GenerateMilnorBasis(Algebra * public_algebra, uint max_degree) {
             algebra->basis_element_to_index_map,
             (max_degree + 1) * sizeof(khash_t(monomial_index_map) *)
         );
-    khash_t(monomial_index_map) ** name_table = algebra->basis_element_to_index_map;
+    khash_t(monomial_index_map) **name_table = algebra->basis_element_to_index_map;
     for(uint k = old_max_degree + 1; k <= max_degree; k++){
         name_table[k] = kh_init(monomial_index_map);
     }
@@ -331,10 +331,10 @@ bool GenerateMilnorBasis(Algebra * public_algebra, uint max_degree) {
     return true;
 }
 
-void freeMilnorBasis(MilnorAlgebra * public_algebra){
-    MilnorAlgebraInternal * algebra = (MilnorAlgebraInternal*) public_algebra;
-    MilnorBasisElement_list * table = algebra->basis_table;
-    khash_t(monomial_index_map) ** name_table = algebra->basis_element_to_index_map;
+void freeMilnorBasis(MilnorAlgebra *public_algebra){
+    MilnorAlgebraInternal *algebra = (MilnorAlgebraInternal*) public_algebra;
+    MilnorBasisElement_list *table = algebra->basis_table;
+    khash_t(monomial_index_map) **name_table = algebra->basis_element_to_index_map;
     for(uint degree = 0; degree <= algebra->public_algebra.max_degree; degree++) {
         free(table[degree].list);
         khint_t bin;
@@ -357,11 +357,11 @@ void freeMilnorBasis(MilnorAlgebra * public_algebra){
     free(algebra->basis_table);
 }
 
-void GenerateMilnorBasis2(MilnorAlgebraInternal * algebra, uint old_max_degree, uint new_max_degree){
+void GenerateMilnorBasis2(MilnorAlgebraInternal *algebra, uint old_max_degree, uint new_max_degree){
     generateMilnorBasisPpartTable(algebra, new_max_degree);
 
-    MilnorBasisElement_list * table = algebra->basis_table;
-    khash_t(monomial_index_map) ** name_table = algebra->basis_element_to_index_map;
+    MilnorBasisElement_list *table = algebra->basis_table;
+    khash_t(monomial_index_map) **name_table = algebra->basis_element_to_index_map;
 
     MilnorBasisElement_list current_degree_list;
     for(uint degree = old_max_degree + 1; degree <= new_max_degree; degree++){
@@ -388,13 +388,13 @@ void GenerateMilnorBasis2(MilnorAlgebraInternal * algebra, uint old_max_degree, 
 
 // Get the basis in degree n for the generic steenrod algebra at the prime p.
 // We just put together the "even part" of the basis and the "Q part".
-void GenerateMilnorBasisGeneric(MilnorAlgebraInternal * algebra, uint old_max_degree, uint new_max_degree){
+void GenerateMilnorBasisGeneric(MilnorAlgebraInternal *algebra, uint old_max_degree, uint new_max_degree){
     uint p = algebra->public_algebra.p;
     uint q = 2 * (p - 1);
     generateMilnorBasisPpartTable(algebra, new_max_degree / q);
     generateMilnorBasisQpartTable(algebra, new_max_degree);
-    MilnorBasisElement_list* table = algebra->basis_table;
-    khash_t(monomial_index_map) ** name_table = algebra->basis_element_to_index_map;
+    MilnorBasisElement_list *table = algebra->basis_table;
+    khash_t(monomial_index_map) **name_table = algebra->basis_element_to_index_map;
 
     for(uint degree = old_max_degree + 1; degree <= new_max_degree; degree++){
         // p_deg records the desired degree of the P part of the basis element.
@@ -436,14 +436,14 @@ void GenerateMilnorBasisGeneric(MilnorAlgebraInternal * algebra, uint old_max_de
 
 
 
-MilnorBasisElement GetMilnorBasisElementFromIndex(MilnorAlgebra * public_algebra, uint degree, uint idx) {
-    MilnorAlgebraInternal * algebra = (MilnorAlgebraInternal*) public_algebra;
+MilnorBasisElement GetMilnorBasisElementFromIndex(MilnorAlgebra *public_algebra, uint degree, uint idx) {
+    MilnorAlgebraInternal *algebra = (MilnorAlgebraInternal*) public_algebra;
     return algebra->basis_table[degree].list[idx];
 }
 
-uint GetIndexFromMilnorBasisElement(MilnorAlgebra * public_algebra, MilnorBasisElement b){
-    MilnorAlgebraInternal * algebra = (MilnorAlgebraInternal*) public_algebra;
-    kh_monomial_index_map_t * map = algebra->basis_element_to_index_map[b.q_degree + b.p_degree];
+uint GetIndexFromMilnorBasisElement(MilnorAlgebra *public_algebra, MilnorBasisElement b){
+    MilnorAlgebraInternal *algebra = (MilnorAlgebraInternal*) public_algebra;
+    kh_monomial_index_map_t *map = algebra->basis_element_to_index_map[b.q_degree + b.p_degree];
     char key[200];
     milnor_basis_element_to_key(key, &b);
     khint_t bin = kh_get(monomial_index_map, map, key);
@@ -555,7 +555,7 @@ int min(int a, int b){
 
 // Handles the multiplication in the even subalgebra of the Steenrod algebra P.
 // When p = 2, this is isomorphic to the whole Steenrod algebra so this method does everything.
-void MilnorProductEven(MilnorAlgebraInternal * algebra, uint * result, MilnorBasisElement r_elt, MilnorBasisElement s_elt){   
+void MilnorProductEven(MilnorAlgebraInternal *algebra, uint *result, MilnorBasisElement r_elt, MilnorBasisElement s_elt){   
     uint p = algebra->public_algebra.p;
     P_part r, s;
     r.degree = r_elt.p_degree;
@@ -566,7 +566,7 @@ void MilnorProductEven(MilnorAlgebraInternal * algebra, uint * result, MilnorBas
     s.p_part = s_elt.p_part;
     uint output_degree = (r_elt.p_degree + s_elt.p_degree);
     uint output_dimension = algebra->basis_table[output_degree].length;
-    memset(result, 0, output_dimension * sizeof(uint));
+    memset(result, 0, output_dimension *sizeof(uint));
     uint rows = r.length + 1;
     uint cols = s.length + 1;
     uint number_of_diagonals = r.length + s.length;
@@ -618,12 +618,12 @@ void MilnorProductEven(MilnorAlgebraInternal * algebra, uint * result, MilnorBas
 
 // Reduce m1 * f = (Q_e0 Q_e1 ... P(r1, r2, ...)) * (Q_f0 Q_f1 ...) into the form Sum of Q's * P's
 // Result is represented as dictionary of pairs of tuples.
-void MilnorProductFullQpart(MilnorAlgebraInternal * algebra, uint * output, MilnorBasisElement m1, uint f) {
+void MilnorProductFullQpart(MilnorAlgebraInternal *algebra, uint *output, MilnorBasisElement m1, uint f) {
     uint p = algebra->public_algebra.p;
     uint q;
     q = 2*p-2;
-    uint * tau_degrees = getTauDegrees(p);
-    uint * xi_degrees = getXiDegrees(p);
+    uint *tau_degrees = getTauDegrees(p);
+    uint *xi_degrees = getXiDegrees(p);
     uint p_degree = m1.p_degree;
     uint q_degree = m1.q_degree;
     uint idx = GetIndexFromMilnorBasisElement((MilnorAlgebra*)algebra, m1);
@@ -634,8 +634,8 @@ void MilnorProductFullQpart(MilnorAlgebraInternal * algebra, uint * output, Miln
     
     uint old_result_dimension, old_result_degree;
 
-    uint * result = memory1;
-    uint * old_result = memory2;
+    uint *result = memory1;
+    uint *old_result = memory2;
 
     memset(result, 0, result_dimension * sizeof(uint));
     result[idx] = 1;
@@ -649,7 +649,7 @@ void MilnorProductFullQpart(MilnorAlgebraInternal * algebra, uint * output, Miln
             continue;
         }
         q_degree += tau_degrees[k];
-        uint * swap_temp = old_result;
+        uint *swap_temp = old_result;
         old_result = result;
         old_result_degree = result_degree;
         old_result_dimension = result_dimension;
@@ -729,7 +729,7 @@ void MilnorProductFullQpart(MilnorAlgebraInternal * algebra, uint * output, Miln
 // This computes the product of the Milnor basis elements
 // $Q_{e_1} Q_{e_2} ... P(r_1, r_2, ...)$ and
 // $Q_{f_1} Q_{f_2} ... P(s_1, s_2, ...)$.
-void MilnorProductFull(MilnorAlgebraInternal * algebra, uint * result, MilnorBasisElement m1, MilnorBasisElement m2) {
+void MilnorProductFull(MilnorAlgebraInternal *algebra, uint *result, MilnorBasisElement m1, MilnorBasisElement m2) {
     uint p = algebra->public_algebra.p;
     MilnorBasisElement s = (MilnorBasisElement) {0, 0, m2.p_degree, m2.p_length, m2.p_part};
     uint m1_times_f_degree = m1.q_degree + m1.p_degree + m2.q_degree;
@@ -776,8 +776,8 @@ void MilnorProductFull(MilnorAlgebraInternal * algebra, uint * result, MilnorBas
 // Multiply the basis elements corresponding to r_index and s_index in the Milnor algebra determined by algebra.
 // Note that since profile functions determine subalgebras, the product
 // doesn't need to care about the profile function at all.
-void MilnorProduct(Algebra * public_algebra, Vector * result, uint coeff, uint r_degree, uint r_index, uint s_degree, uint s_index)  {
-    MilnorAlgebraInternal * algebra = (MilnorAlgebraInternal*) public_algebra;
+void MilnorProduct(Algebra *public_algebra, Vector *result, uint coeff, uint r_degree, uint r_index, uint s_degree, uint s_index)  {
+    MilnorAlgebraInternal *algebra = (MilnorAlgebraInternal*) public_algebra;
     MilnorBasisElement r, s;
     r = GetMilnorBasisElementFromIndex((MilnorAlgebra*)algebra, r_degree, r_index);
     s = GetMilnorBasisElementFromIndex((MilnorAlgebra*)algebra, s_degree, s_index);
@@ -819,7 +819,7 @@ int main() {
 //    n.p_length = 1;
 //    n.p_part = (uint[1]){1};
 
-    MilnorAlgebra * algebra = constructMilnorAlgebra(3, true, NULL);
+    MilnorAlgebra *algebra = constructMilnorAlgebra(3, true, NULL);
     VectorInterface vectorInteterface = algebra->algebra.vectorInterface;
 
 //    generateMilnorBasisQpartTable(algebra, 20);
@@ -827,7 +827,7 @@ int main() {
 //    generateMilnorBasisQpartTable(algebra, 20);
 //    generateMilnorBasisQpartTable(algebra, 76);
 //
-//    Q_part_list* Q_table = algebra->Q_table;
+//    Q_part_list *Q_table = algebra->Q_table;
 //    for(uint int residue = 0; residue < 2*3 - 2; ++residue) {
 //        Q_part_list v = Q_table[residue];
 //        printf("residue: %ld\n", residue);
@@ -840,7 +840,7 @@ int main() {
 //    freeMilnorBasisQPartTable(algebra);
 
 //    generateMilnorBasisPpartTable(algebra, 10);
-//    P_part_list * P_table = algebra->P_table;
+//    P_part_list *P_table = algebra->P_table;
 //    for(int n = 0; n < 10; n++){
 //        printf("deg: %d \n", n);
 //        for(int i = 0; i < P_table[n].length; i++){
@@ -882,7 +882,7 @@ int main() {
 
     uint output_degree = A_deg + B_deg;
     uint output_dimension = GetMilnorAlgebraDimension((Algebra*)algebra, output_degree);
-    Vector * result = vectorInteterface.construct(algebra->p, output_dimension);
+    Vector *result = vectorInteterface.construct(algebra->p, output_dimension);
     MilnorProduct((Algebra*)algebra, result, 1, A_deg, A_idx, B_deg, B_idx);
     string str1 = buffer;
     int len1 = milnor_element_to_string(str1, algebra, output_degree, result);

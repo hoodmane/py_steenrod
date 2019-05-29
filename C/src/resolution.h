@@ -12,9 +12,14 @@
 typedef struct {
     Algebra *algebra;
     Module *module;
-    FreeModule *resolution_modules; // The index into resolution_modules is homological_degree + 1.
-    FreeModuleHomomorphism *resolution_differentials;// Each differential has source the module with the same index in resolution_modules
-    uint *internal_degree_to_resolution_stage;       // Records how far we've resolved in each degree (homological_degree + 1)
+    uint max_degree;
+    FreeModule **modules; // The index into resolution_modules is homological_degree + 1.
+    FreeModuleHomomorphism **differentials;// Each differential has source the module with the same index in resolution_modules
+    int *internal_degree_to_resolution_stage;       // Records how far we've resolved in each degree (homological_degree + 1)
 } Resolution;
+
+Resolution *Resolution_construct(FiniteDimensionalModule *module, uint max_filtration, uint max_degree);
+void Resolution_step(Resolution *resolution, uint homological_degree, uint degree);
+void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uint homological_degree, uint degree);
 
 #endif // CSTEENROD_RESOLUTION_H

@@ -5,7 +5,7 @@ import cFpVector
 import cmilnor
 import steenrod
 import steenrod_module
-from FreeModule import FreeModule
+from FreeModule import *
 
 def FiniteSteenrodModule_to_C(module):
     module.generate_milnor_action()
@@ -101,6 +101,16 @@ def FreeModule_to_c(module, max_degree=None):
     c_module.c_algebra = cmilnor.makeCMilnorAlgebra(p=module.algebra.p, degree=max_degree+10)    
     return c_module
 
+def c_free_module_index_to_py_opgen(module, degree, idx):
+    dimension = CSteenrod.FreeModule_getDimension(cast(module,POINTER(c_Module)), degree)
+    if idx >= dimension:
+        raise IndexError("Index %s out of bounds. Dimension of module is %s." % (idx, dimension))
+    CSteenrod.FreeModule_ConstructBlockOffsetTable(module, degree)
+    c_opgen = CSteenrod.FreeModule_indexToOpGen(module, degree, idx)
+    b = cmilnor.milnor_basis_elt_from_C_idx(module.c_algebra, c_opgen.operation_degree, c_opgen.operation_index)
+    gen = module.index_to_generator[(c_opgen.generator_degree, c_opgen.generator_index)]
+    return (module.py_algebra.get_basis_element(b), gen)
+
 def c_act_on_free_module(module, op, element):
     module_cast = cast(module, POINTER(c_Module))
     op_deg = op.degree()
@@ -126,12 +136,22 @@ def c_act_on_free_module(module, op, element):
     for (i,c) in enumerate(result_array):
         if c==0:
             continue
-        c_opgen = CSteenrod.FreeModule_indexToOpGen(module, output_degree, i)
-        b = cmilnor.milnor_basis_elt_from_C_idx(module.c_algebra, c_opgen.operation_degree, c_opgen.operation_index)
-        gen = module.index_to_generator[(c_opgen.generator_degree, c_opgen.generator_index)]
-        result[(module.py_algebra.get_basis_element(b), gen)] = c
+        py_opgen = c_free_module_index_to_py_opgen(module, output_degree, i)
+        result[py_opgen] = c
     result = module.py_module.get_element(result)
     return result
+
+def homomorphism_to_c(f, c_S, c_T):
+    c_f = CSteenrod.FreeModuleHomomorphism_construct(c_S, cast(c_T, POINTER(c_Module)), 20)
+    for i in range(c_S.contents.max_generator_degree+1):
+        CSteenrod.FreeModuleHomomorphism_AllocateSpaceForNewGenerators(
+            f, i, c_S.contents.number_of_basis_elements_in_degree[i]
+        )
+    
+    for (g, deg) in c_S.py_module.gens.items():
+        CSteenrod.FreeModule_getDimension(sour)
+        c_output = cFpVector.vector_to_C()
+        CSteenrod.FreeModule_setOutput(f, g, c_S.generator_indices[g], )
 
 if __name__ == "__main__":
     A = steenrod.MilnorAlgebra(p=2)
@@ -153,8 +173,18 @@ if __name__ == "__main__":
     c_act_on_fdmodule(cM, Sq(3), x0) # 0
     c_act_on_fdmodule(cM, Sq(0,1), x0) # x3
 
-    F = FreeModule(algebra=A)
-    x0 = F.add_generator("x0", 0)
-    x1 = F.add_generator("x1", 1)
-    cF = FreeModule_to_c(F, 20)
+    T = FreeModule(algebra=A)
+    x00 = T.add_generator("x00", 0)
+    S = FreeModule(algebra=A)
+    x11 = S.add_generator("x11", 1)
+    x12 = S.add_generator("x12", 2)
+    x14 = S.add_generator("x14", 4)
+    x18 = S.add_generator("x18", 8)
+    cS = FreeModule_to_c(S, 20)
+
+    d1 = ModuleHomomorphism(S, T)
+    d1.add_value("x11", A.Sq(1)*x00)
+    d1.add_value("x12", A.Sq(2)*x00)
+    d1.add_value("x14", A.Sq(4)*x00)
+    d1.add_value("x18", A.Sq(8)*x00)
     # A = F.milnor_algebra

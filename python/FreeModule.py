@@ -63,9 +63,14 @@ class FreeModule:
     def get_generator(self, gen):
         return FreeModuleElement({(self.algebra.unit(), gen) : 1}, module=self)
     
-    def get_basis_element(self, op, gen):
-        if b not in self.gens:
-            raise ValueError("%s is not the name of a basis element" % b)
+    def get_basis_element(self, op, gen = None):
+        if gen:
+            opgen = (op, gen)
+        else:
+            opgen = op
+        (op, gen) = opgen
+        if gen not in self.gens:
+            raise ValueError("%s is not the name of a generator." % gen)
         return FreeModuleElement({(op, gen) : 1}, module=self)
 
     def get_element(self, d):
@@ -107,7 +112,7 @@ class ModuleHomomorphism:
 
 
 if __name__ == "__main__":
-    A = steenrod.AdemAlgebra(p=2)
+    A = steenrod.MilnorAlgebra(p=2)
     Sq = A.Sq
     M0 = FreeModule(algebra=A)
     x00 = M0.add_generator("x00", 0)

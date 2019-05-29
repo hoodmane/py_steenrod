@@ -165,8 +165,8 @@ def wrap_modules(CSteenrod):
     # void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism * f, uint num_gens);
     CSteenrod.FreeModuleHomomorphism_AllocateSpaceForNewGenerators.argtypes = [POINTER(c_FreeModuleHomomorphism), c_uint]
 
-    # void FreeModuleHomomorphism_addGenerator(FreeModuleHomomorphism * f, uint gen_degree, Vector * output);
-    CSteenrod.FreeModuleHomomorphism_addGenerator.argtypes = [POINTER(c_FreeModuleHomomorphism), c_uint, POINTER(c_Vector)]
+    # void FreeModuleHomomorphism_setOutput(FreeModuleHomomorphism *f, uint input_degree, uint input_index, Vector *output)
+    CSteenrod.FreeModuleHomomorphism_setOutput.argtypes = [POINTER(c_FreeModuleHomomorphism), c_uint, c_uint, POINTER(c_Vector)]
 
     # void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism * f, Vector * result, uint coeff, uint input_degree, uint input_index);
     CSteenrod.FreeModuleHomomorphism_applyToBasisElement.argtypes = [POINTER(c_FreeModuleHomomorphism), POINTER(c_Vector), c_uint, c_uint, c_uint]

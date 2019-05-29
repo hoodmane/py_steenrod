@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 
-int array_to_string(char* buffer, uint* A, uint length){
+int array_to_string(char *buffer, uint *A, uint length){
     buffer[0] = '[';
     buffer[1] = '\0';
     int len = 1;
@@ -22,14 +22,22 @@ int array_to_string(char* buffer, uint* A, uint length){
     return len;
 }
 
+void printArray(uint *A, uint length){
+    char buffer[1000];
+    array_to_string(buffer, A, length);
+    printf("%s", buffer);
+}
+
 
 typedef struct {
-    VectorInterface * interface;
+    VectorInterface *interface;
     uint p;
     uint dimension;
     uint size;
     uint offset;
-    uint64* vector;
+// Private fields:
+    uint number_of_limbs;
+    uint64 *vector;
 } VectorStd;
 
 
@@ -74,11 +82,11 @@ uint getEntriesPer64Bits(uint p){
     return entries_per_64_bits[prime_to_index_map[p]];   
 }
 
-uint * modplookuptable[MAX_PRIME_INDEX] = {0};
+uint *modplookuptable[MAX_PRIME_INDEX] = {0};
 
 void initializeModpLookupTable(uint p){
     uint p_times_p_minus_1 = p*(p-1);
-    uint * table = malloc((p_times_p_minus_1 + 1) * sizeof(uint));
+    uint *table = malloc((p_times_p_minus_1 + 1) * sizeof(uint));
     for(uint i = 0; i <= p_times_p_minus_1; i++){
         table[i] = i % p;
     }
@@ -95,13 +103,13 @@ typedef struct {
     uint bit_index;
 } LimbBitIndexPair;
 
-LimbBitIndexPair * limbBitIndexLookupTable[MAX_PRIME_INDEX] = {0};
+LimbBitIndexPair *limbBitIndexLookupTable[MAX_PRIME_INDEX] = {0};
 
 void initializeLimbBitIndexLookupTable(uint p){
     uint p_idx = prime_to_index_map[p];
     uint entries_per_limb = getEntriesPer64Bits(p);
     uint bit_length = getBitlength(p);
-    LimbBitIndexPair * table = malloc(MAX_DIMENSION * sizeof(LimbBitIndexPair));
+    LimbBitIndexPair *table = malloc(MAX_DIMENSION * sizeof(LimbBitIndexPair));
     for(uint i = 0; i < MAX_DIMENSION; i++){
         table[i].limb = i/entries_per_limb;
         table[i].bit_index = (i % entries_per_limb) * bit_length;
@@ -111,80 +119,82 @@ void initializeLimbBitIndexLookupTable(uint p){
 
 LimbBitIndexPair getLimbBitIndexPair(uint p, uint idx){
     assert(prime_to_index_map[p] != -1);
+    assert(idx < MAX_DIMENSION);
     return limbBitIndexLookupTable[prime_to_index_map[p]][idx];
 }
 
-uint getVectorSize(uint p, uint dimension, uint offset){
+size_t getVectorSize(uint p, uint dimension, uint offset){
+    assert(dimension < MAX_DIMENSION);
+    assert(offset < getEntriesPer64Bits(p));
     uint bit_length = getBitlength(p);
-    uint size = (dimension == 0) ? 0 : (getLimbBitIndexPair(p, dimension + offset/bit_length - 1).limb + 1);
+    size_t size = (dimension == 0) ? 0 : (getLimbBitIndexPair(p, dimension + offset/bit_length - 1).limb + 1);
+    size *= sizeof(uint64);
     return size; // Need extra space for vector fields.
 }
 
-Vector *initializeVector(VectorInterface *interface, uint p, uint64 *container, uint64 *memory, uint dimension, uint offset){
-    uint bit_length = getBitlength(p);
+Vector *initializeVector(VectorInterface *interface, uint p, char *container, char *memory, uint dimension, uint offset){
     VectorStd *v = (VectorStd *) container;
     v->interface = interface;
     v->p = p;
     v->dimension = dimension;
-    v->size = dimension == 0 ? 0 : getLimbBitIndexPair(p, dimension + offset/bit_length - 1).limb + 1;
+    v->size = getVectorSize(p, dimension, offset);
     v->offset = offset;
-    v->vector = dimension == 0 ? NULL : memory;
-    memset(v->vector, 0, v->size * sizeof(uint64));
+    v->number_of_limbs = (v->size + sizeof(uint64) - 1)/sizeof(uint64);
+    v->vector = dimension == 0 ? NULL : (uint64*)memory;
+    memset(v->vector, 0, v->size);
     return (Vector*)v;
 }
 
-Vector * initializeVector2(uint p, uint64 *container, uint64 *memory, uint dimension, uint offset){
+Vector *initializeVector2(uint p, char *container, char *memory, uint dimension, uint offset){
     return initializeVector(&Vector2Interface, p, container, memory, dimension, offset);
 }
 
-Vector * initializeVectorGeneric(uint p, uint64 *container, uint64 *memory, uint dimension, uint offset){
+Vector *initializeVectorGeneric(uint p, char *container, char *memory, uint dimension, uint offset){
     return initializeVector(&VectorGenericInterface, p, container, memory, dimension, offset);
 }
 
 // There is no case distinction between Vector2 and VectorGeneric for the functions that just 
 // get and set values.
-Vector * constructVector(VectorInterface *interface, uint p, uint dimension, uint offset){
+Vector *constructVector(VectorInterface *interface, uint p, uint dimension, uint offset){
     uint bit_length = getBitlength(p);
-    uint size = dimension == 0 ? 0 : getLimbBitIndexPair(p, dimension + offset/bit_length - 1).limb + 1;
-    uint64 * memory = malloc(
-        sizeof(VectorStd) + size * sizeof(uint64)
+    uint size = getVectorSize(p, dimension, offset);
+    char *memory = malloc(
+        sizeof(VectorStd) + size
     );
-    Vector* result = initializeVector(interface, p, memory, (uint64*)((VectorStd*)memory + 1), dimension, offset);
+    Vector *result = initializeVector(interface, p, memory, (char*)((VectorStd*)memory + 1), dimension, offset);
     return result;
 }
 
-Vector * constructVector2(uint p, uint dimension, uint offset){
+Vector *constructVector2(uint p, uint dimension, uint offset){
     return constructVector(&Vector2Interface, p, dimension, offset);
 }
 
-Vector * constructVectorGeneric(uint p, uint dimension, uint offset){
+Vector *constructVectorGeneric(uint p, uint dimension, uint offset){
     return constructVector(&VectorGenericInterface, p, dimension, offset);
 }
 
 
-void freeVector(Vector * vector){
+void freeVector(Vector *vector){
     free(vector);
 }
 
-void setVectorToZero(Vector * target){
+void setVectorToZero(Vector *target){
     assert(target->offset == 0); // setToZero doesn't handle slices right now.
-    VectorStd * t = (VectorStd*) target;
-    memset(t->vector, 0, t->size * sizeof(uint64));
+    VectorStd *t = (VectorStd*) target;
+    memset(t->vector, 0, t->size);
 }
 
 
-void assignVector(Vector * target, Vector * source){
-    assert(
-        source->dimension == target->dimension
-        && source->offset == target->offset
-        && source->offset == 0 // assignVector doesn't handle slices right now.
-    );
-    VectorStd * t = (VectorStd*) target;
-    VectorStd * s = (VectorStd*) source;
-    memcpy(t->vector, s->vector, s->size * sizeof(uint64));
+void assignVector(Vector *target, Vector *source){
+    assert(source->dimension == target->dimension);
+    assert(source->offset == target->offset);
+    assert(source->offset == 0); // assignVector doesn't handle slices right now.
+    VectorStd *t = (VectorStd*) target;
+    VectorStd *s = (VectorStd*) source;
+    memcpy(t->vector, s->vector, s->size);
 }
 
-uint unpackLimbHelper(uint *  limb_array, VectorStd* vector, uint limb_idx, uint bit_min, uint bit_max){
+uint unpackLimbHelper(uint *limb_array, VectorStd *vector, uint limb_idx, uint bit_min, uint bit_max){
     uint bit_mask = getBitMask(vector->p);
     uint bit_length = getBitlength(vector->p);
     uint64 limb_value = vector->vector[limb_idx];
@@ -196,7 +206,7 @@ uint unpackLimbHelper(uint *  limb_array, VectorStd* vector, uint limb_idx, uint
     return idx;
 }
 
-uint unpackLimb(uint * limb_array, VectorStd* vector, uint limb_idx){
+uint unpackLimb(uint *limb_array, VectorStd *vector, uint limb_idx){
     uint bit_length = getBitlength(vector->p);
     uint entries_per_64_bits = getEntriesPer64Bits(vector->p);
     uint bit_min = 0;
@@ -204,7 +214,7 @@ uint unpackLimb(uint * limb_array, VectorStd* vector, uint limb_idx){
     if(limb_idx == 0){
         bit_min = vector->offset;
     }
-    if(limb_idx == vector->size - 1){
+    if(limb_idx == vector->number_of_limbs - 1){
         bit_max = (vector->offset + vector->dimension * bit_length)%(bit_length * entries_per_64_bits);;
         if(bit_max == 0){
             bit_max = 64;
@@ -213,7 +223,7 @@ uint unpackLimb(uint * limb_array, VectorStd* vector, uint limb_idx){
     return unpackLimbHelper(limb_array, vector, limb_idx, bit_min, bit_max);
 }
 
-uint packLimbHelper(VectorStd* vector, uint * limb_array, uint limb_idx, uint bit_min, uint bit_max, uint64 bit_mask){
+uint packLimbHelper(VectorStd *vector, uint *limb_array, uint limb_idx, uint bit_min, uint bit_max, uint64 bit_mask){
     uint bit_length = getBitlength(vector->p);
     uint idx = 0;
     uint64 limb_value = vector->vector[limb_idx] & bit_mask;
@@ -225,7 +235,7 @@ uint packLimbHelper(VectorStd* vector, uint * limb_array, uint limb_idx, uint bi
     return idx;
 }
 
-uint packLimb(VectorStd* vector, uint * limb_array, uint limb_idx){
+uint packLimb(VectorStd *vector, uint *limb_array, uint limb_idx){
     uint bit_length = getBitlength(vector->p);
     uint entries_per_64_bits = getEntriesPer64Bits(vector->p);
     uint bit_min = 0;
@@ -233,7 +243,7 @@ uint packLimb(VectorStd* vector, uint * limb_array, uint limb_idx){
     if(limb_idx == 0){
         bit_min = vector->offset;
     }
-    if(limb_idx == vector->size - 1){
+    if(limb_idx == vector->number_of_limbs - 1){
         bit_max = (vector->offset + vector->dimension * bit_length)%(bit_length * entries_per_64_bits);
         if(bit_max == 0){
             bit_max = 64;
@@ -249,23 +259,26 @@ uint packLimb(VectorStd* vector, uint * limb_array, uint limb_idx){
 }
 
 
-void packVector(Vector * target, uint * source){
+void packVector(Vector *target, uint *source){
+    assert(target != NULL);
     VectorStd * t = (VectorStd*) target;
-    for(uint limb = 0; limb < target->size; limb++){
+    for(uint limb = 0; limb < t->number_of_limbs; limb++){
         source += packLimb(t, source, limb);
     }
 }
 
 void unpackVector(uint * target, Vector * source){ 
+    assert(target != NULL);
     VectorStd * s = (VectorStd*) source;    
-    for(uint i = 0; i < s->size; i++){
+    for(uint i = 0; i < s->number_of_limbs; i++){
         target += unpackLimb(target, s, i);
     }
 }
 
-uint getVectorEntry(Vector * vector, uint index){
+uint getVectorEntry(Vector *vector, uint index){
+    assert(vector != NULL);
     assert(index < vector->dimension);
-    VectorStd * v = (VectorStd*) vector;    
+    VectorStd *v = (VectorStd*) vector;    
     uint64 bit_mask = getBitMask(vector->p);
     LimbBitIndexPair limb_index = getLimbBitIndexPair(vector->p, index + v->offset);
     uint64 result = v->vector[limb_index.limb];
@@ -274,9 +287,10 @@ uint getVectorEntry(Vector * vector, uint index){
     return result;
 }
 
-void setVectorEntry(Vector * vector, uint index, uint value){
+void setVectorEntry(Vector *vector, uint index, uint value){
+    assert(vector != NULL);
     assert(index < vector->dimension);
-    VectorStd * v = (VectorStd*) vector;    
+    VectorStd *v = (VectorStd*) vector;    
     uint64 bit_mask = getBitMask(vector->p);
     LimbBitIndexPair limb_index = getLimbBitIndexPair(vector->p, index + v->offset);
     uint64 *result = &(v->vector[limb_index.limb]);
@@ -284,24 +298,28 @@ void setVectorEntry(Vector * vector, uint index, uint value){
     *result |= (((uint64)value) << limb_index.bit_index);
 }
 
-void sliceVector(Vector * result, Vector * source, uint start, uint end){
-    assert(start <= end && end <= source->dimension);
-    VectorStd * r = (VectorStd*) result;
-    VectorStd * s = (VectorStd*) source;
+void sliceVector(Vector *result, Vector *source, uint start, uint end){
+    assert(start <= end);
+    assert(end <= source->dimension);
+    VectorStd *r = (VectorStd*) result;
+    VectorStd *s = (VectorStd*) source;
     r->p = s->p;
+    r->interface = s->interface;
     r->dimension = end - start;
     if(start == end){
         r->size = 0;
+        r->number_of_limbs = 0;
         r->vector = NULL;
         return;    
     }
     LimbBitIndexPair limb_index = getLimbBitIndexPair(result->p, start + source->offset);
     r->offset = limb_index.bit_index;
     r->size = getVectorSize(r->p, r->dimension, r->offset);
+    r->number_of_limbs = r->size/sizeof(uint64);
     r->vector = s->vector + limb_index.limb;
 }
 
-VectorIterator getVectorIterator(Vector * v){
+VectorIterator getVectorIterator(Vector *v){
     VectorIterator result;
     if(v->dimension == 0){
         result.has_more = false;
@@ -326,7 +344,7 @@ VectorIterator stepVectorIterator(VectorIterator it){
     uint bit_mask = getBitMask(it.vector->p);
     uint bit_length = getBitlength(it.vector->p);
     it.bit_index += bit_length;
-    if(it.bit_index > 64 - bit_length + 1){
+    if(it.bit_index >= 64 - bit_length + 1){
         it.limb_index ++;
         it.bit_index = 0;
     }
@@ -341,9 +359,9 @@ VectorIterator stepVectorIterator(VectorIterator it){
 // So we do the arithmetic in place. Then we have to reduce each slot by p.
 // We do this by pulling the slots out and reducing each one separately mod p via table lookup.
 
-void addBasisElementToVectorGeneric(Vector * target, uint index, uint coeff){
+void addBasisElementToVectorGeneric(Vector *target, uint index, uint coeff){
     assert(index < target->dimension);
-    VectorStd * t = (VectorStd*) target;    
+    VectorStd *t = (VectorStd*) target;    
     uint bit_mask = getBitMask(target->p);
     LimbBitIndexPair limb_index = getLimbBitIndexPair(target->p, index + target->offset);
     uint64 *result = &(t->vector[limb_index.limb]);
@@ -355,12 +373,12 @@ void addBasisElementToVectorGeneric(Vector * target, uint index, uint coeff){
     *result |= (new_entry << limb_index.bit_index);
 }
 
-void addArrayGeneric(Vector * target, uint * source, uint c){
-    VectorStd * t = (VectorStd*) target;
+void addArrayGeneric(Vector *target, uint *source, uint c){
+    VectorStd *t = (VectorStd*) target;
     uint bit_mask = getBitMask(target->p);
     uint bit_length = getBitlength(target->p);
     uint source_idx = 0;
-    for(uint limb = 0; limb < target->size; limb++){
+    for(uint limb = 0; limb < t->number_of_limbs; limb++){
         uint64 target_limb = t->vector[limb];
         uint64 result = 0;
         uint j = 0;
@@ -369,7 +387,7 @@ void addArrayGeneric(Vector * target, uint * source, uint c){
             j = target->offset;
             result |= t->vector[limb] & ((1<<target->offset) - 1);
         }
-        if(limb == target->size - 1){
+        if(limb == t->number_of_limbs - 1){
             result |= t->vector[limb] & (~((1<<((target->offset + target->dimension)%64)) - 1));
         }        
         for(;
@@ -386,15 +404,13 @@ void addArrayGeneric(Vector * target, uint * source, uint c){
     }
 }
 
-void addVectorsGeneric(Vector * target, Vector * source, uint coeff){
-    assert(
-        source->dimension == target->dimension
-        && target->offset == source->offset 
-    );
-    VectorStd * t = (VectorStd*) target;
-    VectorStd * s = (VectorStd*) source;    
+void addVectorsGeneric(Vector *target, Vector *source, uint coeff){
+    assert(source->dimension == target->dimension);
+    assert(target->offset == source->offset);
+    VectorStd *t = (VectorStd*) target;
+    VectorStd *s = (VectorStd*) source;    
     uint entries[getEntriesPer64Bits(t->p)];    
-    for(uint i = 0; i < source->size; i++){
+    for(uint i = 0; i < s->number_of_limbs; i++){
         t->vector[i] = t->vector[i] + coeff * s->vector[i];
         uint limb_length = unpackLimb(entries, t, i);
         for(uint j = 0; j < limb_length; j++){
@@ -404,12 +420,12 @@ void addVectorsGeneric(Vector * target, Vector * source, uint coeff){
     }
 }
 
-void scaleVectorGeneric(Vector * target, uint coeff){
+void scaleVectorGeneric(Vector *target, uint coeff){
     assert(coeff != 0);
-    VectorStd * t = (VectorStd*) target;   
+    VectorStd *t = (VectorStd*) target;   
     uint entries_per_64_bits = getEntriesPer64Bits(t->p);    
     uint entries[entries_per_64_bits];
-    for(uint i = 0; i < target->size; i++){
+    for(uint i = 0; i < t->number_of_limbs; i++){
         t->vector[i] = coeff * t->vector[i];
         uint limb_length = unpackLimb(entries, t, i);
         for(uint j = 0; j < limb_length; j++){
@@ -420,9 +436,9 @@ void scaleVectorGeneric(Vector * target, uint coeff){
 }
 
 // Vector2
-void addBasisElementToVector2(Vector * target, uint index, uint coeff){
+void addBasisElementToVector2(Vector *target, uint index, uint coeff){
     assert(index < target->dimension);
-    VectorStd * t = (VectorStd*) target;    
+    VectorStd *t = (VectorStd*) target;    
     uint bit_mask = 1;
     LimbBitIndexPair limb_index = getLimbBitIndexPair(target->p, index + target->offset);
     uint64 *result = &(t->vector[limb_index.limb]);
@@ -433,11 +449,11 @@ void addBasisElementToVector2(Vector * target, uint index, uint coeff){
     *result |= (new_entry << limb_index.bit_index);
 }
 
-void addArray2(Vector * target, uint * source, uint c){
-    VectorStd * t = (VectorStd*) target;
+void addArray2(Vector *target, uint *source, uint c){
+    VectorStd *t = (VectorStd*) target;
     uint bit_length = 1;
     uint source_idx = 0;
-    for(uint limb = 0; limb < target->size; limb++){
+    for(uint limb = 0; limb < t->number_of_limbs; limb++){
         uint64 source_limb = 0;
         for(
             uint j = (limb == 0) ? (target->offset) : 0;
@@ -451,20 +467,20 @@ void addArray2(Vector * target, uint * source, uint c){
     }
 }
 
-void addVectors2(Vector * target, Vector * source, uint coeff){
+void addVectors2(Vector *target, Vector *source, uint coeff){
     assert(
         target->dimension == source->dimension 
         && target->offset == source->offset 
     );    
-    VectorStd * t = (VectorStd*) target;
-    VectorStd * s = (VectorStd*) source;    
-    uint64 * target_ptr = t->vector;
-    uint64 * source_ptr = s->vector;
-    if(target->size == 0){
+    VectorStd *t = (VectorStd*) target;
+    VectorStd *s = (VectorStd*) source;    
+    uint64 *target_ptr = t->vector;
+    uint64 *source_ptr = s->vector;
+    if(t->number_of_limbs == 0){
         return;
     }
     uint64 source_limb;
-    if(target->size == 1){
+    if(t->number_of_limbs == 1){
         source_limb = *source_ptr;
         uint64 bit_mask = -1;
         uint bit_min = source->offset;
@@ -484,7 +500,7 @@ void addVectors2(Vector * target, Vector * source, uint coeff){
     *target_ptr ^= coeff * source_limb;    
     target_ptr++;
     source_ptr++;
-    for(uint i = 1; i < target->size-1; i++){
+    for(uint i = 1; i < t->number_of_limbs-1; i++){
         *target_ptr ^= (coeff * (*source_ptr));
         target_ptr++;
         source_ptr++;
@@ -501,19 +517,19 @@ void addVectors2(Vector * target, Vector * source, uint coeff){
 }
 
 // This is a pretty pointless method.
-void scaleVector2(Vector * target, uint coeff){
+void scaleVector2(Vector *target, uint coeff){
     assert(coeff != 0);
     return;
-    VectorStd * t = (VectorStd*) target;   
-    uint64 * target_ptr = t->vector;
-    for(uint i = 0; i < target->size; i++){
+    VectorStd *t = (VectorStd*) target;   
+    uint64 *target_ptr = t->vector;
+    for(uint i = 0; i < t->number_of_limbs; i++){
         *target_ptr *= coeff;
         target_ptr++;
     }
 }
 
 VectorInterface VectorGenericInterface = {
-    (sizeof(VectorStd) + sizeof(uint64) - 1)/sizeof(uint64),
+    sizeof(VectorStd),
     getEntriesPer64Bits, getVectorSize, initializeVectorGeneric,
     constructVectorGeneric, freeVector,    
     assignVector, setVectorToZero, packVector, unpackVector,
@@ -523,7 +539,7 @@ VectorInterface VectorGenericInterface = {
 };
 
 VectorInterface Vector2Interface = {
-    (sizeof(VectorStd) + sizeof(uint64) - 1)/sizeof(uint64),
+    sizeof(VectorStd),
     getEntriesPer64Bits, getVectorSize, initializeVector2,    
     constructVector2, freeVector,    
     assignVector, setVectorToZero, packVector, unpackVector,
@@ -532,7 +548,7 @@ VectorInterface Vector2Interface = {
     addBasisElementToVector2, addArray2, addVectors2, scaleVector2,
 };
 
-uint vectorToString(char * buffer, Vector * vector){
+uint vectorToString(char *buffer, Vector *vector){
     uint len = 0;
     len += sprintf(buffer + len, "[");
     for(VectorIterator it = getVectorIterator(vector); it.has_more; it = stepVectorIterator(it)){
@@ -542,7 +558,7 @@ uint vectorToString(char * buffer, Vector * vector){
     return len;
 }
 
-void printVector(Vector * v){
+void printVector(Vector *v){
     char buffer[200];
     vectorToString(buffer, v);
     printf("%s\n", buffer);
@@ -550,19 +566,19 @@ void printVector(Vector * v){
 
 
 
-uint getMatrixSize(VectorInterface * vectImpl, uint p, uint rows, uint cols){
-    return sizeof(Matrix) + rows 
-        + rows * vectImpl->container_size 
-        + rows * vectImpl->getSize(p, cols, 0);
+uint getMatrixSize(VectorInterface *vectImpl, uint p, uint rows, uint cols){
+    assert(cols < MAX_DIMENSION);
+    return sizeof(Matrix) 
+      + rows * (sizeof(Vector*) + vectImpl->container_size  + vectImpl->getSize(p, cols, 0));
 }
 
-Matrix* initializeMatrix(uint64 * memory, VectorInterface * vectImpl, uint p, uint rows, uint columns)  {
+Matrix *initializeMatrix(char *memory, VectorInterface *vectImpl, uint p, uint rows, uint columns)  {
     uint container_size = vectImpl->container_size;
     uint vector_size = vectImpl->getSize(p, columns, 0);
-    Matrix * matrix = (Matrix*)memory;
-    Vector ** vector_ptr = (Vector**)(matrix+1);
-    uint64 * container_ptr = (uint64*)(vector_ptr + rows);
-    uint64 * values_ptr = container_ptr + rows * container_size;
+    Matrix *matrix = (Matrix*)memory;
+    Vector **vector_ptr = (Vector**)(matrix+1);
+    char *container_ptr = (char*)(vector_ptr + rows);
+    char *values_ptr = container_ptr + rows * container_size;
     matrix->p = p;
     matrix->rows = rows;
     matrix->columns = columns;
@@ -576,20 +592,46 @@ Matrix* initializeMatrix(uint64 * memory, VectorInterface * vectImpl, uint p, ui
     return matrix;
 }
 
-Matrix* constructMatrix(VectorInterface * vectorImplementation, uint p, uint rows, uint columns)  {
-    uint64 * M = malloc(getMatrixSize(vectorImplementation, p, rows, columns) * sizeof(uint64));
+Matrix *constructMatrix(VectorInterface *vectorImplementation, uint p, uint rows, uint columns)  {
+    char *M = malloc(getMatrixSize(vectorImplementation, p, rows, columns));
     return initializeMatrix(M, vectorImplementation, p, rows, columns);
 }
 
-Matrix* constructMatrixGeneric(uint p, uint rows, uint columns)  {
+Matrix *constructMatrixGeneric(uint p, uint rows, uint columns)  {
     return constructMatrix(&VectorGenericInterface, p, rows, columns);
 }
 
-Matrix* constructMatrix2(uint p, uint rows, uint columns)  {
+Matrix *constructMatrix2(uint p, uint rows, uint columns)  {
     return constructMatrix(&Vector2Interface, p, rows, columns);
 }
 
-uint matrixToString(char * buffer, Matrix *M){
+uint Matrix_getSliceSize(uint rows){
+    return sizeof(Matrix) + rows*(sizeof(VectorStd*) + sizeof(VectorStd));
+}
+
+Matrix *Matrix_slice(Matrix *M, char *memory, uint row_min, uint row_max, uint column_min, uint column_max){
+    assert(row_min <= row_max && row_max <= M->rows);
+    assert(column_min <= column_max && column_max <= M->columns);
+    Matrix *result = (Matrix*)memory;
+    uint num_rows = row_max - row_min;
+    uint num_cols = column_max - column_min;
+    result->p = M->p;
+    result->rows = num_rows;
+    result->columns = num_cols;
+    result->matrix = (Vector**)(result + 1);
+    VectorStd **matrix_ptr = (VectorStd**)result->matrix; 
+    VectorStd *vector_ptr = (VectorStd*)(matrix_ptr + num_rows);
+    for(int i = 0; i < num_rows; i++){
+        *matrix_ptr = vector_ptr;
+        sliceVector((Vector*)vector_ptr, M->matrix[i], column_min, column_max);
+        matrix_ptr ++;
+        vector_ptr++;
+    }
+    assert(matrix_ptr == result->matrix + num_rows);
+    return result;
+}
+
+uint matrixToString(char *buffer, Matrix *M){
     int len = 0;
     len += sprintf(buffer + len, "    [\n");
     for(int i = 0; i < M->rows; i++){
@@ -608,11 +650,11 @@ void printMatrix(Matrix *matrix){
 }
 
 void rowReduce(Matrix *M, int *column_to_pivot_row){
-    Vector ** matrix = M->matrix;
+    Vector **matrix = M->matrix;
     uint p = M->p;
     uint columns = M->columns;
     uint rows = M->rows;
-    memset(column_to_pivot_row, -1, columns * sizeof(uint));
+    memset(column_to_pivot_row, -1, columns * sizeof(int));
     if(rows == 0){
         return;
     }
@@ -644,7 +686,7 @@ void rowReduce(Matrix *M, int *column_to_pivot_row){
 
         // Pivot_row contains a row with a pivot in current column.
         // Swap pivot row up.
-        Vector* temp = matrix[pivot];
+        Vector *temp = matrix[pivot];
         matrix[pivot] = matrix[pivot_row];
         matrix[pivot_row] = temp;
 
@@ -703,9 +745,9 @@ int main(int argc, char *argv[]){
     // uint contents_size = VectorGenericInterface.getSize(p, dim, 0);
     // uint64 vector_container_memory[container_size * num_vectors];
     // uint64 vector_contents_memory[contents_size * num_vectors];
-    // uint64 * vector_container_ptr = vector_container_memory;
-    // uint64 * vector_contents_ptr = vector_contents_memory;
-    // Vector * vectors[num_vectors];
+    // uint64 *vector_container_ptr = vector_container_memory;
+    // uint64 *vector_contents_ptr = vector_contents_memory;
+    // Vector *vectors[num_vectors];
     // for(uint i = 0; i < num_vectors; i++){
     //     for(uint j = 0; j < dim; j++){
     //         arrays[i][j] = modPLookup(p, rand() & bitmask);
@@ -742,7 +784,7 @@ int main(int argc, char *argv[]){
     // sliceVector(vectors[1], vectors[0], 2, 4);
 
 
-    // Vector * v = constructVector(&VectorGenericInterface, p, 4 - 2, vectors[1]->offset);
+    // Vector *v = constructVector(&VectorGenericInterface, p, 4 - 2, vectors[1]->offset);
     // packVector(v, arrays[3]);
     // vectorToString(buffer, v);
     // printf("v:               %s\n", buffer);
