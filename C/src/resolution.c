@@ -17,6 +17,20 @@
 #define max(a,b) ((a) > (b) ? (a) : (b))
 void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uint homological_degree, uint degree);
 
+void printCallback(Resolution * res, uint homological_degree, uint degree, uint num_gens);
+
+void addClass_doNothing(uint hom_deg, uint int_deg, char *cocycle_name){
+    // printf("\n\nhom_deg: %d, mod_deg: %d, num_gens: %d\n", homological_degree, degree, num_gens);
+}
+
+void addStructline_doNothing(
+    uint source_hom_deg, uint source_int_deg, uint source_idx, 
+    uint target_hom_deg, uint target_int_deg, uint target_idx
+){
+    // printf("\n\nhom_deg: %d, mod_deg: %d, num_gens: %d\n", homological_degree, degree, num_gens);
+}
+
+
 Resolution *Resolution_construct(FiniteDimensionalModule *module, uint max_filtration, uint max_degree){
     Resolution *res = malloc(
         sizeof(Resolution)
@@ -35,30 +49,33 @@ Resolution *Resolution_construct(FiniteDimensionalModule *module, uint max_filtr
     res->max_degree = max_degree;
     res->modules[0] = (FreeModule*)module;
     res->differentials[0] = FreeModuleHomomorphism_construct((FreeModule*)module, NULL, max_degree);
+    res->addClass = addClass_doNothing;
+    res->addStructline = addStructline_doNothing;
     return res;
 }
 
 void Resolution_resolveThroughDegree(Resolution *res, uint degree){
     for(uint hom_deg = 0; hom_deg < degree; hom_deg++){
        for(uint int_deg = hom_deg; int_deg <= degree; int_deg ++){
-           Resolution_step(res, hom_deg, int_deg);
+            Resolution_step(res, hom_deg, int_deg);
        }
    }
 }
 
 void Resolution_step(Resolution *res, uint homological_degree, uint degree){
-    printf("\n\nhom_deg: %d, mod_deg: %d\n", homological_degree, degree);
+    // Construct kernel -- say that it's everything.
+    // We put the module itself in degree zero and we'll want to hit the whole thing.
     if(homological_degree == 0){
         VectorInterface *vectImpl = &res->algebra->vectorInterface;
         FreeModuleHomomorphism *dminus1 = res->differentials[0];
         uint module_dim = module_getDimension(res->module, degree);
-        // printf("    hom_deg 0. mod_dim: %d\n", module_dim);
         dminus1->kernel[degree] = Kernel_construct(vectImpl, res->algebra->p, module_dim, module_dim);
         for(uint j = 0; j < module_dim; j++){
             dminus1->kernel[degree]->column_to_pivot_row[j] = j;
             vectImpl->setEntry(dminus1->kernel[degree]->kernel->matrix[j], j, 1);
         }
     }
+    // Construct new FreeModule.
     if(homological_degree == degree){
         res->modules[homological_degree + 1] = 
             FreeModule_construct(res->algebra, res->max_degree, res->max_degree);
@@ -69,7 +86,38 @@ void Resolution_step(Resolution *res, uint homological_degree, uint degree){
                 res->max_degree
             );
     }
+    // Do the work
     Resolution_generateOldKernelAndComputeNewKernel(res, homological_degree, degree);
+
+    // Report the answers.
+    // Classes:
+    uint num_gens = res->modules[homological_degree + 1]->number_of_generators_in_degree[degree];
+    for(uint i=0; i < num_gens; i++){
+        res->addClass(homological_degree, degree, "");
+    }
+    // Products:
+    if(homological_degree > 0){
+        FreeModuleHomomorphism *d = res->differentials[homological_degree + 1];
+        FreeModule *T = (FreeModule*)d->target;        
+        for(uint source= 0; source < num_gens; source++){
+            Vector *dx = d->outputs[degree][source];
+            for(uint j = 0; j < 3; j++){
+                uint hj_degree = 1 << j;
+                if(hj_degree > degree){
+                    break;
+                }
+                uint gen_degree = degree - hj_degree;
+                uint num_target_generators = T->number_of_generators_in_degree[gen_degree];
+                for(uint target = 0; target < num_target_generators; target++){
+                    uint vector_idx = FreeModule_operationGeneratorToIndex(res->modules[homological_degree], hj_degree, 0, gen_degree, target);
+                    if(getVectorEntry(dx, vector_idx) != 0){
+                        // There was a product!
+                        res->addStructline(homological_degree - 1, gen_degree, target, homological_degree, degree, source);
+                    }
+                }
+            }
+        }
+    }
 }
 
 // Invariants:
@@ -79,10 +127,6 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     FreeModuleHomomorphism *current_differential  = resolution->differentials[homological_degree + 1];
     FreeModuleHomomorphism *previous_differential = resolution->differentials[homological_degree];
     FreeModule *source = current_differential->source;
-    // printf("    source gens: ");
-    // printArray(source->number_of_generators_in_degree, degree);
-    // printf("\n");
-    // assert(target == previous_differential.source)
     uint source_dimension = module_getDimension(&current_differential->source->module, degree);
     uint target_dimension = module_getDimension(current_differential->target, degree);
 
@@ -114,14 +158,8 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
         vectImpl->setEntry(matrix->matrix[i], padded_target_dimension + i, 1);
     }
     // Row reduce
-    // if(degree == 17){
-    //     printMatrixSlice(matrix, target_dimension, padded_target_dimension);
-    // }
     int column_to_pivot_row[matrix->columns];
     rowReduce(matrix, column_to_pivot_row, 0, 0);//target_dimension, padded_target_dimension);
-    // if(degree == 17){
-    //     printMatrixSlice(matrix, target_dimension, padded_target_dimension);
-    // }
 
     // Stage 1: Find kernel of current differential
     // Locate first kernel row
@@ -153,31 +191,18 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     //     printf("    previous_cycles:\n");
     //     printMatrix(previous_cycles->kernel);
     // }
-    uint previous_cycle_dimension = previous_cycles->kernel->rows;
+    // uint previous_cycle_dimension = previous_cycles->kernel->rows;
     // We no longer care about the kernel rows since we stored them somewhere else, 
     // so we're going to write over them.
     uint current_target_row = first_kernel_row;
     // Find basis of quotient previous_kernel/image and add new free module generators to hit
     uint homology_dimension = 0;
-    // if(degree == 17){
-    //     printf("    column_to_pivot_row:  \n    ");
-    //     printArray(column_to_pivot_row, previous_cycles->kernel->columns);
-    //     printf("\n");
-    //     printf("    previous_cycles column_to_pivot_row:  \n    ");
-    //     printArray(previous_cycles->column_to_pivot_row, previous_cycles->kernel->columns);
-    //     printf("\n");        
-    // }
     for(uint i = 0; i < previous_cycles->kernel->columns; i++){
         if(column_to_pivot_row[i] < 0 && previous_cycles->column_to_pivot_row[i] >= 0){
             // Look up the cycle that we're missing and add a generator hitting it.
             int kernel_vector_row = previous_cycles->column_to_pivot_row[i];
             // assert(kernel_vector_row < previous_kernel->kernel->rows);
             Vector *new_image = previous_cycles->kernel->matrix[kernel_vector_row];
-            // if(degree == 17){
-            //     printf("    new_image %d, row %d: ", i, kernel_vector_row);
-            //     printVector(new_image);
-            //     printf("\n");
-            // }
             char slice_memory[vectImpl->container_size];
             Vector *slice = (Vector*)slice_memory;
             vectImpl->slice(slice, full_matrix->matrix[current_target_row], 0, previous_cycles->kernel->columns);
@@ -222,14 +247,26 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     resolution->internal_degree_to_resolution_stage[degree] ++;
 }
 
+void test2(void (*fn)(uint x)){
+    printf("Calling argument...\n");
+    fn(43);
+    printf("Called it.\n");
+}
+
 
 #include "milnor.h"
-/**/
-int main(){
+void doResolution(
+    uint degree, 
+    void (*addClass)(uint hom_deg, uint int_deg, char *cocycle_name),
+    void (*addStructline)(
+        uint source_hom_deg, uint source_int_deg, uint source_idx, 
+        uint target_hom_deg, uint target_int_deg, uint target_idx
+    )
+){
     initializePrime(2);
     MilnorAlgebra *A = constructMilnorAlgebra(2, false, NULL);
     Algebra *algebra = (Algebra*) A;
-    algebra_computeBasis(algebra, 50);
+    algebra_computeBasis(algebra, degree + 10);
     // Vector * v = constructVector2(2, 65, 0);
     // uint i = 64;
     // setVectorEntry(v, i, 1);
@@ -240,10 +277,16 @@ int main(){
     // printf("\n");
     // return 0;
     uint max_generator_degree = 0;
-    uint number_of_generators_in_degree[5] = {1,1,1,1,1};
+    uint number_of_generators_in_degree[1] = {1};
     FiniteDimensionalModule *module = 
-    FiniteDimensionalModule_construct(algebra, max_generator_degree, number_of_generators_in_degree);
-    Resolution *res = Resolution_construct(module, 50, 50);
+        FiniteDimensionalModule_construct(algebra, max_generator_degree, number_of_generators_in_degree);
+    Resolution *res = Resolution_construct(module, degree, degree);
+    if(addClass != NULL){
+        res->addClass = addClass;
+    }
+    if(addStructline != NULL){
+        res->addStructline = addStructline;
+    }    
     // uint max_deg = 25;
     // uint max_int_deg = 18;  //max_deg;
     // uint max_hom_deg = 3;   //max_deg;
@@ -252,26 +295,35 @@ int main(){
     //         Resolution_step(res, hom_deg, int_deg);
     //     }    
     // }
-    uint max_deg = 50;
-    uint max_int_deg = max_deg;
-    uint max_hom_deg = max_deg;
-    Resolution_resolveThroughDegree(res, max_deg);
-    for(int i = max_hom_deg-1; i >= 0; i--){
-        printf("stage %*d: ", 2, i);
-        printArray(&res->modules[i+1]->number_of_generators_in_degree[i], max_int_deg - i);
-        printf("\n");
-    }
+    uint max_int_deg = degree;
+    uint max_hom_deg = degree;
+    Resolution_resolveThroughDegree(res, degree);
+    // for(int i = max_hom_deg-1; i >= 0; i--){
+    //     printf("stage %*d: ", 2, i);
+    //     printArray(&res->modules[i+1]->number_of_generators_in_degree[i], max_int_deg - i);
+    //     printf("\n");
+    // }
+}
 
-    printf("\n\n\n\n\n");
-    Vector * result = constructVector2(2, 37, 0);
-    printVector(result);
-    char buffer[1000];
-    MilnorBasisElement b = GetMilnorBasisElementFromIndex(res->algebra, 7, 0);
-    milnor_basis_element_to_string(buffer, &b);
-    printf("MBE: %s\n", buffer);
-    FreeModule_actOnBasis((Module*)res->modules[2], result, 3, 7, 3, 10, 12);
-    printVector(result);
-    printf("\n\n\n\n=======================\n\n");
+typedef struct {
+    uint a;
+    uint b;
+    uint *c;
+} testStruct;
+
+testStruct *test(){
+    testStruct *result = malloc(sizeof(testStruct) + 2*sizeof(int));
+    result->a = 50;
+    result->b = 12;
+    result->c = (uint*)(result + 1);
+    result->c[0] = 17;
+    result->c[1] = 33;
+    return result;
+}
+
+/**/
+int main(){
+    doResolution(9, NULL, NULL);
     // printf("max_gen_deg: %d\n", res->modules[2]->max_generator_degree);
     // printArray(res->modules[2]->number_of_generators_in_degree, res->modules[2]->max_generator_degree);
     // printf("\n");

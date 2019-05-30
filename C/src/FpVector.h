@@ -7,7 +7,7 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
-#define MAX_DIMENSION 10000
+#define MAX_DIMENSION 100000
 typedef unsigned long long uint64;
 typedef long long int64;
 typedef unsigned int uint;

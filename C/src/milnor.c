@@ -14,7 +14,7 @@
 #include "milnor.h"
 #include "milnor_private.h"
 
-#define MAX_DIMENSION 10000
+//#define MAX_DIMENSION 10000
 
 
 void printMilnorBasisElement(MilnorBasisElement *b){

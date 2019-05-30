@@ -566,6 +566,7 @@ void printVector(Vector *v){
 
 
 uint getMatrixSize(VectorInterface *vectImpl, uint p, uint rows, uint cols){
+    // printf("cols: %ud\n", cols);
     assert(cols < MAX_DIMENSION);
     return sizeof(Matrix) 
       + rows * (sizeof(Vector*) + vectImpl->container_size  + vectImpl->getSize(p, cols, 0));
