@@ -1,28 +1,20 @@
 'use strict';
+importScripts("CSteenrod.js");
 // let ctypes = require("ctypes");
-let sseq = new Sseq();
-sseq.xRange = [0, 50];
-sseq.yRange = [0, 20];
-sseq.initialxRange = [0, 20];
-sseq.initialyRange = [0, 12];
-sseq.display();
-Mousetrap.unbind("left");
-Mousetrap.unbind("right");
-document.getElementById('page_indicator').innerText = "";
 
 function addClassCallback(hom_deg, int_deg, cocycle) { 
-    let c = sseq.addClass(int_deg - hom_deg, hom_deg);
-    classesTable[int_deg - hom_deg][hom_deg].push(c);
-    sseq.update();
+    self.postMessage({"cmd" : "addClass", "x" : int_deg - hom_deg, "y": hom_deg});
+    // display.updateBatch();
 }
 
 function addStructlineCallback(
     source_hom_deg, source_int_deg, source_idx, 
     target_hom_deg, target_int_deg, target_idx
 ){
-    let source = classesTable[source_int_deg - source_hom_deg][source_hom_deg][source_idx];
-    let target = classesTable[target_int_deg - target_hom_deg][target_hom_deg][target_idx];
-    sseq.addStructline(source, target);
+    self.postMessage({"cmd" : "addStructline", 
+        "source" : {"x" : source_int_deg - source_hom_deg, "y": source_hom_deg, "idx": source_idx},
+        "target" : {"x" : target_int_deg - target_hom_deg, "y": target_hom_deg, "idx": target_idx}
+    })
 }
 
 
@@ -31,14 +23,19 @@ let addStructlineCallbackPtr = Module.addFunction(addStructlineCallback);
 let cdoRes = cwrap("doResolution", 'void', ['number', 'pointer', 'pointer'])
 
 function doRes(degree){
-    window.classesTable = Array(degree).fill(0).map(x => Array(degree).fill(0).map(x => []));
     cdoRes(degree, addClassCallbackPtr, addStructlineCallbackPtr);
 }
 
+let runtimePromise = new Promise(function(resolve, reject){
+    Module.onRuntimeInitialized = function(){
+        resolve();
+    }; 
+});
 
-Module.onRuntimeInitialized = function(){
-    doRes(50);
-}; 
+self.onmessage = function(msg){
+    runtimePromise.then(() => doRes(msg.data.degree));
+};
+
 // sleep(1000).then( () => doRes(20));
 
 

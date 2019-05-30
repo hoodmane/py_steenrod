@@ -20,7 +20,7 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
 void printCallback(Resolution * res, uint homological_degree, uint degree, uint num_gens);
 
 void addClass_doNothing(uint hom_deg, uint int_deg, char *cocycle_name){
-    // printf("\n\nhom_deg: %d, mod_deg: %d, num_gens: %d\n", homological_degree, degree, num_gens);
+    // printf("hom_deg: %d, int_deg: %d\n", hom_deg, int_deg);
 }
 
 void addStructline_doNothing(
@@ -55,9 +55,16 @@ Resolution *Resolution_construct(FiniteDimensionalModule *module, uint max_filtr
 }
 
 void Resolution_resolveThroughDegree(Resolution *res, uint degree){
-    for(uint hom_deg = 0; hom_deg < degree; hom_deg++){
-       for(uint int_deg = hom_deg; int_deg <= degree; int_deg ++){
+//     for(uint hom_deg = 0; hom_deg < degree; hom_deg++){
+//        for(uint int_deg = hom_deg; int_deg <= degree; int_deg ++){
+//             Resolution_step(res, hom_deg, int_deg);
+//             printf("(%d, %d)\n", hom_deg, int_deg);
+//        }
+//    }
+    for(uint int_deg = 0; int_deg <= degree; int_deg ++){
+        for(uint hom_deg = 0; hom_deg <= int_deg; hom_deg++){           
             Resolution_step(res, hom_deg, int_deg);
+            printf("(%d, %d)\n", hom_deg, int_deg);
        }
    }
 }
@@ -324,17 +331,7 @@ testStruct *test(){
 
 /**/
 int main(){
-    MilnorAlgebra *alg = constructMilnorAlgebra(2, false, NULL);
-    GenerateMilnorBasis(alg, 30);
-    Vector * result = constructVector2(2, 23, 0);
-    MilnorProduct((Algebra*)alg, result, 1, 12, 2, 11, 1);
-    // Resolution *res = doResolution(30, NULL, NULL);
-    // printf("max_gen_deg: %d\n", res->modules[2]->max_generator_degree);
-    // printArray(res->modules[2]->number_of_generators_in_degree, res->modules[2]->max_generator_degree);
-    // printf("\n");
-
-    // FreeModuleHomomorphism_applyToBasisElement(res->differentials[7], result, 1, 28, 24);
-    printVector(result);
+    Resolution *res = doResolution(50, NULL, NULL);
     return 0;
 }
 //**/
