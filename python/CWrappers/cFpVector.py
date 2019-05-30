@@ -1,7 +1,7 @@
 from ctypes import *
 from ctypes_wrap import *
 
-def construct_c_vector(p, dim, offset=0):
+def c_constructVector(p, dim, offset=0):
     CSteenrod.initializePrime(p)
     if(p==2):
         v = CSteenrod.constructVector2(p, dim, offset)
@@ -86,7 +86,7 @@ def c_row_reduce(c_M):
     c_M.pivots = pivots_array
 
 def vector_to_C(p, vector):
-    c_v = construct_c_vector(p, len(vector))
+    c_v = c_constructVector(p, len(vector))
     c_packVector(c_v, vector)
     return c_v
 
@@ -106,8 +106,8 @@ def matrix_from_C(matrix):
     
 def test_c_vector(p, dim):
     import random
-    v = construct_c_vector(p, dim)
-    w = construct_c_vector(p, dim)
+    v = c_constructVector(p, dim)
+    w = c_constructVector(p, dim)
     k = [random.randint(0,p-1) for x in range(dim)]
     l = [random.randint(0,p-1) for x in range(dim)]
     print(k)

@@ -31,44 +31,41 @@ def printMatrixInfo(d_first, d_second, degree):
             print("    ", "dx = ", dx)
 
 if __name__ == "__main__":
-    cmilnor.makeCMilnorAlgebra(p=2, degree=50)
-    A = steenrod.MilnorAlgebra(p=2)
+    A = cmilnor.makeCMilnorAlgebra(p=2, degree=50)
     Sq = A.Sq
     M = steenrod_module.FiniteSteenrodModule(p=2)
     x0 = M.add_basis_element("x0", 0)
     M.validate()
     cM = cmodules.FiniteSteenrodModule_to_C(M)
     print("resolve")
-    res = resolve(M, 20)
+    res = resolve(M, 30)
     print("done resolving")
     print(res.contents.modules[2].contents.max_generator_degree)
-    F0 = cmodules.FreeModule_from_c(res.contents.modules[1], A, "x0")
-    F1 = cmodules.FreeModule_from_c(res.contents.modules[2], A, "x1")
-    F2 = cmodules.FreeModule_from_c(res.contents.modules[3], A, "x2")
-    F3 = cmodules.FreeModule_from_c(res.contents.modules[4], A, "x3")
-    F4 = cmodules.FreeModule_from_c(res.contents.modules[5], A, "x4")
-    F5 = cmodules.FreeModule_from_c(res.contents.modules[6], A, "x5")
-    d1 = cmodules.homomorphism_from_c(res.contents.differentials[2], F1, F0)
-    d2 = cmodules.homomorphism_from_c(res.contents.differentials[3], F2, F1)
-    d3 = cmodules.homomorphism_from_c(res.contents.differentials[4], F3, F2)
-    d4 = cmodules.homomorphism_from_c(res.contents.differentials[5], F4, F3)
-    d5 = cmodules.homomorphism_from_c(res.contents.differentials[6], F5, F4)
-    x11 = F1.get_generator("x11")
-    x12 = F1.get_generator("x12")
-    x14 = F1.get_generator("x14")
-    x18 = F1.get_generator("x18")
-    x116 = F1.get_generator("x116")
-    x22 = F2.get_generator("x22")
-    x24 = F2.get_generator("x24")
-    x25 = F2.get_generator("x25")
-    x28 = F2.get_generator("x28")
-    x29 = F2.get_generator("x29")
-    x210 = F2.get_generator("x210")
-    x216 = F2.get_generator("x216")
-
+    res_modules = []
     for i in range(8):
-        op = Sq(i)
-        print(op * cmodules.c_apply_homomorphism(d2, x29) - cmodules.c_apply_homomorphism(d2, op * x29))
+        F = cmodules.FreeModule_from_c(res.contents.modules[i+1], A, "x" + str(i))
+        res_modules.append(F)
+        globals()["F" + str(i)] = F
+        for i in F.gens:
+            globals()[i] = F.get_generator(i)
+
+    for i in range(1, 8):
+        globals()["d" + str(i)] = cmodules.homomorphism_from_c(res.contents.differentials[i+1], res_modules[i], res_modules[i-1])
+
+    def checkDifferential(d, x):
+        for (op, g) in x:
+            prod1 = op* d(d.source.get_generator(g))
+            prod2 = d(d.source.get_basis_element(op, g))
+            if len(prod1 - prod2) != 0:
+                print("op:", op, "g:", g, ":")
+                print("    ", prod1)
+                print("    ", prod2)
+                print("    ", prod1  + prod2)
+                return prod1  + prod2
+
+    # for i in range(8):
+    #     op = Sq(i)
+    #     print(op * cmodules.c_apply_homomorphism(d2, x29) - cmodules.c_apply_homomorphism(d2, op * x29))
 
     #checkDsquaredZero(F2, d2, d1)
     #checkDsquaredZero(F3, d3, d2)

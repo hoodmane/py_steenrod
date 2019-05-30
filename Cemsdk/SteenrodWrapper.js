@@ -1,7 +1,14 @@
 'use strict';
 // let ctypes = require("ctypes");
 let sseq = new Sseq();
+sseq.xRange = [0, 50];
+sseq.yRange = [0, 20];
+sseq.initialxRange = [0, 20];
+sseq.initialyRange = [0, 12];
 sseq.display();
+Mousetrap.unbind("left");
+Mousetrap.unbind("right");
+document.getElementById('page_indicator').innerText = "";
 
 function addClassCallback(hom_deg, int_deg, cocycle) { 
     let c = sseq.addClass(int_deg - hom_deg, hom_deg);

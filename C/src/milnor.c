@@ -609,7 +609,7 @@ void MilnorProductEven(MilnorAlgebraInternal *algebra, uint *result, MilnorBasis
         if(coeff != 0) {
             MilnorBasisElement m = (MilnorBasisElement){0, 0, output_degree, max_nonzero_diagonal, diagonal_sums};
             uint idx = GetIndexFromMilnorBasisElement((MilnorAlgebra*)algebra, m);
-            result[idx] = coeff;
+            result[idx] = (result[idx] + coeff) % p;
         }
     } while(step_milnor_matrix(p, M, r, s));
 }

@@ -1,17 +1,26 @@
 from ctypes import *
 from ctypes_modules import *
 
-#typedef struct {
-#    Algebra * algebra;
-#    Module * module;
-#    FreeModule * resolution_modules;
-#    FreeModuleHomomorphism * resolution_differentials;
-#} Resolution;
+# typedef struct Resolution_s {
+#     Algebra *algebra;
+#     Module *module;
+#     void (*addClass)(uint hom_deg, uint int_deg, char *cocycle_name);
+#     void (*addStructline)(
+#         uint source_hom_deg, uint source_int_deg, uint source_idx, 
+#         uint target_hom_deg, uint target_int_deg, uint target_idx
+#     );
+#     uint max_degree;
+#     FreeModule **modules; // The index into resolution_modules is homological_degree + 1.
+#     FreeModuleHomomorphism **differentials;// Each differential has source the module with the same index in resolution_modules
+#     int *internal_degree_to_resolution_stage;       // Records how far we've resolved in each degree (homological_degree + 1)
+# } Resolution;
 
 class c_Resolution(Structure):
     _fields_ = [
         ("algebra", POINTER(c_Algebra)),
         ("module", POINTER(c_Module)),
+        ("addClass", c_void_p),
+        ("addStructline", c_void_p),
         ("max_degree", c_uint),
         ("modules", POINTER(POINTER(c_FreeModule))),
         ("differentials", POINTER(POINTER(c_FreeModuleHomomorphism))),

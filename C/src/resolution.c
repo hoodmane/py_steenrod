@@ -255,7 +255,7 @@ void test2(void (*fn)(uint x)){
 
 
 #include "milnor.h"
-void doResolution(
+Resolution *doResolution(
     uint degree, 
     void (*addClass)(uint hom_deg, uint int_deg, char *cocycle_name),
     void (*addStructline)(
@@ -303,6 +303,7 @@ void doResolution(
     //     printArray(&res->modules[i+1]->number_of_generators_in_degree[i], max_int_deg - i);
     //     printf("\n");
     // }
+    return res;
 }
 
 typedef struct {
@@ -323,10 +324,17 @@ testStruct *test(){
 
 /**/
 int main(){
-    doResolution(9, NULL, NULL);
+    MilnorAlgebra *alg = constructMilnorAlgebra(2, false, NULL);
+    GenerateMilnorBasis(alg, 30);
+    Vector * result = constructVector2(2, 23, 0);
+    MilnorProduct((Algebra*)alg, result, 1, 12, 2, 11, 1);
+    // Resolution *res = doResolution(30, NULL, NULL);
     // printf("max_gen_deg: %d\n", res->modules[2]->max_generator_degree);
     // printArray(res->modules[2]->number_of_generators_in_degree, res->modules[2]->max_generator_degree);
     // printf("\n");
+
+    // FreeModuleHomomorphism_applyToBasisElement(res->differentials[7], result, 1, 28, 24);
+    printVector(result);
     return 0;
 }
 //**/
