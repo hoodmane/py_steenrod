@@ -86,7 +86,6 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     uint source_dimension = module_getDimension(&current_differential->source->module, degree);
     uint target_dimension = module_getDimension(current_differential->target, degree);
 
-    source->max_generator_degree ++;
     // assert(source->max_generator_degree == degree);
 
     // The Homomorphism matrix has size source_dimension x target_dimension, but we are going to augment it with an
@@ -115,10 +114,14 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
         vectImpl->setEntry(matrix->matrix[i], padded_target_dimension + i, 1);
     }
     // Row reduce
-    // printMatrixSlice(matrix, target_dimension, padded_target_dimension);
+    // if(degree == 17){
+    //     printMatrixSlice(matrix, target_dimension, padded_target_dimension);
+    // }
     int column_to_pivot_row[matrix->columns];
     rowReduce(matrix, column_to_pivot_row, 0, 0);//target_dimension, padded_target_dimension);
-    // printMatrixSlice(matrix, target_dimension, padded_target_dimension);
+    // if(degree == 17){
+    //     printMatrixSlice(matrix, target_dimension, padded_target_dimension);
+    // }
 
     // Stage 1: Find kernel of current differential
     // Locate first kernel row
@@ -146,18 +149,35 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     current_differential->kernel[degree] = kernel;
     // Stage 2: Hit kernel of previous differential. 
     Kernel *previous_cycles = previous_differential->kernel[degree];
+    // if(degree == 17){
+    //     printf("    previous_cycles:\n");
+    //     printMatrix(previous_cycles->kernel);
+    // }
     uint previous_cycle_dimension = previous_cycles->kernel->rows;
     // We no longer care about the kernel rows since we stored them somewhere else, 
     // so we're going to write over them.
     uint current_target_row = first_kernel_row;
     // Find basis of quotient previous_kernel/image and add new free module generators to hit
     uint homology_dimension = 0;
+    // if(degree == 17){
+    //     printf("    column_to_pivot_row:  \n    ");
+    //     printArray(column_to_pivot_row, previous_cycles->kernel->columns);
+    //     printf("\n");
+    //     printf("    previous_cycles column_to_pivot_row:  \n    ");
+    //     printArray(previous_cycles->column_to_pivot_row, previous_cycles->kernel->columns);
+    //     printf("\n");        
+    // }
     for(uint i = 0; i < previous_cycles->kernel->columns; i++){
         if(column_to_pivot_row[i] < 0 && previous_cycles->column_to_pivot_row[i] >= 0){
             // Look up the cycle that we're missing and add a generator hitting it.
             int kernel_vector_row = previous_cycles->column_to_pivot_row[i];
             // assert(kernel_vector_row < previous_kernel->kernel->rows);
             Vector *new_image = previous_cycles->kernel->matrix[kernel_vector_row];
+            // if(degree == 17){
+            //     printf("    new_image %d, row %d: ", i, kernel_vector_row);
+            //     printVector(new_image);
+            //     printf("\n");
+            // }
             char slice_memory[vectImpl->container_size];
             Vector *slice = (Vector*)slice_memory;
             vectImpl->slice(slice, full_matrix->matrix[current_target_row], 0, previous_cycles->kernel->columns);
@@ -224,17 +244,15 @@ int main(){
     FiniteDimensionalModule *module = 
     FiniteDimensionalModule_construct(algebra, max_generator_degree, number_of_generators_in_degree);
     Resolution *res = Resolution_construct(module, 50, 50);
-    // uint max_int_deg = 6;
-    // uint max_hom_deg = 3;
-    // uint max_int_deg = 7;
-    // uint max_hom_deg = 5;
+    // uint max_deg = 25;
+    // uint max_int_deg = 18;  //max_deg;
+    // uint max_hom_deg = 3;   //max_deg;
     // for(uint int_deg = 0; int_deg < max_int_deg; int_deg ++){
     //     for(uint hom_deg = 0; hom_deg < max_hom_deg && hom_deg <= int_deg; hom_deg++){
     //         Resolution_step(res, hom_deg, int_deg);
     //     }    
     // }
-
-    uint max_deg = 25;
+    uint max_deg = 50;
     uint max_int_deg = max_deg;
     uint max_hom_deg = max_deg;
     Resolution_resolveThroughDegree(res, max_deg);
@@ -244,6 +262,19 @@ int main(){
         printf("\n");
     }
 
+    printf("\n\n\n\n\n");
+    Vector * result = constructVector2(2, 37, 0);
+    printVector(result);
+    char buffer[1000];
+    MilnorBasisElement b = GetMilnorBasisElementFromIndex(res->algebra, 7, 0);
+    milnor_basis_element_to_string(buffer, &b);
+    printf("MBE: %s\n", buffer);
+    FreeModule_actOnBasis((Module*)res->modules[2], result, 3, 7, 3, 10, 12);
+    printVector(result);
+    printf("\n\n\n\n=======================\n\n");
+    // printf("max_gen_deg: %d\n", res->modules[2]->max_generator_degree);
+    // printArray(res->modules[2]->number_of_generators_in_degree, res->modules[2]->max_generator_degree);
+    // printf("\n");
     return 0;
 }
 //**/

@@ -194,7 +194,7 @@ class Vector(dict):
                 coeff = ""
             else:
                 coeff = "%s * " % c
-            result.append(coeff + self.basis_elt_to_string(self.module, b))
+            result.append(coeff + self.basis_elt_to_string(getattr(self, "module", None), b))
         if(len(result) == 0):
             return "0";
         else:

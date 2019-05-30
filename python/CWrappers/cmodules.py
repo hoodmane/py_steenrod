@@ -116,8 +116,6 @@ def FreeModule_from_c(cF, algebra, name_prefix):
     F.generator_indices = generator_indices
     F.index_to_generator = index_to_generator
 
-    max_generator_degree = min(max_generator_degree, 10)
-    print("maxed gen")
     for i in range(max_generator_degree + 1):
         for j in range(number_of_generators_in_degree[i]):
             gen_name = name_prefix + str(i)
@@ -139,8 +137,7 @@ def c_free_module_index_to_py_opgen(module, degree, idx):
     gen = module.index_to_generator[(c_opgen.generator_degree, c_opgen.generator_index)]
     return (module.algebra.get_basis_element(b), gen)
 
-def free_module_elt_from_c(module, degree, c_elt):
-    result_array = cFpVector.vector_from_C(c_elt)
+def free_module_elt_from_array(module, degree, result_array):
     result = {}
     for (i,c) in enumerate(result_array):
         if c==0:
@@ -148,6 +145,10 @@ def free_module_elt_from_c(module, degree, c_elt):
         py_opgen = c_free_module_index_to_py_opgen(module, degree, i)
         result[py_opgen] = c
     return module.get_element(result)
+
+def free_module_elt_from_c(module, degree, c_elt):
+    result_array = cFpVector.vector_from_C(c_elt)
+    return free_module_elt_from_array(module, degree, result_array)
 
 def c_act_on_free_module(module, op, element):
     c_module = module.c_module

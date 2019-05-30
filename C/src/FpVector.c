@@ -459,7 +459,7 @@ void addArray2(Vector *target, uint *source, uint c){
             j < (64 - bit_length + 1) && source_idx < target->dimension; 
             j += bit_length
         ){
-            source_limb |= source[source_idx] << j;
+            source_limb |= ((uint64)source[source_idx] << j);
             source_idx ++;
         }  
         t->vector[limb] ^= source_limb;
@@ -558,7 +558,7 @@ uint vectorToString(char *buffer, Vector *vector){
 }
 
 void printVector(Vector *v){
-    char buffer[200];
+    char buffer[10000];
     vectorToString(buffer, v);
     printf("%s\n", buffer);
 }
