@@ -9,8 +9,6 @@ from ctypes import *
 # } Vector;
 class c_Vector(Structure):
     _fields_ = [
-        ("interface",c_void_p),
-        ("p", c_uint),
         ("dimension", c_uint),
         ("size", c_uint),
         ("offset", c_uint)
@@ -95,6 +93,9 @@ def wrap_FpVector(CSteenrod):
     #void Vector_add(Vector * target, Vector * source, uint c);
     CSteenrod.Vector_add.argtypes = [POINTER(c_Vector), POINTER(c_Vector), c_uint]  
     
+    #void Vector_addArray(Vector * target, uint *source, uint c);
+    CSteenrod.Vector_addArray.argtypes = [POINTER(c_Vector), POINTER(c_uint), c_uint]
+
     #void Vector_scale(Vector * v, uint c);
     CSteenrod.Vector_scale.argtypes = [POINTER(c_Vector), c_uint] 
     

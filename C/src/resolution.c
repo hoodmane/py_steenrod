@@ -31,17 +31,25 @@ void addStructline_doNothing(
 }
 
 
-Resolution *Resolution_construct(FiniteDimensionalModule *module, uint max_filtration, uint max_degree){
+Resolution *Resolution_construct(
+    FiniteDimensionalModule *module, 
+    uint max_degree,
+    void (*addClass)(uint hom_deg, uint int_deg, char *cocycle_name),
+    void (*addStructline)(
+        uint source_hom_deg, uint source_int_deg, uint source_idx, 
+        uint target_hom_deg, uint target_int_deg, uint target_idx
+    )    
+){
     Resolution *res = malloc(
         sizeof(Resolution)
-        + (max_filtration + 1) * sizeof(FreeModule*)
-        + (max_filtration + 1) * sizeof(FreeModuleHomomorphism*)
+        + (max_degree + 1) * sizeof(FreeModule*)
+        + (max_degree + 1) * sizeof(FreeModuleHomomorphism*)
         + (max_degree + 1) * sizeof(int)
     );
     res->modules = (FreeModule**)(res + 1);
     res->differentials = 
-        (FreeModuleHomomorphism**)(res->modules + (max_filtration + 1));
-    res->internal_degree_to_resolution_stage = (int*)(res->differentials + max_filtration + 1);
+        (FreeModuleHomomorphism**)(res->modules + (max_degree + 1));
+    res->internal_degree_to_resolution_stage = (int*)(res->differentials + max_degree + 1);
     memset(res->internal_degree_to_resolution_stage, 0, (max_degree+1)*sizeof(int));
     
     res->module = (Module*)module;
@@ -49,8 +57,14 @@ Resolution *Resolution_construct(FiniteDimensionalModule *module, uint max_filtr
     res->max_degree = max_degree;
     res->modules[0] = (FreeModule*)module;
     res->differentials[0] = FreeModuleHomomorphism_construct((FreeModule*)module, NULL, max_degree);
-    res->addClass = addClass_doNothing;
-    res->addStructline = addStructline_doNothing;
+    if(addClass == NULL){
+        addClass = addClass_doNothing;
+    }
+    if(addStructline == NULL){
+        addStructline = addStructline_doNothing;
+    }    
+    res->addClass = addClass;
+    res->addStructline = addStructline;
     return res;
 }
 
@@ -63,8 +77,8 @@ void Resolution_resolveThroughDegree(Resolution *res, uint degree){
 //    }
     for(uint int_deg = 0; int_deg <= degree; int_deg ++){
         for(uint hom_deg = 0; hom_deg <= int_deg; hom_deg++){           
-            Resolution_step(res, hom_deg, int_deg);
             printf("(%d, %d)\n", hom_deg, int_deg);
+            Resolution_step(res, hom_deg, int_deg);
        }
    }
 }
@@ -102,28 +116,28 @@ void Resolution_step(Resolution *res, uint homological_degree, uint degree){
         res->addClass(homological_degree, degree, "");
     }
     // Products:
-    if(homological_degree > 0){
-        FreeModuleHomomorphism *d = res->differentials[homological_degree + 1];
-        FreeModule *T = (FreeModule*)d->target;        
-        for(uint source= 0; source < num_gens; source++){
-            Vector *dx = d->outputs[degree][source];
-            for(uint j = 0; j < 3; j++){
-                uint hj_degree = 1 << j;
-                if(hj_degree > degree){
-                    break;
-                }
-                uint gen_degree = degree - hj_degree;
-                uint num_target_generators = T->number_of_generators_in_degree[gen_degree];
-                for(uint target = 0; target < num_target_generators; target++){
-                    uint vector_idx = FreeModule_operationGeneratorToIndex(res->modules[homological_degree], hj_degree, 0, gen_degree, target);
-                    if(Vector_getEntry(dx, vector_idx) != 0){
-                        // There was a product!
-                        res->addStructline(homological_degree - 1, gen_degree, target, homological_degree, degree, source);
-                    }
-                }
-            }
-        }
-    }
+    // if(homological_degree > 0){
+    //     FreeModuleHomomorphism *d = res->differentials[homological_degree + 1];
+    //     FreeModule *T = (FreeModule*)d->target;        
+    //     for(uint source= 0; source < num_gens; source++){
+    //         Vector *dx = d->outputs[degree][source];
+    //         for(uint j = 0; j < 3; j++){
+    //             uint hj_degree = 1 << j;
+    //             if(hj_degree > degree){
+    //                 break;
+    //             }
+    //             uint gen_degree = degree - hj_degree;
+    //             uint num_target_generators = T->number_of_generators_in_degree[gen_degree];
+    //             for(uint target = 0; target < num_target_generators; target++){
+    //                 uint vector_idx = FreeModule_operationGeneratorToIndex(res->modules[homological_degree], hj_degree, 0, gen_degree, target);
+    //                 if(Vector_getEntry(dx, vector_idx) != 0){
+    //                     // There was a product!
+    //                     res->addStructline(homological_degree - 1, gen_degree, target, homological_degree, degree, source);
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 // Invariants:
@@ -267,8 +281,8 @@ Resolution *doResolution(
         uint target_hom_deg, uint target_int_deg, uint target_idx
     )
 ){
-    initializePrime(2);
-    MilnorAlgebra *A = MilnorAlgebra_construct(2, false, NULL);
+    initializePrime(3);
+    MilnorAlgebra *A = MilnorAlgebra_construct(3, true, NULL);
     Algebra *algebra = (Algebra*) A;
     algebra_computeBasis(algebra, degree);
 
@@ -276,13 +290,7 @@ Resolution *doResolution(
     uint number_of_generators_in_degree[1] = {1};
     FiniteDimensionalModule *module = 
         FiniteDimensionalModule_construct(algebra, max_generator_degree, number_of_generators_in_degree);
-    Resolution *res = Resolution_construct(module, degree, degree);
-    if(addClass != NULL){
-        res->addClass = addClass;
-    }
-    if(addStructline != NULL){
-        res->addStructline = addStructline;
-    }    
+    Resolution *res = Resolution_construct(module, degree, addClass, addStructline);
 
     Resolution_resolveThroughDegree(res, degree);
     // for(int i = max_hom_deg-1; i >= 0; i--){

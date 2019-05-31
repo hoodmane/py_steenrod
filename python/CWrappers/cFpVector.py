@@ -2,10 +2,10 @@ from ctypes import *
 from ctypes_wrap import *
 
 class cVector:
-    def __init__(self, p=None, dim=None, offset=0, vector=None):
+    def __init__(self, p, dim=None, offset=0, vector=None):
         self.freed = False
+        self.p = p        
         if vector != None and type(vector) != list:
-            self.p = vector.contents.p
             self.dimension = vector.contents.dimension
             self.c_list_type = c_uint * self.dimension
             self.vector = vector
@@ -14,7 +14,6 @@ class cVector:
         if type(vector) == list:
             dim = len(vector)
 
-        self.p = p
         self.dimension = dim
         self.c_list_type = c_uint * self.dimension
         CSteenrod.initializePrime(p)
@@ -63,7 +62,8 @@ class cVector:
     def slice(self, min, max):
         cSlice = CSteenrod.Vector_construct(self.p, 0, 0)
         CSteenrod.Vector_slice(cSlice, self.vector, min, max)
-        slice = cVector(vector=cSlice)
+        slice = cVector(self.p, vector=cSlice)
+        slice.dimension = cSlice.contents.dimension
         return slice
 
     def __len__(self):

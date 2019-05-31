@@ -95,7 +95,7 @@ uint *modplookuptable[MAX_PRIME_INDEX] = {0};
 
 // Called by initializePrime
 void initializeModpLookupTable(uint p){
-    uint p_times_p_minus_1 = p*(p-1);
+    uint p_times_p_minus_1 = p*(p-1) + 1;
     uint *table = malloc((p_times_p_minus_1 + 1) * sizeof(uint));
     for(uint i = 0; i <= p_times_p_minus_1; i++){
         table[i] = i % p;
@@ -105,6 +105,7 @@ void initializeModpLookupTable(uint p){
 
 // n must be in the range 0 <= n <= p * (p-1)
 uint modPLookup(uint p, uint n){
+    // printf("%d ", n);
     return modplookuptable[prime_to_index_map[p]][n];
 }
 
@@ -140,7 +141,7 @@ LimbBitIndexPair getLimbBitIndexPair(uint p, uint idx){
 
 size_t Vector_getSize(uint p, uint dimension, uint offset){
     assert(dimension < MAX_DIMENSION);
-    assert(offset < getEntriesPer64Bits(p));
+    assert(offset < 64);
     uint bit_length = getBitlength(p);
     size_t size = (dimension == 0) ? 0 : (getLimbBitIndexPair(p, dimension + offset/bit_length - 1).limb + 1);
     size *= sizeof(uint64);
@@ -377,32 +378,15 @@ void VectorGeneric_addBasisElement(Vector *target, uint index, uint coeff){
 
 void VectorGeneric_addArray(Vector *target, uint *source, uint c){
     VectorStd *t = (VectorStd*) target;
-    uint bit_mask = getBitMask(t->implementation->p);
-    uint bit_length = getBitlength(t->implementation->p);
     uint source_idx = 0;
-    for(uint limb = 0; limb < t->number_of_limbs; limb++){
-        uint64 target_limb = t->vector[limb];
-        uint64 result = 0;
-        uint j = 0;
-        // Preserve the bits outside of the range we're writing in case target is a slice.
-        if(limb == 0){
-            j = target->offset;
-            result |= t->vector[limb] & ((1<<target->offset) - 1);
+    uint entries[getEntriesPer64Bits(t->implementation->p)];   
+    for(uint i = 0; i < t->number_of_limbs; i++){
+        uint limb_length = unpackLimb(entries, t, i);
+        for(uint j = 0; j < limb_length; j++){
+            entries[j] = modPLookup(t->implementation->p, entries[j] + c*source[source_idx]);
+            source_idx++;
         }
-        if(limb == t->number_of_limbs - 1){
-            result |= t->vector[limb] & (~((1<<((target->offset + target->dimension)%64)) - 1));
-        }        
-        for(;
-            j < 64 - bit_length + 1 && source_idx < target->dimension; 
-            j += bit_length
-        ){
-            uint64 entry = (target_limb >> j ) & bit_mask;
-            entry += c*source[source_idx];
-            uint64 entry_mod_p = modPLookup(t->implementation->p, entry);
-            result |= entry_mod_p << j;
-            source_idx ++;
-        }  
-        t->vector[limb] = result;
+        packLimb(t, entries, i);
     }
 }
 
@@ -423,7 +407,7 @@ void VectorGeneric_add(Vector *target, Vector *source, uint coeff){
 }
 
 void VectorGeneric_scale(Vector *target, uint coeff){
-    assert(coeff != 0);
+    // assert(coeff != 0);
     VectorStd *t = (VectorStd*) target;   
     uint entries_per_64_bits = getEntriesPer64Bits(t->implementation->p);    
     uint entries[entries_per_64_bits];
@@ -615,7 +599,7 @@ Matrix *Matrix_initialize(char *memory, uint p, uint rows, uint columns)  {
 
 Matrix *Matrix_construct(uint p,  uint rows, uint columns)  {
     char *M = malloc(Matrix_getSize(p, rows, columns));
-    printf("columns: %d, rows: %d\n", columns, rows);
+    // printf("columns: %d, rows: %d\n", columns, rows);
     return Matrix_initialize(M, p, rows, columns);
 }
 
@@ -690,7 +674,6 @@ void rowReduce(Matrix *M, int *column_to_pivot_row, uint col_end, uint col_start
     if(rows == 0){
         return;
     }
-    VectorImplementation *vectorImpl = ((VectorStd*)M->matrix[0])->implementation;    
     VectorIterator rowIterators[rows];
     for(uint i = 0; i < rows; i++){
         rowIterators[i] = Vector_getIterator(matrix[i]);
@@ -736,7 +719,7 @@ void rowReduce(Matrix *M, int *column_to_pivot_row, uint col_end, uint col_start
         // Divide pivot row by pivot entry
         int c = rowIterators[pivot].value;
         int c_inv = inverse(p, c);
-        vectorImpl->scale(matrix[pivot], c_inv);
+        Vector_scale(matrix[pivot], c_inv);
 
         if(col_end > 0){
             printf("row(%d) *= %d\n", pivot, c_inv);
@@ -754,7 +737,7 @@ void rowReduce(Matrix *M, int *column_to_pivot_row, uint col_end, uint col_start
                 continue;
             }
             // Do row operation
-            vectorImpl->add(matrix[i], matrix[pivot], row_op_coeff);
+            Vector_add(matrix[i], matrix[pivot], row_op_coeff);
             if(col_end > 0){
                 printf("row(%d) <== row(%d) + %d * row(%d)\n", i, i, row_op_coeff, pivot);
                 Matrix_printSlice(M, col_end, col_start);

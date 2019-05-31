@@ -29,7 +29,7 @@ def MilnorElement_fromC(algebra, m):
     for i, entry in enumerate(m.unpack()):
         if entry == 0:
             continue
-        result[cMilnorBasisElement_fromIndex(algebra, m.degree, i)] = entry
+        result[cMilnorBasisElement.fromIndex(algebra, m.degree, i)] = entry
     return algebra.get_element(result)
 
 def getBasis(algebra, degree):
@@ -40,7 +40,7 @@ def getBasis(algebra, degree):
     result = [None] * int(c_basisElementList.length)
     for i in range(c_basisElementList.length):
         b = c_basisElementList.list[i]
-        result[i] = algebra.get_basis_element(milnor_basis_elt_from_C_MBE(algebra, b))
+        result[i] = algebra.get_basis_element(cMilnorBasisElement.fromC(algebra, b))
     return result
 
 def getDimension(algebra, degree):
@@ -53,7 +53,7 @@ def multiply(m1, m2):
     out_degree = m1_deg + m2_deg
     if out_degree > algebra.c_max_degree:
         raise Exception("C basis only known through degree %s < %s." % (algebra.c_max_degree, out_degree))
-    out_dimension = C_dimension(algebra, out_degree)
+    out_dimension = getDimension(algebra, out_degree)
     ret = cVector(algebra.p, out_dimension)
     ret.degree = out_degree
     b1 = next(iter(m1))
@@ -62,7 +62,7 @@ def multiply(m1, m2):
     m2_idx = cMilnorBasisElement.toIndex(algebra, b2)
     CSteenrod.MilnorAlgebra_multiply(cast(algebra.c_algebra, POINTER(c_Algebra)), ret.vector, 1, m1_deg, m1_idx, m2_deg, m2_idx)
     ret.dimension = out_dimension
-    x = milnor_elt_from_C(algebra, ret)
+    x = MilnorElement_fromC(algebra, ret)
     ret.free()
     return x
 

@@ -4,7 +4,7 @@ import random
 from cFpVector import *
 
 primes = [2,3,5,7]
-dimensions = [10, 33, 65, 1000]
+dimensions = [5, 10, 33, 65, 1000]
 repeats = 100
 
 @pytest.mark.parametrize("dim", dimensions)
@@ -92,6 +92,22 @@ def test_add(p, dim):
     assert result == py_sum
     v.free()
     w.free()
+
+@pytest.mark.parametrize("dim", dimensions)
+@pytest.mark.parametrize("p", primes)
+def test_addArray(p, dim):
+    v = cVector(p, dim)
+    w = (c_uint * dim)()
+    k = [random.randint(0,p-1) for i in range(dim)]
+    l = [random.randint(0,p-1) for i in range(dim)]
+    py_sum = [ (k[i] + l[i]) % p for i in range(dim)]
+    for i in range(dim):
+        w[i] = l[i]
+    cVector.pack(v, k)
+    CSteenrod.Vector_addArray(v.vector, w, 1)
+    result = cVector.unpack(v)
+    assert result == py_sum
+    v.free()
 
 @pytest.mark.parametrize("dim,min,max", [(10, 3,7), (100, 57, 72), (1000, 178, 256), (1000, 700, 900)])
 @pytest.mark.parametrize("p", primes)

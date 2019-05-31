@@ -1,5 +1,5 @@
 #\bin\bash
 if ./make; then
     #valgrind --leak-check=full C/csteen 
-    valgrind --max-stackframe=3200224 C/csteen 
+    valgrind --vgdb-error=0 --max-stackframe=3200224 C/csteen 
 fi
