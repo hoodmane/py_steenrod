@@ -98,6 +98,6 @@ void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism *f, Vecto
 void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism *f, uint degree, uint num_gens);
 
 void FreeModuleHomomorphism_getMatrix(FreeModuleHomomorphism *f, Matrix *result, uint degree);
-Kernel *Kernel_construct(VectorInterface *vectImpl, uint p, uint rows, uint columns);
+Kernel *Kernel_construct(uint p, uint rows, uint columns);
 
 #endif //CSTEENROD_MODULES_H

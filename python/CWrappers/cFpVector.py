@@ -18,10 +18,7 @@ class cVector:
         self.dimension = dim
         self.c_list_type = c_uint * self.dimension
         CSteenrod.initializePrime(p)
-        if(p==2):
-            self.vector = CSteenrod.Vector2_construct(p, dim, offset)
-        else:
-            self.vector = CSteenrod.VectorGeneric_construct(p, dim, offset)
+        self.vector = CSteenrod.Vector_construct(p, dim, offset)
 
         if type(vector) == list:
             self.pack(vector)      
@@ -52,28 +49,19 @@ class cVector:
     
     def addBasisElement(self, idx, c=1):
         c = c % self.p
-        if self.p == 2:
-            CSteenrod.Vector2_addBasisElement(self.vector, idx, c)
-        else:
-            CSteenrod.VectorGeneric_addBasisElement(self.vector, idx, c)    
+        CSteenrod.Vector_addBasisElement(self.vector, idx, c)
 
     def add(self, w, c=1):
         c = c % self.p
-        if self.p == 2:
-            CSteenrod.Vector2_add(self.vector, w.vector, c)
-        else:
-            CSteenrod.VectorGeneric_add(self.vector, w.vector, c)        
+        CSteenrod.Vector_add(self.vector, w.vector, c)
         
         
     def scale(self, c):
         c = c % self.p
-        if self.p == 2:
-            CSteenrod.Vector2_scale(self.vector, c)
-        else:
-            CSteenrod.VectorGeneric_scaleVector(self.vector, c)        
+        CSteenrod.Vector_scale(self.vector, c)
 
     def slice(self, min, max):
-        cSlice = CSteenrod.Vector2_construct(self.p, 0, 0)
+        cSlice = CSteenrod.Vector_construct(self.p, 0, 0)
         CSteenrod.Vector_slice(cSlice, self.vector, min, max)
         slice = cVector(vector=cSlice)
         return slice
@@ -122,10 +110,7 @@ class cMatrix:
         self.rows = rows
         self.columns = columns
         CSteenrod.initializePrime(p)
-        if p == 2:
-            self.cM = CSteenrod.Matrix2_construct(p, rows, columns)
-        else:
-            self.cM = CSteenrod.MatrixGeneric_construct(p, rows, columns)
+        self.cM = CSteenrod.Matrix_construct(p, rows, columns)
     
     def pack(self, py_M):
         for i in range(c_M.contents.rows):

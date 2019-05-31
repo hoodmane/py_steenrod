@@ -1,9 +1,11 @@
 import os,sys
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 from ctypes_wrap import *
-import cmodules
+import cMilnorAlgebra
+import cFiniteDimensionalModule
+import cFreeModule
+import cFreeModuleHomomorphism
 import cFpVector
-import cmilnor
 import steenrod
 import steenrod_module
 
@@ -14,43 +16,43 @@ def resolve(module, degree):
 
 def checkDsquaredZero(source, d_first, d_second):
     for g in source.gens:
-        dg = cmodules.c_apply_homomorphism(d_first, source.get_generator(g))
-        ddg = cmodules.c_apply_homomorphism(d_second, dg)
+        dg = cFreeModuleHomomorphism.apply(d_first, source.get_generator(g))
+        ddg = cFreeModuleHomomorphism.apply(d_second, dg)
         if len(ddg) > 0:
             print(g)
 
 def printMatrixInfo(d_first, d_second, degree):
-    M = cmodules.c_homomorphism_to_matrix(d_first, degree)
+    M = cFreeModuleHomomorphism.toMatrix(d_first, degree)
     for idx, ar in enumerate(M):
-        x = cmodules.free_module_elt_from_array(d_first.target, degree, ar)
+        x = FreeModule.elementfromArray(d_first.target, degree, ar)
         print(idx, x)
         if(x==0):
             continue
-        dx = cmodules.c_apply_homomorphism(d_second, x)
+        dx = cFreeModuleHomomorphism.apply(d_second, x)
         if dx != 0:
             print("    ", "dx = ", dx)
 
 if __name__ == "__main__":
-    A = cmilnor.makeCMilnorAlgebra(p=2, degree=50)
+    A = cMilnorAlgebra.construct(p=2, degree=50)
     Sq = A.Sq
     M = steenrod_module.FiniteSteenrodModule(p=2)
     x0 = M.add_basis_element("x0", 0)
     M.validate()
-    cM = cmodules.FiniteSteenrodModule_to_C(M)
+    cM = cFiniteDimensionalModule.toC(M)
     print("resolve")
     res = resolve(M, 30)
     print("done resolving")
     print(res.contents.modules[2].contents.max_generator_degree)
     res_modules = []
     for i in range(8):
-        F = cmodules.FreeModule_from_c(res.contents.modules[i+1], A, "x" + str(i))
+        F = cFreeModule.fromC(res.contents.modules[i+1], A, "x" + str(i))
         res_modules.append(F)
         globals()["F" + str(i)] = F
         for i in F.gens:
             globals()[i] = F.get_generator(i)
 
     for i in range(1, 8):
-        globals()["d" + str(i)] = cmodules.homomorphism_from_c(res.contents.differentials[i+1], res_modules[i], res_modules[i-1])
+        globals()["d" + str(i)] = cFreeModuleHomomorphism.fromC(res.contents.differentials[i+1], res_modules[i], res_modules[i-1])
 
     def checkDifferential(d, x):
         for (op, g) in x:

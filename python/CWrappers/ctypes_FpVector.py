@@ -51,43 +51,37 @@ class c_Matrix(Structure):
     ]
 
 def wrap_FpVector(CSteenrod):        
-    # Vector * VectorGeneric_initialize(uint p, uint64 * vector_container, uint64 * memory, uint dimension, uint offset);
-    # Vector * VectorGeneric_constructVectorGeneric(uint p, uint dimension, uint offset);
+    # Vector * Vector_initialize(uint p, uint64 * vector_container, uint64 * memory, uint dimension, uint offset);
+    # Vector * Vector_construct(uint p, uint dimension, uint offset);
+    # void Vector_free(Vector * v); 
 
-    # Vector * initializeVector2(uint p, uint64 * vector_container, uint64 * memory, uint dimension, uint offset);
-    # Vector * constructVector2(uint p, uint dimension, uint offset);
-    # void freeVector(Vector * v); 
-
-    CSteenrod.VectorGeneric_construct.argtypes = [c_uint, c_uint, c_uint]    
-    CSteenrod.VectorGeneric_construct.restype = POINTER(c_Vector)
-    
-    CSteenrod.Vector2_construct.argtypes = [c_uint, c_uint, c_uint]    
-    CSteenrod.Vector2_construct.restype = POINTER(c_Vector)
+    CSteenrod.Vector_construct.argtypes = [c_uint, c_uint, c_uint]    
+    CSteenrod.Vector_construct.restype = POINTER(c_Vector)
 
     CSteenrod.Vector_free.argtypes = [POINTER(c_Vector)]
     
-    #void assignVector(Vector * target, Vector * source);
+    #void Vector_assign(Vector * target, Vector * source);
     CSteenrod.Vector_assign.argtypes = [POINTER(c_Vector), POINTER(c_Vector)]
     
-    #void setVectorToZero(Vector * target);
+    #void Vector_setToZero(Vector * target);
     CSteenrod.Vector_setToZero.argtypes = [POINTER(c_Vector)]
 
-    #void packVector(Vector * target, uint * source);
+    #void Vector_pack(Vector * target, uint * source);
     CSteenrod.Vector_pack.argtypes = [POINTER(c_Vector), POINTER(c_uint)]
     
-    #void unpackVector(uint * target, Vector * source);
+    #void Vector_unpack(uint * target, Vector * source);
     CSteenrod.Vector_unpack.argtypes = [POINTER(c_uint), POINTER(c_Vector)]
     
-    #uint getVectorEntry(Vector * v, uint index);
+    #uint Vector_getEntry(Vector * v, uint index);
     CSteenrod.Vector_getEntry.argtypes = [POINTER(c_Vector), c_uint]    
     CSteenrod.Vector_getEntry.restype = c_uint
     
-    #void setVectorEntry(Vector * v, uint index, uint value);
+    #void Vector_setEntry(Vector * v, uint index, uint value);
     CSteenrod.Vector_setEntry.argtypes = [POINTER(c_Vector), c_uint, c_uint]    
     
-    # void sliceVector(Vector *result, Vector *source, uint start, uint end);
-    # VectorIterator getVectorIterator(Vector * v); 
-    # VectorIterator stepVectorIterator(VectorIterator);
+    # void Vector_slice(Vector *result, Vector *source, uint start, uint end);
+    # VectorIterator Vector_getIterator(Vector * v); 
+    # VectorIterator Vector_stepIterator(VectorIterator);
     CSteenrod.Vector_slice.argtypes = [POINTER(c_Vector), POINTER(c_Vector), c_uint, c_uint]
 
     CSteenrod.Vector_getIterator.argtypes = [POINTER(c_Vector)]
@@ -95,37 +89,23 @@ def wrap_FpVector(CSteenrod):
     CSteenrod.Vector_stepIterator.argtypes = [c_VectorIterator]
     CSteenrod.Vector_stepIterator.restype = c_VectorIterator
 
-    #void addBasisElementToVectorGeneric(Vector * v, uint idx, uint c);
-    CSteenrod.VectorGeneric_addBasisElement.argtypes = [POINTER(c_Vector), c_uint, c_uint]  
+    #void Vector_addBasisElement(Vector * v, uint idx, uint c);
+    CSteenrod.Vector_addBasisElement.argtypes = [POINTER(c_Vector), c_uint, c_uint]
     
-    #void addVectorsGeneric(Vector * target, Vector * source, uint c);
-    CSteenrod.VectorGeneric_add.argtypes = [POINTER(c_Vector), POINTER(c_Vector), c_uint]  
+    #void Vector_add(Vector * target, Vector * source, uint c);
+    CSteenrod.Vector_add.argtypes = [POINTER(c_Vector), POINTER(c_Vector), c_uint]  
     
-    #void scaleVectorGeneric(Vector * v, uint c);
-    CSteenrod.VectorGeneric_scale.argtypes = [POINTER(c_Vector), c_uint] 
-
-    #void addBasisElementToVector2(Vector * v, uint idx, uint c);
-    CSteenrod.Vector2_addBasisElement.argtypes = [POINTER(c_Vector), c_uint, c_uint]
-    
-    #void addVectors2(Vector * target, Vector * source, uint c);
-    CSteenrod.Vector2_add.argtypes = [POINTER(c_Vector), POINTER(c_Vector), c_uint]  
-    
-    #void scaleVector2(Vector * v, uint c);
-    CSteenrod.Vector2_scale.argtypes = [POINTER(c_Vector), c_uint] 
+    #void Vector_scale(Vector * v, uint c);
+    CSteenrod.Vector_scale.argtypes = [POINTER(c_Vector), c_uint] 
     
     
     #uint vectorToString(char * buffer, Vector * v);
     CSteenrod.Vector_toString.argtypes = [c_char_p, POINTER(c_Vector)]
     CSteenrod.Vector_toString.restype = c_uint
     
-    #Vector* constructMatrixGeneric(uint p, uint rows, uint cols);
-    CSteenrod.MatrixGeneric_construct.argtypes = [c_uint, c_uint, c_uint]
-    CSteenrod.MatrixGeneric_construct.restype = POINTER(c_Matrix)
-    
-    #Vector* constructMatrix2(uint p, uint rows, uint cols);
-    CSteenrod.Matrix2_construct.argtypes = [c_uint, c_uint, c_uint]
-    CSteenrod.Matrix2_construct.restype = POINTER(c_Matrix)
-
+    #Vector* Matrix_construct(uint p, uint rows, uint cols);
+    CSteenrod.Matrix_construct.argtypes = [c_uint, c_uint, c_uint]
+    CSteenrod.Matrix_construct.restype = POINTER(c_Matrix)
 
     #void rowReduce(Vector **matrix, int * column_to_pivot_row, uint rows);
     CSteenrod.rowReduce.argtypes = [POINTER(c_Matrix), POINTER(c_int)]

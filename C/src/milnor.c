@@ -27,7 +27,6 @@ MilnorAlgebra *MilnorAlgebra_construct(uint p, bool generic, Profile *profile){
     initializePrime(p);
     algebra->public_algebra.p = p;
     algebra->public_algebra.algebra.p = p;
-    algebra->public_algebra.algebra.vectorInterface = (p == 2) ? Vector2Interface : VectorGenericInterface;
     algebra->public_algebra.generic = generic;
     if(profile == NULL){
         algebra->public_algebra.profile.truncated = false;
@@ -791,7 +790,7 @@ void MilnorAlgebra_multiply(Algebra *public_algebra, Vector *result, uint coeff,
     } else {
         MilnorProductEven(algebra, product_array, r, s);
     }
-    public_algebra->vectorInterface.addArray(result, product_array, coeff);
+    Vector_addArray(result, product_array, coeff);
 }
 /**/
 

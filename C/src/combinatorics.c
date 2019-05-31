@@ -117,6 +117,11 @@ void basepExpansion(uint * result, uint p, uint n){
 
 uint **binomial_table[MAX_PRIME_INDEX] = {0};
 
+// Defined in FpVector.c
+void initializeModpLookupTable(uint p);
+void initializeLimbBitIndexLookupTable(uint p);
+void initializeVectorImplementation(uint p);
+
 void initializePrime(uint p){
     if(p > MAX_PRIME){
         // Fatal error: max prime allowed is 251
@@ -132,6 +137,7 @@ void initializePrime(uint p){
     initializeXiTauDegrees(p);
     initializeModpLookupTable(p);
     initializeLimbBitIndexLookupTable(p);
+    initializeVectorImplementation(p);
 }
 void freePrimes() {
 //    freeBinomialTables();

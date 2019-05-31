@@ -186,12 +186,11 @@ MilnorBasisElement MilnorBasisElement_fromString(MilnorAlgebra * algebra, char* 
 }
 
 int MilnorElement_toString(string buffer, MilnorAlgebra * algebra, uint degree, Vector * m){
-    VectorInterface vectorInterface = algebra->algebra.vectorInterface;
     uint len = 0;
     for(
-        VectorIterator it = vectorInterface.getIterator(m); 
+        VectorIterator it = Vector_getIterator(m); 
         it.has_more; 
-        it = vectorInterface.stepIterator(it)
+        it = Vector_stepIterator(it)
     ){
         if(it.value == 0){
             continue;

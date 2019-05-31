@@ -11,7 +11,6 @@
 
 typedef struct Algebra {
     uint p;
-    VectorInterface vectorInterface;
 // Methods:
     bool (*computeBasis)(struct Algebra* this, uint degree);
     uint (*getDimension)(struct Algebra* this, uint degree);
