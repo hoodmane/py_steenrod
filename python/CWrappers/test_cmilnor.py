@@ -1,6 +1,23 @@
+from cmilnor import *
+
 
 def check_C_product(a, b):
     return C_product(a,b) == a*b
+
+def test_C_basis():
+    A2 = makeCMilnorAlgebra(p=2, degree=50)
+    A2gen = makeCMilnorAlgebra(p=2, generic=True, degree=50)
+    A3 = makeCMilnorAlgebra(p=3, degree=50)
+
+    for alg in (A2, A2gen, A3):
+        for dim in range(50):
+            c_basis = C_basis(alg, dim)
+            py_basis = alg.basis(dim)
+            py_basis.reverse()
+            if c_basis != py_basis:
+                print("Discrepency for algebra %s in dimension %s." % (alg, dim))
+                print("  c_basis:", c_basis)
+                print("  py_basis:", py_basis)
 
 def test_C_product():
     A2 = makeCMilnorAlgebra(p=2, degree=100)
@@ -11,6 +28,7 @@ def test_C_product():
         (A2.Sq(1), A2.Sq(1)),
         (A2.Sq(2), A2.Sq(2)),
         (A2.Sq(1,8), A2.Sq(1,1)),
+        (A2.Sq(6,2), A2.Sq(8,1)),
 #
         (A2gen.P(1), A2gen.P(1)),
         (A2gen.P(2), A2gen.P(1)),
@@ -80,19 +98,3 @@ def test_C_product():
             print("%s ( %s, %s, %s ) : %s * %s" % (algebra, x_deg, y_deg, x_deg + y_deg,  x, y))
             print("  Test %s failed" % i)
 
-
-
-def test_C_basis():
-    A2 = makeCMilnorAlgebra(p=2, degree=50)
-    A2gen = makeCMilnorAlgebra(p=2, generic=True, degree=50)
-    A3 = makeCMilnorAlgebra(p=3, degree=50)
-
-    for alg in (A2, A2gen, A3):
-        for dim in range(50):
-            c_basis = C_basis(alg, dim)
-            py_basis = alg.basis(dim)
-            py_basis.reverse()
-            if c_basis != py_basis:
-                print("Discrepency for algebra %s in dimension %s." % (alg, dim))
-                print("  c_basis:", c_basis)
-                print("  py_basis:", py_basis)

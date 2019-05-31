@@ -1,5 +1,5 @@
 import sys,os
-sys.path.append(os.path.join(os.path.dirname(__file__),os.pardir,"src"))
+sys.path.append(os.path.join(os.path.dirname(__file__),os.pardir,"python"))
 
 from combinatorics import *
 

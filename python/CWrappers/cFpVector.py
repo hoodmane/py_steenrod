@@ -1,83 +1,139 @@
 from ctypes import *
 from ctypes_wrap import *
 
-def cVector_construct(p, dim, offset=0):
-    CSteenrod.initializePrime(p)
-    if(p==2):
-        v = CSteenrod.Vector2_construct(p, dim, offset)
-    else:
-        v = CSteenrod.VectorGeneric_construct(p, dim, offset)
-    v.freed = False
-    return v
-    
-def cVector_free(v):
-    if type(v) == c_Vector and not v.freed:
-        CSteenrod.Vector_free(v)
-    v.freed = True
+class cVector:
+    def __init__(self, p=None, dim=None, offset=0, vector=None):
+        self.freed = False
+        if vector != None and type(vector) != list:
+            self.p = vector.contents.p
+            self.dimension = vector.contents.dimension
+            self.c_list_type = c_uint * self.dimension
+            self.vector = vector
+            return
         
-def cVector_assign(v, w):
-    CSteenrod.Vector_assign(v, w)
+        if type(vector) == list:
+            dim = len(vector)
+
+        self.p = p
+        self.dimension = dim
+        self.c_list_type = c_uint * self.dimension
+        CSteenrod.initializePrime(p)
+        if(p==2):
+            self.vector = CSteenrod.Vector2_construct(p, dim, offset)
+        else:
+            self.vector = CSteenrod.VectorGeneric_construct(p, dim, offset)
+
+        if type(vector) == list:
+            self.pack(vector)      
+
+    def free(self):
+        if not self.freed:
+            CSteenrod.Vector_free(self.vector)
+        self.freed = True
+
+    def assign(self, w):
+        CSteenrod.Vector_assign(self.vector, w.vector)
     
-def cVector_pack(v, list):
-    if v.contents.dimension != len(list):
-        raise Exception("Wrong length.")
-    c_list_type = c_uint * len(list)
-    c_list = c_list_type()
-    for i, elt in enumerate(list):
-        c_list[i] = elt % v.contents.p
-    CSteenrod.Vector_pack(v, c_list)
+    def pack(self, list):
+        if self.dimension != len(list):
+            raise Exception("Wrong length.")
+        c_list = self.c_list_type()
+        for i, elt in enumerate(list):
+            c_list[i] = elt % self.p
+        CSteenrod.Vector_pack(self.vector, c_list)
 
-def cVector_unpack(v):
-    c_list_type = c_uint * v.contents.dimension
-    c_list = c_list_type()
-    CSteenrod.Vector_unpack(c_list, v)
-    py_list = [None] * v.contents.dimension
-    for i in range(v.contents.dimension):
-        py_list[i] = c_list[i]
-    return py_list
+    def unpack(self):
+        c_list = self.c_list_type()
+        CSteenrod.Vector_unpack(c_list, self.vector)
+        py_list = [None] * self.dimension
+        for i in range(self.dimension):
+            py_list[i] = c_list[i]
+        return py_list        
     
-def cVector_getEntry(v, idx):
-    return CSteenrod.Vector_getEntry(v, idx)
+    def addBasisElement(self, idx, c=1):
+        c = c % self.p
+        if self.p == 2:
+            CSteenrod.Vector2_addBasisElement(self.vector, idx, c)
+        else:
+            CSteenrod.VectorGeneric_addBasisElement(self.vector, idx, c)    
 
-def cVector_setEntry(v, idx, value):
-    CSteenrod.Vector_setEntry(v, idx, (value % v.contents.p))
+    def add(self, w, c=1):
+        c = c % self.p
+        if self.p == 2:
+            CSteenrod.Vector2_add(self.vector, w.vector, c)
+        else:
+            CSteenrod.VectorGeneric_add(self.vector, w.vector, c)        
+        
+        
+    def scale(self, c):
+        c = c % self.p
+        if self.p == 2:
+            CSteenrod.Vector2_scale(self.vector, c)
+        else:
+            CSteenrod.VectorGeneric_scaleVector(self.vector, c)        
+
+    def slice(self, min, max):
+        cSlice = CSteenrod.Vector2_construct(self.p, 0, 0)
+        CSteenrod.Vector_slice(cSlice, self.vector, min, max)
+        slice = cVector(vector=cSlice)
+        return slice
+
+    def __len__(self):
+        return self.dimension
+        
+    def __setitem__(self, idx, value):
+        CSteenrod.Vector_setEntry(self.vector, idx, (value % self.p))
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            #Get the start, stop, and step from the slice
+            if(key.step != None and key.step != 1):
+                print(key.step)
+                raise(IndexError("Slice steps not equal to 1 not supported."))
+            return self.slice(key.start, key.stop)
+        elif isinstance(key, int):
+            if key < 0 : #Handle negative indices
+                key += len(self)
+            if key < 0 or key >= len(self):
+                raise(IndexError("The index (%d) is out of range."%key))
+            return CSteenrod.Vector_getEntry(self.vector, key)
+        else:
+            raise TypeError("Invalid argument type.")
+
+    def __iter__(self):
+        return cVector_iterator(self)
+
+
+class cVector_iterator:
+    def __init__(self, vector):
+        self.cIterator = CSteenrod.Vector_getIterator(vector.vector)
+
+    def __next__(self):
+        if not self.cIterator.has_more:
+            raise StopIteration
+        result = self.cIterator.value
+        cIterator = CSteenrod.Vector_stepIterator(self.cIterator)
+        return result
+
+
+class cMatrix:
+    def __init__(self, p, rows, columns):
+        self.p = p
+        self.rows = rows
+        self.columns = columns
+        CSteenrod.initializePrime(p)
+        if p == 2:
+            self.cM = CSteenrod.Matrix2_construct(p, rows, columns)
+        else:
+            self.cM = CSteenrod.MatrixGeneric_construct(p, rows, columns)
     
-def cVector_addBasisElement(v, idx, c=1):
-    c = c % v.p
-    if v.contents.p == 2:
-        CSteenrod.Vector2_addBasisElement(v, idx, c)
-    else:
-        CSteenrod.VectorGeneric_addBasisElement(v, idx, c)    
+    def pack(self, py_M):
+        for i in range(c_M.contents.rows):
+            c_packVector(c_M.contents.matrix[i], py_M[i])
 
-def cVector_add(v, w, c=1):
-    c = c % v.contents.p
-    if v.contents.p == 2:
-        CSteenrod.Vector2_add(v, w, c)
-    else:
-        CSteenrod.VectorGeneric_addVectors(v, w, c)        
-    
-    
-def cVector_scale(v, c):
-    c = c % v.contents.p
-    if v.contents.p == 2:
-        CSteenrod.Vector2_scale(v, c)
-    else:
-        CSteenrod.VectorGeneric_scaleVector(v, c)        
+    def unpack(c_M):
+        return [c_unpackVector(c_M.contents.matrix[i]) for i in range(c_M.contents.rows)]
 
-def cMatrix_construct(p, rows, columns):
-    CSteenrod.initializePrime(p)
-    if p == 2:
-        M = CSteenrod.Matrix2_construct(p, rows, columns)
-    else:
-        M = CSteenrod.MatrixGeneric_construct(p, rows, columns)
-    return M
-
-def cMatrix_pack(c_M, py_M):
-    for i in range(c_M.contents.rows):
-        c_packVector(c_M.contents.matrix[i], py_M[i])
-
-def cMatrix_unpack(c_M):
-    return [c_unpackVector(c_M.contents.matrix[i]) for i in range(c_M.contents.rows)]
 
 def c_row_reduce(c_M):
     array_type = c_int * c_M.contents.columns
@@ -86,12 +142,9 @@ def c_row_reduce(c_M):
     c_M.pivots = pivots_array
 
 def vector_to_C(p, vector):
-    c_v = cVector_construct(p, len(vector))
+    c_v = cVector(p, len(vector))
     cVector_pack(c_v, vector)
     return c_v
-
-def vector_from_C(vector):
-    return cVector_unpack(vector)
 
 def matrix_to_C(p, matrix):
     rows = len(matrix)
@@ -102,39 +155,6 @@ def matrix_to_C(p, matrix):
 
 def matrix_from_C(matrix):
     return cMatrix_unpack(matrix)
-
-    
-def test_c_vector(p, dim):
-    import random
-    v = cVector_construct(p, dim)
-    w = cVector_construct(p, dim)
-    k = [random.randint(0,p-1) for x in range(dim)]
-    l = [random.randint(0,p-1) for x in range(dim)]
-    print(k)
-    print(l)
-    result = [ (k[i] + l[i]) % p for i in range(dim)]
-    print(result)
-    cVector_pack(v, k)
-    k_packed_unpacked = cVector_unpack(v)
-    if k != k_packed_unpacked:
-        print("Pack unpack failed.")
-        print("Orig: ", k)
-        print("Punp: ", k_packed_unpacked)
-        return
-
-    cVector_pack(w, l)
-    cVector_add(v, w)
-    s = cVector_unpack(v)
-    for x in range(dim):
-        if cVector_getEntry(v, x) != s[x]:
-            print("getVectorEntry and unpack disagree")
-            break
-    if result != s:
-        print("Test failed:")
-        print("k:      ", k)
-        print("l:      ", l)
-        print("result: ", result)
-        print("s:      ", s)
 
 
 if __name__ == "__main__":

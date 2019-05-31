@@ -1,5 +1,5 @@
 import sys,os
-sys.path.append(os.path.join(os.path.dirname(__file__),os.pardir,"src"))
+sys.path.append(os.path.join(os.path.dirname(__file__),os.pardir,"python"))
 
 from steenrod import *
 
@@ -14,6 +14,9 @@ Sq = Adem2.Sq
 P = Adem3.P
 bP = Adem3.bP
 beta = Adem3.b()
+
+def test_equals():
+    assert Sq(3) + Sq(2)*Sq(1) == Sq(2)*Sq(1) + Sq(3)
 
 def test_adem_mult():
     assert type(Sq(0) * Sq(5)) == AdemElement

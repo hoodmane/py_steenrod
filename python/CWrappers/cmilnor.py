@@ -68,8 +68,7 @@ def milnor_basis_elt_from_C_idx(algebra, degree, idx):
 
 def milnor_elt_from_C(algebra, m):
     result = {}
-    for i in range(m.contents.dimension):
-        entry = cVector_getEntry(m, i)
+    for i, entry in enumerate(m.unpack()):
         if entry == 0:
             continue
         result[milnor_basis_elt_from_C_idx(algebra, m.degree, i)] = entry
@@ -83,7 +82,7 @@ def C_basis(algebra, degree):
     result = [None] * int(c_basisElementList.length)
     for i in range(c_basisElementList.length):
         b = c_basisElementList.list[i]
-        result[i] = algebra.get_basis_element(milnor_basis_elt_from_C(algebra, b))
+        result[i] = algebra.get_basis_element(milnor_basis_elt_from_C_MBE(algebra, b))
     return result
 
 def C_dimension(algebra, degree):
@@ -97,16 +96,16 @@ def C_product(m1, m2):
     if out_degree > algebra.c_max_degree:
         raise Exception("C basis only known through degree %s < %s." % (algebra.c_max_degree, out_degree))
     out_dimension = C_dimension(algebra, out_degree)
-    ret = cVector_construct(algebra.p, out_dimension)
+    ret = cVector(algebra.p, out_dimension)
     ret.degree = out_degree
     b1 = next(iter(m1))
     b2 = next(iter(m2))
     m1_idx = milnor_basis_elt_to_C_index(algebra, b1)
     m2_idx = milnor_basis_elt_to_C_index(algebra, b2)
-    CSteenrod.MilnorProduct(cast(algebra.c_algebra, POINTER(c_Algebra)), ret, 1, m1_deg, m1_idx, m2_deg, m2_idx)
+    CSteenrod.MilnorProduct(cast(algebra.c_algebra, POINTER(c_Algebra)), ret.vector, 1, m1_deg, m1_idx, m2_deg, m2_idx)
     ret.dimension = out_dimension
     x = milnor_elt_from_C(algebra, ret)
-    CSteenrod.Vector_free(ret)
+    ret.free()
     return x
 
 
@@ -117,9 +116,10 @@ def check_C_product(a, b):
 
 def test_C_product():
     A2 = makeCMilnorAlgebra(p=2, degree=100)
+    print("hi")
     A2gen = makeCMilnorAlgebra(p=2, generic=True, degree=100)
     A3 = makeCMilnorAlgebra(p=3, degree=200)
-    A5 = makeCMilnorAlgebra(p=5, degree=400)
+    A5 = makeCMilnorAlgebra(p=5, degree=200)
     tests = [
         (A2.Sq(1), A2.Sq(1)),
         (A2.Sq(2), A2.Sq(2)),

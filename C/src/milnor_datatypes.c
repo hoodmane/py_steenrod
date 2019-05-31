@@ -15,7 +15,7 @@
 uint get_profile_name(char *buffer, Profile P);
 
 
-uint getProfileExponent(Profile P, uint p, uint index){
+uint Profile_getExponent(Profile P, uint p, uint index){
     if(index < P.p_part_length){
         return integer_power(p, P.p_part[index]);
     }
@@ -25,7 +25,7 @@ uint getProfileExponent(Profile P, uint p, uint index){
     return -1;
 }
 
-uint get_profile_name(char *buffer, Profile P){
+uint Profile_getName(char *buffer, Profile P){
     uint len = 0;
     len += sprintf(buffer + len, "Profile( truncated=%s, ", P.truncated ? "true" : "false");
     len += sprintf(buffer + len, "q_part=%x, ", P.q_part);
@@ -35,7 +35,7 @@ uint get_profile_name(char *buffer, Profile P){
     return len;
 }
 
-void milnor_algebra_generate_name(MilnorAlgebra *A){
+void MilnorAlgebra_generateName(MilnorAlgebra *A){
     if (A->name != NULL) {
         return;
     }
@@ -43,7 +43,7 @@ void milnor_algebra_generate_name(MilnorAlgebra *A){
     int len = 0;
     len += sprintf(buffer + len, "MilnorAlgebra(p=%d, generic=%s", A->p, A->generic ? "true" : "false" );
     if(A->profile.restricted){
-        len += get_profile_name(buffer + len, A->profile);
+        len += Profile_getName(buffer + len, A->profile);
     }
     len += sprintf(buffer + len, ")");
     char * result = malloc((len + 1)* sizeof(char));
@@ -55,7 +55,7 @@ void milnor_algebra_generate_name(MilnorAlgebra *A){
 
 
 
-int milnor_basis_element_to_key(string buffer, MilnorBasisElement *b){
+int MilnorBasisElement_toKey(string buffer, MilnorBasisElement *b){
     // Copy bytes representing MilnorBasisElement to a string.
 //    printf("making hash.\n");
 //    printf("    pointer address: %x\n", (int)b->p_part);
@@ -73,7 +73,7 @@ int milnor_basis_element_to_key(string buffer, MilnorBasisElement *b){
     return len;
 }
 
-int milnor_basis_element_to_string(string buffer, MilnorBasisElement *b){
+int MilnorBasisElement_toString(string buffer, MilnorBasisElement *b){
     if(b->p_length == 0 && b->q_part == 0){
         buffer[0] = '0';
         buffer[1] = '\0';
@@ -127,7 +127,7 @@ char *trimwhitespace(char *str){
     return str;
 }
 
-MilnorBasisElement milnor_basis_element_from_string(MilnorAlgebra * algebra, char* elt_string){
+MilnorBasisElement MilnorBasisElement_fromString(MilnorAlgebra * algebra, char* elt_string){
     char *idx_string, *string, *tofree;
     char * Q_or_P;
     uint p = algebra->p;
@@ -185,7 +185,7 @@ MilnorBasisElement milnor_basis_element_from_string(MilnorAlgebra * algebra, cha
     return result;
 }
 
-int milnor_element_to_string(string buffer, MilnorAlgebra * algebra, uint degree, Vector * m){
+int MilnorElement_toString(string buffer, MilnorAlgebra * algebra, uint degree, Vector * m){
     VectorInterface vectorInterface = algebra->algebra.vectorInterface;
     uint len = 0;
     for(
@@ -199,8 +199,8 @@ int milnor_element_to_string(string buffer, MilnorAlgebra * algebra, uint degree
         if(it.value != 1) {
             len += sprintf(buffer + len, "%d * ", it.value);
         }
-        MilnorBasisElement b = GetMilnorBasisElementFromIndex(algebra, degree, it.index);
-        len += milnor_basis_element_to_string(buffer + len, &b);
+        MilnorBasisElement b = MilnorBasisElement_fromIndex(algebra, degree, it.index);
+        len += MilnorBasisElement_toString(buffer + len, &b);
         len += sprintf(buffer + len, " + ");
     }
     if(len == 0){

@@ -12,7 +12,7 @@ typedef unsigned long long uint64;
 typedef long long int64;
 typedef unsigned int uint;
 int array_toString(char *buffer, uint *A, uint length);
-void printArray(uint *A, uint length);
+void array_print(uint *A, uint length);
 
 void initializeModpLookupTable(uint p);
 void initializeLimbBitIndexLookupTable(uint p);

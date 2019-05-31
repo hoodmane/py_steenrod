@@ -189,7 +189,9 @@ class Vector(dict):
     
     def __repr__(self):
         result = []
-        for (b,c) in self.items():
+        items = list(self.items())
+        items.sort()
+        for (b,c) in items:
             if c == 1:
                 coeff = ""
             else:
@@ -207,7 +209,7 @@ class Vector(dict):
         """
             Improve this and hash later.
         """
-        return str(self) == str(other)
+        return dict(self) == dict(other)
 
     def basis_elt_to_string(self, module, basis_elt):
         """

@@ -272,18 +272,10 @@ Resolution *doResolution(
     )
 ){
     initializePrime(2);
-    MilnorAlgebra *A = constructMilnorAlgebra(2, false, NULL);
+    MilnorAlgebra *A = MilnorAlgebra_construct(2, false, NULL);
     Algebra *algebra = (Algebra*) A;
-    algebra_computeBasis(algebra, degree + 10);
-    // Vector * v = constructVector2(2, 65, 0);
-    // uint i = 64;
-    // setVectorEntry(v, i, 1);
-    // // setVectorEntry(v, 65, 1);
-    // printf("entry%d: %d\n",i, getVectorEntry(v, i));
-    // // printf("entry64: %d\n", getVectorEntry(v, 64));
-    // printVector(v);
-    // printf("\n");
-    // return 0;
+    algebra_computeBasis(algebra, degree);
+
     uint max_generator_degree = 0;
     uint number_of_generators_in_degree[1] = {1};
     FiniteDimensionalModule *module = 
@@ -295,16 +287,7 @@ Resolution *doResolution(
     if(addStructline != NULL){
         res->addStructline = addStructline;
     }    
-    // uint max_deg = 25;
-    // uint max_int_deg = 18;  //max_deg;
-    // uint max_hom_deg = 3;   //max_deg;
-    // for(uint int_deg = 0; int_deg < max_int_deg; int_deg ++){
-    //     for(uint hom_deg = 0; hom_deg < max_hom_deg && hom_deg <= int_deg; hom_deg++){
-    //         Resolution_step(res, hom_deg, int_deg);
-    //     }    
-    // }
-    uint max_int_deg = degree;
-    uint max_hom_deg = degree;
+
     Resolution_resolveThroughDegree(res, degree);
     // for(int i = max_hom_deg-1; i >= 0; i--){
     //     printf("stage %*d: ", 2, i);
@@ -332,7 +315,11 @@ testStruct *test(){
 
 /**/
 int main(){
-    Resolution *res = doResolution(75, NULL, NULL);
+    Algebra * A = (Algebra*)MilnorAlgebra_construct(5, true, NULL);
+    MilnorAlgebra_generateBasis(A, 100);
+    printf("constructed\n");
+    // algebra_computeBasis(A, 10);
+    // Resolution *res = doResolution(75, NULL, NULL);
     return 0;
 }
 //**/

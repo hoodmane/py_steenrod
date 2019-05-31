@@ -101,6 +101,9 @@ class MilnorElement(Vector):
         self.milnor_element = True
         super(MilnorElement, self).__init__(algebra.p, dictionary)
 
+    def __lt__(self, other):
+        return next(iter(self)) < next(iter(other))
+
     def milnor_act(self, v):
         """Compute the product self*v. Implements an abstract method of Vector."""
         if not isinstance(v, MilnorElement):
@@ -108,7 +111,6 @@ class MilnorElement(Vector):
         if v.p != self.p or v.algebra.generic != self.algebra.generic:
             raise TypeError()
         return v.multiply(self)
-            
 
     @linearextension
     def multiply(basis_element_1, basis_element_2, *, module):

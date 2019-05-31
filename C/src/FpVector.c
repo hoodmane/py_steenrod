@@ -361,12 +361,12 @@ VectorIterator Vector_stepIterator(VectorIterator it){
 void VectorGeneric_addBasisElement(Vector *target, uint index, uint coeff){
     assert(index < target->dimension);
     VectorStd *t = (VectorStd*) target;    
-    uint bit_mask = getBitMask(target->p);
+    uint64 bit_mask = getBitMask(target->p);
     LimbBitIndexPair limb_index = getLimbBitIndexPair(target->p, index + target->offset);
     uint64 *result = &(t->vector[limb_index.limb]);
     uint64 new_entry = *result >> limb_index.bit_index;
     new_entry &= bit_mask;
-    new_entry*= coeff;
+    new_entry += coeff;
     new_entry = modPLookup(target->p, new_entry);
     *result &= ~(bit_mask << limb_index.bit_index);
     *result |= (new_entry << limb_index.bit_index);
@@ -438,14 +438,9 @@ void VectorGeneric_scale(Vector *target, uint coeff){
 void Vector2_addBasisElement(Vector *target, uint index, uint coeff){
     assert(index < target->dimension);
     VectorStd *t = (VectorStd*) target;    
-    uint bit_mask = 1;
     LimbBitIndexPair limb_index = getLimbBitIndexPair(target->p, index + target->offset);
     uint64 *result = &(t->vector[limb_index.limb]);
-    uint64 new_entry = *result >> limb_index.bit_index;
-    new_entry &= bit_mask;
-    new_entry *= coeff;
-    *result &= ~(bit_mask << limb_index.bit_index);
-    *result |= (new_entry << limb_index.bit_index);
+    *result ^= ((uint64)coeff << limb_index.bit_index);
 }
 
 void Vector2_addArray(Vector *target, uint *source, uint c){
@@ -895,4 +890,4 @@ int main(int argc, char *argv[]){
     printMatrix(M);
     return 0;
 }
-/**/
+*/

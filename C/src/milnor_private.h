@@ -44,7 +44,7 @@ typedef struct {
 } MilnorAlgebraInternal;
 
 void milnor_algebra_generate_name(MilnorAlgebra *A);
-uint getProfileExponent(Profile P, uint p, uint index);
+uint Profile_getExponent(Profile P, uint p, uint index);
 
 // Private functions
 void generateMilnorBasisPpartTable(MilnorAlgebraInternal * algebra, uint n);
