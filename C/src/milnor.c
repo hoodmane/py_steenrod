@@ -703,8 +703,6 @@ void MilnorProductFullQpart(MilnorAlgebraInternal *algebra, uint *output, Milnor
                 uint out_idx = GetIndexFromMilnorBasisElement((MilnorAlgebra*)algebra, m);
                 result[out_idx] += coeff;
                 result[out_idx] = modPLookup(p, result[out_idx]);
-                char buffer[1000];
-                array_to_string(buffer, result, result_dimension);
             }
         }
     }

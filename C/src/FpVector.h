@@ -11,7 +11,7 @@
 typedef unsigned long long uint64;
 typedef long long int64;
 typedef unsigned int uint;
-int array_to_string(char *buffer, uint *A, uint length);
+int array_toString(char *buffer, uint *A, uint length);
 void printArray(uint *A, uint length);
 
 void initializeModpLookupTable(uint p);
@@ -70,45 +70,45 @@ extern VectorInterface VectorGenericInterface;
 extern VectorInterface Vector2Interface;
 
 uint getEntriesPer64Bits(uint p);
-size_t getVectorSize(uint p, uint dimension, uint offset);
+size_t Vector_getSize(uint p, uint dimension, uint offset);
 
-Vector *initializeVector(VectorInterface *interface, uint p, char *vector_container, char *memory, uint dimension, uint offset);
-Vector *constructVector(VectorInterface *interface, uint p, uint dimension, uint offset);
+Vector *Vector_initialize(VectorInterface *interface, uint p, char *vector_container, char *memory, uint dimension, uint offset);
+Vector *Vector_construct(VectorInterface *interface, uint p, uint dimension, uint offset);
 
-Vector *initializeVectorGeneric(uint p, char *vector_container, char *memory, uint dimension, uint offset);
-Vector *constructVectorGeneric(uint p, uint dimension, uint offset);
+Vector *VectorGeneric_initialize(uint p, char *vector_container, char *memory, uint dimension, uint offset);
+Vector *VectorGeneric_construct(uint p, uint dimension, uint offset);
 
-Vector *initializeVector2(uint p, char *vector_container, char *memory, uint dimension, uint offset);
-Vector *constructVector2(uint p, uint dimension, uint offset);
+Vector *Vector2_initialize(uint p, char *vector_container, char *memory, uint dimension, uint offset);
+Vector *Vector2_construct(uint p, uint dimension, uint offset);
 
-void freeVector(Vector *v); 
+void Vector_free(Vector *v); 
 
-void assignVector(Vector *target, Vector *source);
-void setVectorToZero(Vector *target);
-void packVector(Vector *target, uint *source);
-void unpackVector(uint *target, Vector *source);
+void Vector_assign(Vector *target, Vector *source);
+void Vector_setToZero(Vector *target);
+void Vector_pack(Vector *target, uint *source);
+void Vector_unpack(uint *target, Vector *source);
 
-uint getVectorEntry(Vector *v, uint index);
-void setVectorEntry(Vector *v, uint index, uint value);
+uint Vector_getEntry(Vector *v, uint index);
+void Vector_setEntry(Vector *v, uint index, uint value);
 
-void sliceVector(Vector *result, Vector *source, uint start, uint end);
-VectorIterator getVectorIterator(Vector *v); 
-VectorIterator stepVectorIterator(VectorIterator);
+void Vector_slice(Vector *result, Vector *source, uint start, uint end);
+VectorIterator Vector_getIterator(Vector *v); 
+VectorIterator Vector_stepIterator(VectorIterator);
 
 // Maybe delete addArray methods?
-void addBasisElementToVectorGeneric(Vector *target, uint idx, uint c);
-void addArrayToVectorGeneric(Vector *target, uint *source, uint c);
-void addVectorsGeneric(Vector *target, Vector *source, uint c);
-void scaleVectorGeneric(Vector *target, uint c);
+void VectorGeneric_addBasisElement(Vector *target, uint idx, uint c);
+void VectorGeneric_addArray(Vector *target, uint *source, uint c);
+void VectorGeneric_add(Vector *target, Vector *source, uint c);
+void VectorGeneric_scale(Vector *target, uint c);
 
-void addBasisElementToVector2(Vector *target, uint idx, uint c);
-void addArrayToVector2(Vector *target, uint *source, uint c);
-void addVectors2(Vector *target, Vector *source, uint c);
-void scaleVector2(Vector *target, uint c);
+void Vector2_addBasisElement(Vector *target, uint idx, uint c);
+void Vector2_addArray(Vector *target, uint *source, uint c);
+void Vector2_add(Vector *target, Vector *source, uint c);
+void Vector2_scale(Vector *target, uint c);
 
 
-uint vectorToString(char *buffer, Vector *v);
-void printVector(Vector *v);
+uint Vector_toString(char *buffer, Vector *v);
+void Vector_print(Vector *v);
 
 typedef struct {
     uint p;
@@ -117,17 +117,18 @@ typedef struct {
     Vector **matrix;
 } Matrix;
 
-uint getMatrixSize(VectorInterface *interface, uint p, uint rows, uint cols);
-Matrix *initializeMatrix(char *memory, VectorInterface *interface, uint p, uint rows, uint cols);
-Matrix *constructMatrix(VectorInterface *interface, uint p, uint rows, uint cols);
+uint Matrix_getSize(VectorInterface *interface, uint p, uint rows, uint cols);
+Matrix *Matrix_initialize(char *memory, VectorInterface *interface, uint p, uint rows, uint cols);
+Matrix *Matrix_construct(VectorInterface *interface, uint p, uint rows, uint cols);
 
-Matrix *constructMatrixGeneric(uint p, uint rows, uint cols);
-Matrix *constructMatrix2(uint p, uint rows, uint cols);
+Matrix *MatrixGeneric_construct(uint p, uint rows, uint cols);
+Matrix *Matrix2_construct(uint p, uint rows, uint cols);
 
-uint matrixToString(char *buffer, Matrix *M);
-void printMatrix(Matrix *matrix);
+uint Matrix_toString(char *buffer, Matrix *M);
+void Matrix_print(Matrix *matrix);
 uint Matrix_getSliceSize(uint rows);
 Matrix *Matrix_slice(Matrix *M, char *memory, uint row_min, uint row_max, uint column_min, uint column_max);
+void Matrix_printSlice(Matrix *M, uint col_end, uint col_start);
 
 void rowReduce(Matrix *M, int *column_to_pivot_row, uint, uint);
 

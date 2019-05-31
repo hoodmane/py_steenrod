@@ -30,7 +30,7 @@ uint get_profile_name(char *buffer, Profile P){
     len += sprintf(buffer + len, "Profile( truncated=%s, ", P.truncated ? "true" : "false");
     len += sprintf(buffer + len, "q_part=%x, ", P.q_part);
     len += sprintf(buffer + len, "p_part=");
-    len += array_to_string(buffer, P.p_part, P.p_part_length);
+    len += array_toString(buffer, P.p_part, P.p_part_length);
     len += sprintf(buffer + len, ")");
     return len;
 }
@@ -214,7 +214,7 @@ int milnor_matrix_to_string(string buffer, uint M[MAX_XI_TAU][MAX_XI_TAU], uint 
     len += sprintf(buffer + len, "[\n");
     for(int row = 0; row < rows; row++) {
         len += sprintf(buffer + len, "  ");
-        len += array_to_string(buffer + len, M[row], cols);
+        len += array_toString(buffer + len, M[row], cols);
         len += sprintf(buffer + len, ",");
     }
     len += sprintf(buffer + len, "]\n");

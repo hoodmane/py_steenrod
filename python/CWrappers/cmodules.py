@@ -48,7 +48,7 @@ def FiniteSteenrodModule_to_C(module):
             input_degree, input_index,
             c_vector
         )
-        CSteenrod.freeVector(c_vector)
+        CSteenrod.Vector_free(c_vector)
     return module
 
 def c_act_on_fdmodule(module, op, gen):
@@ -60,13 +60,13 @@ def c_act_on_fdmodule(module, op, gen):
     if(output_degree > len(module.number_of_basis_elements_in_degree)):
         return 0
     output_dimension = module.number_of_basis_elements_in_degree[output_degree]
-    c_result = cFpVector.c_constructVector(module.p, output_dimension)
+    c_result = cFpVector.cVector_construct(module.p, output_dimension)
 
     for (op_basis_elt, c) in op.items():
         op_idx = cmilnor.milnor_basis_elt_to_C_index(module.milnor_algebra, op_basis_elt)
         CSteenrod.FiniteDimensionalModule_actOnBasis(cast(c_module, POINTER(c_Module)), c_result, c, op_deg, op_idx, gen_deg, gen_idx)
     result = cFpVector.vector_from_C(c_result)
-    CSteenrod.freeVector(c_result)
+    CSteenrod.Vector_free(c_result)
     result = {module.index_to_basis_element[(output_degree, i)] : c for i, c in enumerate(result) if c != 0}
     result = module.get_element(result)
     return result
@@ -162,7 +162,7 @@ def c_act_on_free_module(module, op, element):
     elt_deg = element.degree()
     output_degree = elt_deg + op_deg
     output_dimension = CSteenrod.FreeModule_getDimension(c_module_cast, output_degree)
-    c_result = cFpVector.c_constructVector(module.p, output_dimension)
+    c_result = cFpVector.cVector_construct(module.p, output_dimension)
     CSteenrod.FreeModule_ConstructBlockOffsetTable(c_module, elt_deg)
     CSteenrod.FreeModule_ConstructBlockOffsetTable(c_module, output_degree)
     for (op_basis_elt, c1) in op.items():
@@ -176,7 +176,7 @@ def c_act_on_free_module(module, op, element):
             elt_idx = CSteenrod.FreeModule_operationGeneratorToIndex(c_module, elt_op_deg, elt_op_idx, gen_deg, gen_idx)
             CSteenrod.FreeModule_actOnBasis(c_module_cast, c_result, c1*c2, op_deg, op_idx, elt_deg, elt_idx)    
     result = free_module_elt_from_c(module, output_degree, c_result)
-    CSteenrod.freeVector(c_result)
+    CSteenrod.Vector_free(c_result)
     return result
 
 def homomorphism_to_c(f, c_S, c_T):
@@ -210,7 +210,7 @@ def c_apply_homomorphism(f, element):
     c_source = f.source.c_module
     c_target_cast = cast(f.target.c_module, POINTER(c_Module))
     output_dimension = CSteenrod.FreeModule_getDimension(c_target_cast, degree)
-    c_result = cFpVector.c_constructVector(f.source.p, output_dimension)
+    c_result = cFpVector.cVector_construct(f.source.p, output_dimension)
     for ((elt_op, gen), coeff) in element.items():
         elt_op_deg = elt_op.degree()
         elt_op = next(iter(elt_op))
@@ -223,7 +223,7 @@ def c_apply_homomorphism(f, element):
         CSteenrod.FreeModuleHomomorphism_applyToBasisElement(f.cf, c_result, coeff, degree, elt_idx)
         # print(free_module_elt_from_c(f.target, degree, c_result))
     result = free_module_elt_from_c(f.target, degree, c_result)
-    CSteenrod.freeVector(c_result)
+    CSteenrod.Vector_free(c_result)
     return result
 
 def c_homomorphism_to_matrix(f, degree):
@@ -231,7 +231,7 @@ def c_homomorphism_to_matrix(f, degree):
     c_target_cast = cast(f.target.c_module, POINTER(c_Module))
     input_dimension = CSteenrod.FreeModule_getDimension(c_source_cast, degree)
     output_dimension = CSteenrod.FreeModule_getDimension(c_target_cast, degree)
-    cM = cFpVector.c_constructMatrix(2, input_dimension, output_dimension)
+    cM = cFpVector.cMatrix_construct(2, input_dimension, output_dimension)
     CSteenrod.FreeModuleHomomorphism_getMatrix(f.cf, cM, degree)
     result = cFpVector.matrix_from_C(cM)
     # free matrix

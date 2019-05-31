@@ -103,6 +103,7 @@ void Resolution_step(Resolution *res, uint homological_degree, uint degree){
         res->addClass(homological_degree, degree, "");
     }
     // Products:
+    VectorInterface *vectImpl = &res->algebra->vectorInterface;
     if(homological_degree > 0){
         FreeModuleHomomorphism *d = res->differentials[homological_degree + 1];
         FreeModule *T = (FreeModule*)d->target;        
@@ -117,7 +118,7 @@ void Resolution_step(Resolution *res, uint homological_degree, uint degree){
                 uint num_target_generators = T->number_of_generators_in_degree[gen_degree];
                 for(uint target = 0; target < num_target_generators; target++){
                     uint vector_idx = FreeModule_operationGeneratorToIndex(res->modules[homological_degree], hj_degree, 0, gen_degree, target);
-                    if(getVectorEntry(dx, vector_idx) != 0){
+                    if(vectImpl->getEntry(dx, vector_idx) != 0){
                         // There was a product!
                         res->addStructline(homological_degree - 1, gen_degree, target, homological_degree, degree, source);
                     }
@@ -152,8 +153,8 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
         ((target_dimension + entries_per_limb - 1)/entries_per_limb)*entries_per_limb;
     uint rows = max(source_dimension, target_dimension);
     uint columns = padded_target_dimension + source_dimension + rows;
-    char matrix_memory[getMatrixSize(vectImpl, p, rows, columns)];
-    Matrix *full_matrix = initializeMatrix(matrix_memory, vectImpl, p, rows, columns);
+    char matrix_memory[Matrix_getSize(vectImpl, p, rows, columns)];
+    Matrix *full_matrix = Matrix_initialize(matrix_memory, vectImpl, p, rows, columns);
 
     // For the first stage we just want the part of size source_dimension x (padded_target_dimension + source_dimension).
     // Slice matrix out of full_matrix.
@@ -237,7 +238,7 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     // Allocate a matrix coimage_to_image with these dimensions.
     uint coimage_to_image_rows = current_target_row;
     uint coimage_to_image_columns = padded_target_dimension + source_dimension + homology_dimension;
-    Matrix *coimage_to_image = constructMatrix(vectImpl, p, coimage_to_image_rows, coimage_to_image_columns);
+    Matrix *coimage_to_image = Matrix_construct(vectImpl, p, coimage_to_image_rows, coimage_to_image_columns);
     current_differential->coimage_to_image_isomorphism[degree] = coimage_to_image;
     // Copy matrix contents to coimage_to_image
     for(uint i = 0; i < coimage_to_image_rows; i++) {
@@ -331,7 +332,7 @@ testStruct *test(){
 
 /**/
 int main(){
-    Resolution *res = doResolution(50, NULL, NULL);
+    Resolution *res = doResolution(75, NULL, NULL);
     return 0;
 }
 //**/

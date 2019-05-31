@@ -441,10 +441,10 @@ Kernel *Kernel_construct(VectorInterface *vectImpl, uint p, uint rows, uint colu
     Kernel *k = malloc(
         sizeof(Kernel) 
         + columns * sizeof(uint)
-        + getMatrixSize(vectImpl, p, rows, columns) * sizeof(uint64)
+        + Matrix_getSize(vectImpl, p, rows, columns) * sizeof(uint64)
     );
     k->column_to_pivot_row = (int*)(k + 1);
-    k->kernel = initializeMatrix((char*)(k->column_to_pivot_row + columns), vectImpl, p, rows, columns);
+    k->kernel = Matrix_initialize((char*)(k->column_to_pivot_row + columns), vectImpl, p, rows, columns);
     return k;
 }
 
