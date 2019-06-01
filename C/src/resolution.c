@@ -30,8 +30,7 @@ void addStructline_doNothing(
     // printf("\n\nhom_deg: %d, mod_deg: %d, num_gens: %d\n", homological_degree, degree, num_gens);
 }
 
-
-Resolution *Resolution_construct(
+Resolution * Resolution_construct(
     FiniteDimensionalModule *module, 
     uint max_degree,
     void (*addClass)(uint hom_deg, uint int_deg, char *cocycle_name),
@@ -77,7 +76,7 @@ void Resolution_resolveThroughDegree(Resolution *res, uint degree){
 //    }
     for(uint int_deg = 0; int_deg <= degree; int_deg ++){
         for(uint hom_deg = 0; hom_deg <= int_deg; hom_deg++){           
-            printf("(%d, %d)\n", hom_deg, int_deg);
+            // printf("(%d, %d)\n", hom_deg, int_deg);
             Resolution_step(res, hom_deg, int_deg);
        }
    }
@@ -116,28 +115,34 @@ void Resolution_step(Resolution *res, uint homological_degree, uint degree){
         res->addClass(homological_degree, degree, "");
     }
     // Products:
-    // if(homological_degree > 0){
-    //     FreeModuleHomomorphism *d = res->differentials[homological_degree + 1];
-    //     FreeModule *T = (FreeModule*)d->target;        
-    //     for(uint source= 0; source < num_gens; source++){
-    //         Vector *dx = d->outputs[degree][source];
-    //         for(uint j = 0; j < 3; j++){
-    //             uint hj_degree = 1 << j;
-    //             if(hj_degree > degree){
-    //                 break;
-    //             }
-    //             uint gen_degree = degree - hj_degree;
-    //             uint num_target_generators = T->number_of_generators_in_degree[gen_degree];
-    //             for(uint target = 0; target < num_target_generators; target++){
-    //                 uint vector_idx = FreeModule_operationGeneratorToIndex(res->modules[homological_degree], hj_degree, 0, gen_degree, target);
-    //                 if(Vector_getEntry(dx, vector_idx) != 0){
-    //                     // There was a product!
-    //                     res->addStructline(homological_degree - 1, gen_degree, target, homological_degree, degree, source);
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+    if(homological_degree > 0){
+        FreeModuleHomomorphism *d = res->differentials[homological_degree + 1];
+        FreeModule *T = (FreeModule*)d->target;        
+        for(uint source= 0; source < num_gens; source++){
+            Vector *dx = d->outputs[degree][source];
+            // 1<<j, j < 3
+            for(uint j = 0; j < 3; j++){
+                uint hj_degree = 1 << j;
+                if(hj_degree > degree){
+                    break;
+                }
+                uint gen_degree = degree - hj_degree;
+                uint num_target_generators = T->number_of_generators_in_degree[gen_degree];
+                for(uint target = 0; target < num_target_generators; target++){
+                    uint vector_idx = FreeModule_operationGeneratorToIndex(res->modules[homological_degree], hj_degree, 0, gen_degree, target);
+                    if(vector_idx >= dx->dimension){
+                        printf("degree: %d, hom_deg: %d, dim: %d, idx: %d\n", degree, homological_degree, dx->dimension, vector_idx);
+
+                    } else {
+                        if(Vector_getEntry(dx, vector_idx) != 0){
+                            // There was a product!
+                            res->addStructline(homological_degree - 1, gen_degree, target, homological_degree, degree, source);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 // Invariants:
@@ -265,11 +270,6 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     resolution->internal_degree_to_resolution_stage[degree] ++;
 }
 
-void test2(void (*fn)(uint x)){
-    printf("Calling argument...\n");
-    fn(43);
-    printf("Called it.\n");
-}
 
 
 #include "milnor.h"
@@ -281,15 +281,17 @@ Resolution *doResolution(
         uint target_hom_deg, uint target_int_deg, uint target_idx
     )
 ){
-    initializePrime(3);
-    MilnorAlgebra *A = MilnorAlgebra_construct(3, true, NULL);
+    initializePrime(2);
+    MilnorAlgebra *A = MilnorAlgebra_construct(2, false, NULL);
     Algebra *algebra = (Algebra*) A;
     algebra_computeBasis(algebra, degree);
 
-    uint max_generator_degree = 0;
-    uint number_of_generators_in_degree[1] = {1};
+    uint max_generator_degree = 2;
+    uint graded_dimension[5] = {1,0,1};
     FiniteDimensionalModule *module = 
-        FiniteDimensionalModule_construct(algebra, max_generator_degree, number_of_generators_in_degree);
+        FiniteDimensionalModule_construct(algebra, max_generator_degree, graded_dimension);
+    uint output[1] = {1};
+    FiniteDimensionalModule_setAction(module, 2, 0, 0, 0, output);
     Resolution *res = Resolution_construct(module, degree, addClass, addStructline);
 
     Resolution_resolveThroughDegree(res, degree);
@@ -323,7 +325,7 @@ int main(){
     // MilnorAlgebra_generateBasis(A, 100);
     // printf("constructed\n");
     // algebra_computeBasis(A, 10);
-    Resolution *res = doResolution(75, NULL, NULL);
+    Resolution *res = doResolution(30, NULL, NULL);
     return 0;
 }
 //**/

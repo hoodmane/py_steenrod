@@ -11,7 +11,7 @@ from FreeModule import *
 
 def toC(module):
     module.generate_milnor_action()
-    max_degree = max(module.gens.values())    
+    max_degree = max(module.gens.values())
     module.c_algebra = cMilnorAlgebra.construct(p=module.milnor_algebra.p, degree=max_degree+10)
     number_of_basis_elements_in_degree = [0] * (max_degree + 1)
     basis_element_indices = {}
@@ -39,11 +39,11 @@ def toC(module):
         input_index = basis_element_indices[input]
         output_degree = output.degree()
         output_vector = [None] * number_of_basis_elements_in_degree[output_degree]
+        op_degree = output_degree - input_degree
+        op_index = cMilnorBasisElement.toIndex(algebra, op)        
         for (b, coeff) in output.items():
             output_vector[basis_element_indices[b]] = coeff
         c_vector = cFpVector.cVector(module.p, vector=output_vector)
-        op_degree = output_degree - input_degree
-        op_index = cMilnorBasisElement.toIndex(algebra, op)
         CSteenrod.FiniteDimensionalModule_setAction(
             c_module, 
             op_degree, op_index,

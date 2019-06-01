@@ -373,7 +373,7 @@ class FiniteSteenrodModule:
         row = dual_module.zero()
         for w in self.getBasisInDegree(input_degree):
             if (w, output_vec) in matrix:
-                w_dual = dual_module.get_basis_element(SteenrodModule.get_dual_vector_name(w))
+                w_dual = dual_module.get_basis_element(FiniteSteenrodModule.get_dual_vector_name(w))
                 row.add_in_place(w_dual, coefficient=matrix[(w, output_vec)])
         return row
 
@@ -393,7 +393,7 @@ class FiniteSteenrodModule:
         max_degree = max(self.gens.values())
         P = self.adem_algebra.P if generic else self.adem_algebra.Sq
         add_action = result.add_P_action if generic else result.add_Sq_action
-        dual_vec = SteenrodModule.get_dual_vector_name
+        dual_vec = FiniteSteenrodModule.get_dual_vector_name
 
         for (v, deg) in self.gens.items():
             result.add_basis_element(dual_vec(v), -deg)
@@ -454,7 +454,7 @@ class FiniteSteenrodModule:
         """
             M*N is the tensor product of M and N
         """
-        return SteenrodModule.tensor(self, other)
+        return FiniteSteenrodModule.tensor(self, other)
 
     def __invert__(self):
         """
@@ -534,7 +534,15 @@ class FiniteSteenrodModule:
         raise NotImplementedError()        
 
     def to_json_obj(self):
+        self.__ensure_valid()
+        self.generate_milnor_action()
         d = {}
+        if self.name:
+            d['name'] = self.name
+        if self.file_name:
+            d['file_name'] = self.file_name
+        d["p"] = self.p
+        d["generic"] = self.generic
         d["gens"] = self.gens
         d["sq_actions"]     = [ {
               "op" : k[0], 
@@ -554,7 +562,7 @@ class FiniteSteenrodModule:
     @staticmethod
     def from_Bruner_file(file, p=2):
         file_contents = read_file(file)
-        return SteenrodModule.from_Bruner_str(file_contents, p)
+        return FiniteSteenrodModule.from_Bruner_str(file_contents, p)
 
     def to_Bruner_file(self, file):
         write_file(file, self.to_Bruner_str())
@@ -562,7 +570,7 @@ class FiniteSteenrodModule:
     @staticmethod
     def from_json_file(file):
         obj = json.loads(read_file(file))
-        return SteenrodModule.from_json_obj(obj)
+        return FiniteSteenrodModule.from_json_obj(obj)
 
     def to_json_file(self, file):
         obj = self.to_json_obj()

@@ -12,22 +12,23 @@
 
 
 // The allocator is horrendous so we're going to separate it out.
-FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint max_generator_degree, uint *number_of_generators_in_degree);
+FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint max_generator_degree, uint *graded_dimension);
 
-FiniteDimensionalModule *FiniteDimensionalModule_construct(Algebra *algebra, uint max_generator_degree, uint *number_of_generators_in_degree){
-    max_generator_degree ++;
-    FiniteDimensionalModule *result = FiniteDimensionalModule_allocate(algebra, max_generator_degree, number_of_generators_in_degree);
+FiniteDimensionalModule *FiniteDimensionalModule_construct(Algebra *algebra, uint max_degree, uint *graded_dimension){
+    max_degree ++;
+    array_print(graded_dimension, max_degree);
+    FiniteDimensionalModule *result = FiniteDimensionalModule_allocate(algebra, max_degree, graded_dimension);
     result->module.p = algebra->p;
     result->module.algebra = algebra;
     result->module.computeBasis = FiniteDimensionalModule_computeBasis;
     result->module.getDimension = FiniteDimensionalModule_getDimension;
     result->module.actOnBasis = FiniteDimensionalModule_actOnBasis;
-    result->max_degree = max_generator_degree;
+    result->max_degree = max_degree;
     result->dimension = 0;
-    for(uint i = 0; i <= max_generator_degree; i++){
-        result->dimension += number_of_generators_in_degree[i];
+    for(uint i = 0; i <= max_degree; i++){
+        result->dimension += graded_dimension[i];
     }
-    memcpy(result->number_of_basis_elements_in_degree, number_of_generators_in_degree, max_generator_degree * sizeof(uint));
+    memcpy(result->graded_dimension, graded_dimension, max_degree * sizeof(uint));
     return result;
 }
 
@@ -36,7 +37,7 @@ void FiniteDimensionalModule_free(FiniteDimensionalModule *module){
 }
 
 // This is the grossest allocator.
-FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint max_generator_degree, uint *number_of_generators_in_degree){
+FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint max_generator_degree, uint *graded_dimension){
     uint p = algebra->p;
     // Count number of triples (x, y, op) with |x| + |op| = |y|.
     // The amount of memory we need to allocate is:
@@ -52,7 +53,7 @@ FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint
             action_matrix_size_5 = 0;
     uint number_of_nonempty_degrees = 0;
     for(uint degree = 0; degree < max_generator_degree; degree++) {
-        if(number_of_generators_in_degree[degree] != 0){
+        if(graded_dimension[degree] != 0){
             number_of_nonempty_degrees ++;
         }
     }
@@ -60,19 +61,19 @@ FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint
     //  ****    -> ***       -> **Vector   -> *Vector    -> Vector -> uint
     action_matrix_size_1 += max_generator_degree * sizeof(Vector***);
     action_matrix_size_2 += number_of_nonempty_degrees * max_generator_degree * sizeof(Vector**);
-    for(int input_degree = 0; input_degree < max_generator_degree; input_degree++){
-        if(number_of_generators_in_degree[input_degree] == 0){
+    for(uint input_degree = 0; input_degree < max_generator_degree; input_degree++){
+        if(graded_dimension[input_degree] == 0){
             continue;
         }
-        for(int output_degree = input_degree + 1; output_degree < max_generator_degree; output_degree++){
-            if(number_of_generators_in_degree[output_degree] == 0){
+        for(uint output_degree = input_degree + 1; output_degree < max_generator_degree; output_degree++){
+            if(graded_dimension[output_degree] == 0){
                 continue;
             }
             uint number_of_operations = algebra_getDimension(algebra, output_degree - input_degree);
             action_matrix_size_3 += sizeof(Vector*) * number_of_operations;
-            action_matrix_size_4 += Vector_getContainerSize(p) * number_of_operations * number_of_generators_in_degree[input_degree];
-            uint vectorSize = Vector_getSize(p, number_of_generators_in_degree[output_degree], 0);
-            action_matrix_size_5 += number_of_operations * number_of_generators_in_degree[input_degree] * vectorSize;
+            action_matrix_size_4 += Vector_getContainerSize(p) * number_of_operations * graded_dimension[input_degree];
+            uint vectorSize = Vector_getSize(p, graded_dimension[output_degree], 0);
+            action_matrix_size_5 += number_of_operations * graded_dimension[input_degree] * vectorSize;
         }
     }
 
@@ -86,7 +87,7 @@ FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint
             + max_generator_degree * sizeof(uint)
             + action_matrix_size_5
     );
-    result->number_of_basis_elements_in_degree = (uint *) (result + 1);
+    result->graded_dimension = (uint *) (result + 1);
     char *top_of_action_table = (char *) (result + 1) + max_generator_degree *sizeof(uint);
     Vector ****current_ptr_1 = (Vector ****) top_of_action_table;
     Vector ***current_ptr_2 = (Vector ***) (top_of_action_table + action_matrix_size_1);
@@ -96,27 +97,27 @@ FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint
     result->actions = current_ptr_1; 
     memset(top_of_action_table, 0, action_matrix_size_5);
     for(int input_degree = 0; input_degree < max_generator_degree; input_degree++){
-        if(number_of_generators_in_degree[input_degree] == 0){
+        if(graded_dimension[input_degree] == 0){
             current_ptr_1 ++;
             continue;
         }
         *current_ptr_1 = current_ptr_2;
         current_ptr_2 += input_degree + 1;
         for(int output_degree = input_degree + 1; output_degree < max_generator_degree; output_degree++){
-            if(number_of_generators_in_degree[output_degree] == 0){
+            if(graded_dimension[output_degree] == 0){
                 current_ptr_2 ++;
                 continue;
             }
             *current_ptr_2 = current_ptr_3;
-            uint vectorSize = Vector_getSize(p, number_of_generators_in_degree[output_degree], 0);
+            uint vectorSize = Vector_getSize(p, graded_dimension[output_degree], 0);
             uint number_of_operations = algebra_getDimension(algebra, output_degree - input_degree);
             for(int operation_idx = 0; operation_idx < number_of_operations; operation_idx ++){
                 *current_ptr_3 = current_ptr_4;
-                for(int input_idx = 0; input_idx < number_of_generators_in_degree[input_degree]; input_idx ++ ){
-                    Vector_initialize(p, (char*)current_ptr_4, current_ptr_5, number_of_generators_in_degree[output_degree], 0);
+                for(int input_idx = 0; input_idx < graded_dimension[input_degree]; input_idx ++ ){
+                    Vector_initialize(p, (char*)current_ptr_4, current_ptr_5, graded_dimension[output_degree], 0);
                     // ... gross:
                     current_ptr_4 = (Vector*)(((char*)current_ptr_4) + Vector_getContainerSize(p));
-                    current_ptr_5 += number_of_generators_in_degree[output_degree] * vectorSize;
+                    current_ptr_5 += graded_dimension[output_degree] * vectorSize;
                 }
                 current_ptr_3 ++;
             }
@@ -132,7 +133,7 @@ FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint
     return result;
 }
 
-void FiniteDimensionalModule_setAction(
+void FiniteDimensionalModule_setActionVector(
     FiniteDimensionalModule *module,
     uint operation_degree, uint operation_idx,
     uint input_degree, uint input_idx,
@@ -144,6 +145,18 @@ void FiniteDimensionalModule_setAction(
     Vector_assign(output_vector, output);
 }
 
+void FiniteDimensionalModule_setAction(
+    FiniteDimensionalModule *module,
+    uint operation_degree, uint operation_idx,
+    uint input_degree, uint input_idx,
+    uint *output
+){
+    uint output_degree = input_degree + operation_degree;
+    // (in_deg) -> (out_deg) -> (op_index) -> (in_index) -> Vector
+    Vector *output_vector = &module->actions[input_degree][output_degree][operation_idx][input_idx];
+    Vector_pack(output_vector, output);
+}
+
 bool FiniteDimensionalModule_computeBasis(Module *this, uint dimension){
     return true;
 }
@@ -151,7 +164,7 @@ bool FiniteDimensionalModule_computeBasis(Module *this, uint dimension){
 uint FiniteDimensionalModule_getDimension(Module *this, uint degree){
     FiniteDimensionalModule *module = (FiniteDimensionalModule *) this;
     if(degree < module->max_degree ){
-        return module->number_of_basis_elements_in_degree[degree];
+        return module->graded_dimension[degree];
     }
     return 0;
 }
@@ -159,11 +172,14 @@ uint FiniteDimensionalModule_getDimension(Module *this, uint degree){
 void FiniteDimensionalModule_actOnBasis(Module *this, Vector *result, uint coeff, uint op_degree, uint op_index, uint mod_degree, uint mod_index){
     FiniteDimensionalModule *module = ((FiniteDimensionalModule*)this);
     assert(op_index < algebra_getDimension(this->algebra, op_degree));
-    assert(mod_index < module->number_of_basis_elements_in_degree[mod_degree]);    
-    if(mod_degree + op_degree >= module->max_degree){
+    assert(mod_index < module->graded_dimension[mod_degree]);    
+    if(mod_degree + op_degree >= module->max_degree || module->graded_dimension[mod_degree + op_degree] == 0){
         return;
     }
-    Vector_add(result, &module->actions[mod_degree][mod_degree + op_degree][op_index][mod_index], coeff);
+    char output_block_memory[Vector_getContainerSize(this->p)];    
+    Vector *output_block = (Vector*)output_block_memory;     
+    Vector_slice(output_block, result, 0, module->graded_dimension[mod_degree + op_degree]); 
+    Vector_add(output_block, &module->actions[mod_degree][mod_degree + op_degree][op_index][mod_index], coeff);
 }
 
 typedef struct {
@@ -178,7 +194,6 @@ typedef struct {
     uint ***generator_to_index_table;
 } FreeModuleInternal;
 
-// TODO: figure out why number_of_generators_in_degree sometimes contains garbage.
 FreeModule *FreeModule_construct(Algebra *algebra, uint max_generator_degree, uint max_degree){
     FreeModuleInternal *module = malloc(
         sizeof(FreeModuleInternal) 
@@ -241,10 +256,9 @@ void FreeModule_actOnBasis(Module *this, Vector *result, uint coeff, uint op_deg
     uint num_ops = algebra_getDimension(this->algebra, module_operation_degree + op_deg);
     uint output_block_min = module->generator_to_index_table[module_degree + op_deg][generator_degree][generator_index];
     uint output_block_max = output_block_min + num_ops;
-    char output_block_memory[Vector_getContainerSize(this->p)];
-    
+    char output_block_memory[Vector_getContainerSize(this->p)];    
     Vector *output_block = (Vector*)output_block_memory;     
-    Vector_slice(output_block, result, output_block_min, output_block_max);    
+    Vector_slice(output_block, result, output_block_min, output_block_max); 
     // Now we multiply s * r and write the result to the appropriate position.
     algebra_multiplyBasisElements(module->module.algebra, output_block, coeff, op_deg, op_idx, module_operation_degree, module_operation_index);
 }

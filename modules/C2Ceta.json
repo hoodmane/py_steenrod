@@ -2,8 +2,8 @@
     "generators" : {"x0" : 0, "x1" : 1, "x2" : 2, "x3" : 3},
     "action" : [
         {"Sq" : 1, "input" : "x0", "output" : [[1, "x1"]]},
-        {"Sq" : 1, "input" : "x2", "output" : [[1, "x3"]]}
+        {"Sq" : 1, "input" : "x2", "output" : [[1, "x3"]]},
         {"Sq" : 2, "input" : "x0", "output" : [[1, "x2"]]},
-        {"Sq" : 3, "input" : "x0", "output" : [[1, "x3"]]},
+        {"Sq" : 3, "input" : "x0", "output" : [[1, "x3"]]}
     ]
 }

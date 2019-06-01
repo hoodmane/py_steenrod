@@ -30,15 +30,22 @@ typedef struct {
     Module module;
     uint dimension;
     uint max_degree;
-    uint *number_of_basis_elements_in_degree;
+    uint *graded_dimension;
     // This goes input_degree --> output_degree --> operation --> input_index --> Vector
     Vector ****actions;
 } FiniteDimensionalModule;
 
-FiniteDimensionalModule *FiniteDimensionalModule_construct(Algebra *algebra, uint dimension, uint *generator_degrees);
+FiniteDimensionalModule *FiniteDimensionalModule_construct(Algebra *algebra, uint max_generator_degree, uint *graded_dimension);
 
 void FiniteDimensionalModule_free(FiniteDimensionalModule *module);
 void FiniteDimensionalModule_setAction(
+    FiniteDimensionalModule *module,
+    uint operation_degree, uint operation_idx,
+    uint input_degree, uint input_idx,
+    uint *output    
+);
+
+void FiniteDimensionalModule_setActionVector(
     FiniteDimensionalModule *module,
     uint operation_degree, uint operation_idx,
     uint input_degree, uint input_idx,

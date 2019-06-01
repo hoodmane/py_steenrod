@@ -15,10 +15,7 @@ def test_C_basis():
             c_basis = cMilnorAlgebra.getBasis(alg, dim)
             py_basis = alg.basis(dim)
             py_basis.reverse()
-            if c_basis != py_basis:
-                print("Discrepency for algebra %s in dimension %s." % (alg, dim))
-                print("  c_basis:", c_basis)
-                print("  py_basis:", py_basis)
+            assert c_basis == py_basis
 
 def test_C_product():
     tests = [

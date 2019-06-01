@@ -544,6 +544,7 @@ void initializeVectorImplementation(uint p){
     } else {
         vectorImplementationTable[prime_to_index_map[p]] = VectorGenericImplementation;
     }
+    printf("vectImpl_addr: %llx\n", (uint64)&vectorImplementationTable[prime_to_index_map[p]]);
     vectorImplementationTable[prime_to_index_map[p]].p = p;
 }
 
