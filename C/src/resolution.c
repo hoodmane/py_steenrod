@@ -39,6 +39,8 @@ Resolution * Resolution_construct(
         uint target_hom_deg, uint target_int_deg, uint target_idx
     )    
 ){
+    printf("Resolution_construct: module: %llx, max_deg: %d, addClass: %llx, addStructline: %llx\n", module, max_degree, addClass, addStructline);
+    printf("    module->max_degree: %d, module->graded_dim[0]: %d\n", module->max_degree, module->graded_dimension[0]);
     Resolution *res = malloc(
         sizeof(Resolution)
         + (max_degree + 1) * sizeof(FreeModule*)
@@ -132,7 +134,6 @@ void Resolution_step(Resolution *res, uint homological_degree, uint degree){
                     uint vector_idx = FreeModule_operationGeneratorToIndex(res->modules[homological_degree], hj_degree, 0, gen_degree, target);
                     if(vector_idx >= dx->dimension){
                         printf("degree: %d, hom_deg: %d, dim: %d, idx: %d\n", degree, homological_degree, dx->dimension, vector_idx);
-
                     } else {
                         if(Vector_getEntry(dx, vector_idx) != 0){
                             // There was a product!
@@ -273,7 +274,7 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
 
 
 #include "milnor.h"
-Resolution *doResolution(
+Resolution *testResolution(
     uint degree, 
     void (*addClass)(uint hom_deg, uint int_deg, char *cocycle_name),
     void (*addStructline)(
@@ -281,25 +282,45 @@ Resolution *doResolution(
         uint target_hom_deg, uint target_int_deg, uint target_idx
     )
 ){
+    uint p = 2;
+    bool generic = p!=2;
     initializePrime(2);
-    MilnorAlgebra *A = MilnorAlgebra_construct(2, false, NULL);
+    uint p_part[3] = {3,2,1};
+    uint p_part_length = 3;
+    // uint p_part[2] = {2,1};
+    // uint p_part_length = 2;
+    bool truncated = true;
+    Profile *P = Profile_construct(generic, 0, NULL, p_part_length, p_part, truncated);
+    MilnorAlgebra *A = MilnorAlgebra_construct(2, generic, P);
     Algebra *algebra = (Algebra*) A;
     algebra_computeBasis(algebra, degree);
 
-    uint max_generator_degree = 2;
+    char buffer[10000];
+    for(int i = 0; i < degree; i++){
+        MilnorBasisElement_list basis_list = MilnorAlgebra_getBasis(A, i);
+        printf("degree: %d \n", i);
+        for(int i = 0; i < basis_list.length; i++){
+            MilnorBasisElement v = basis_list.list[i];
+            MilnorBasisElement_toString(buffer, &v);
+            printf("  %d: '%s'\n", i , buffer);
+        }
+        printf("\n");
+    }
+
+    uint max_generator_degree = 0;
     uint graded_dimension[5] = {1,0,1};
     FiniteDimensionalModule *module = 
         FiniteDimensionalModule_construct(algebra, max_generator_degree, graded_dimension);
-    uint output[1] = {1};
-    FiniteDimensionalModule_setAction(module, 2, 0, 0, 0, output);
+    // uint output[1] = {1};
+    // FiniteDimensionalModule_setAction(module, 2, 0, 0, 0, output);
     Resolution *res = Resolution_construct(module, degree, addClass, addStructline);
 
     Resolution_resolveThroughDegree(res, degree);
-    // for(int i = max_hom_deg-1; i >= 0; i--){
-    //     printf("stage %*d: ", 2, i);
-    //     printArray(&res->modules[i+1]->number_of_generators_in_degree[i], max_int_deg - i);
-    //     printf("\n");
-    // }
+    for(int i = degree - 1; i >= 0; i--){
+        printf("stage %*d: ", 2, i);
+        array_print(&res->modules[i+1]->number_of_generators_in_degree[i], degree - i);
+        printf("\n");
+    }
     return res;
 }
 
@@ -325,7 +346,7 @@ int main(){
     // MilnorAlgebra_generateBasis(A, 100);
     // printf("constructed\n");
     // algebra_computeBasis(A, 10);
-    Resolution *res = doResolution(30, NULL, NULL);
+    Resolution *res = testResolution(30, NULL, NULL);
     return 0;
 }
 //**/

@@ -12,6 +12,7 @@
 typedef char *string;
 
 typedef struct {
+    bool generic;
     bool restricted;
     bool truncated;
     uint q_part;
@@ -41,6 +42,8 @@ typedef struct {
     uint max_degree;
 } MilnorAlgebra;
 
+Profile *Profile_construct(bool generic, uint q_part_length, uint * q_part, uint p_part_length, uint *p_part, bool truncated);
+void Profile_free(Profile *profile);
 
 // Implemented in milnor_datatypes.c
 // These methods write a string to a buffer and return the length of the string written.

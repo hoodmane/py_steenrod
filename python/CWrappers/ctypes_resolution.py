@@ -32,6 +32,8 @@ def wrap_resolution(CSteenrod):
     CSteenrod.Resolution_construct.argtypes = [POINTER(c_FiniteDimensionalModule), c_uint, c_uint]
     CSteenrod.Resolution_construct.restype = POINTER(c_Resolution)
     
+    CSteenrod.testResolution.restype = POINTER(c_Resolution)
+
     # void Resolution_step(Resolution *resolution, uint homological_degree, uint degree);
     CSteenrod.Resolution_step.argtypes = [POINTER(c_Resolution), c_uint, c_uint]
     

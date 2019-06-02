@@ -32,16 +32,28 @@ def printMatrixInfo(d_first, d_second, degree):
         if dx != 0:
             print("    ", "dx = ", dx)
 
+def checkDifferential(d, x):
+    for (op, g) in x:
+        prod1 = op* d(d.source.get_generator(g))
+        prod2 = d(d.source.get_basis_element(op, g))
+        if len(prod1 - prod2) != 0:
+            print("op:", op, "g:", g, ":")
+            print("    ", prod1)
+            print("    ", prod2)
+            print("    ", prod1  + prod2)
+            return prod1  + prod2
+
 if __name__ == "__main__":
-    A = cMilnorAlgebra.construct(p=2, degree=50)
-    Sq = A.Sq
-    M = steenrod_module.FiniteSteenrodModule(p=2)
-    x0 = M.add_basis_element("x0", 0)
-    M.validate()
-    cM = cFiniteDimensionalModule.toC(M)
-    print("resolve")
-    res = resolve(M, 30)
-    print("done resolving")
+    # A = cMilnorAlgebra.construct(p=2, degree=50)
+    # Sq = A.Sq
+    # M = steenrod_module.FiniteSteenrodModule(p=2)
+    # x0 = M.add_basis_element("x0", 0)
+    # M.validate()
+    # cM = cFiniteDimensionalModule.toC(M)
+    # print("resolve")
+    # res = resolve(M, 30)
+    # print("done resolving")
+    res = CSteenrod.testResolution(30, 0, 0);
     print(res.contents.modules[2].contents.max_generator_degree)
     res_modules = []
     for i in range(8):
@@ -54,16 +66,7 @@ if __name__ == "__main__":
     for i in range(1, 8):
         globals()["d" + str(i)] = cFreeModuleHomomorphism.fromC(res.contents.differentials[i+1], res_modules[i], res_modules[i-1])
 
-    def checkDifferential(d, x):
-        for (op, g) in x:
-            prod1 = op* d(d.source.get_generator(g))
-            prod2 = d(d.source.get_basis_element(op, g))
-            if len(prod1 - prod2) != 0:
-                print("op:", op, "g:", g, ":")
-                print("    ", prod1)
-                print("    ", prod2)
-                print("    ", prod1  + prod2)
-                return prod1  + prod2
+
 
     # for i in range(8):
     #     op = Sq(i)

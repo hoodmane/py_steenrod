@@ -21,11 +21,33 @@ let addClassCallbackPtr = Module.addFunction(addClassCallback);
 let addStructlineCallbackPtr = Module.addFunction(addStructlineCallback);
 
 
-
+function constructAlgebra(algebraData){
+    let p = algebraData.p;
+    let generic = algebraData.generic;
+    cinitializePrime(p);
+    let cProfile = 0;
+    if(algebraData.profile){
+        let q_part = algebraData.profile.q_part || [];
+        let p_part = algebraData.profile.p_part;
+        let truncated = algebraData.profile.truncated;        
+        let c_qpart_offset = Module._malloc(4 * (q_part.length + p_part.length));
+        let c_ppart_offset = c_qpart_offset + 4*q_part.length;
+        Module.HEAPU32.set(new Uint32Array(q_part), c_qpart_offset/4);
+        Module.HEAPU32.set(new Uint32Array(p_part), c_ppart_offset/4);
+        cProfile = cProfile_construct(p != 2, q_part.length, c_qpart_offset, p_part.length, c_ppart_offset, truncated);
+        Module._free(c_qpart_offset);
+    }
+    console.log("cMilnorAlgebra_construct");    
+    let cAlgebra = cMilnorAlgebra_construct(p, generic, cProfile);
+    cProfile_free(cProfile); 
+    console.log("cMilnorAlgebra_generateBasis");
+    cMilnorAlgebra_generateBasis(cAlgebra, algebraData.max_degree);
+    return cAlgebra;
+}
 
 
 function constructModule(module, cAlgebra){
-    console.log(module);
+    let p = module.p;
     let gensArray = new Uint32Array(Object.values(module.gens));
     let max_degree = Math.max(...Object.values(module.gens));
     let graded_dimension = new Uint32Array(max_degree + 1);
@@ -41,21 +63,29 @@ function constructModule(module, cAlgebra){
     let c_array_offset = Module._malloc(4 * Math.max((max_degree + 1), ...graded_dimension));
     Module.HEAPU32.set(graded_dimension, c_array_offset/4);
     let cModule = cFiniteDimensionalModule_construct(cAlgebra, max_degree, c_array_offset);
-        for(let {op, input, output} of module.milnor_actions){
-        op = op.concat([0,0,0]);
-        let op_degree = op[0] + 3*op[1] + 7*op[2]; // TODO: fix me.
+    for(let {op, input, output} of module.milnor_actions){
+        let op_degree;
+        if(p==2){
+            op = op.concat([0,0,0]);
+            op_degree = op[0] + 3*op[1] + 7*op[2]; // TODO: fix me.
+        } else {
+            let opQ = op[0];
+            let opP = op[1].concat([0,0]);
+            op_degree = 2*(p-1)*opP[0] + opQ.length;
+        }
+        if(op_degree == 0){
+            continue;
+        }
         let input_degree = module.gens[input];
         let input_index = basis_element_indices[input];
         let output_degree = input_degree + op_degree;        
         let op_index = 0; //cMilnorBasisElement.toIndex(algebra, op);        
         let output_vector = new Uint32Array(graded_dimension[output_degree]);
-        console.log(output);
         for( let {gen, coeff} of output) {
-            console.log(gen, coeff);
             output_vector[basis_element_indices[gen]] = coeff
         }
-        console.log(output_vector);
         Module.HEAPU32.set(output_vector, c_array_offset/4);
+
         cFiniteDimensionalModule_setAction(
             cModule, 
             op_degree, op_index,
@@ -64,7 +94,6 @@ function constructModule(module, cAlgebra){
         )
     }
     Module._free(c_array_offset);
-    console.log("Finished module!");
     return cModule;
 }
 
@@ -80,11 +109,8 @@ let runtimePromise = new Promise(function(resolve, reject){
 });
 
 self.onmessage = function(msg){
-    console.log(msg);
     runtimePromise.then(() => {
         let p = msg.data.module.p;
-        console.log(msg.data.module);
-        let generic = msg.data.module.generic;
         let max_degree = msg.data.max_degree;
         if(typeof(p) != 'number'){
             console.log("p not a number, quitting.");
@@ -94,9 +120,16 @@ self.onmessage = function(msg){
             console.log("max_degree not a number, quitting.");
             return;
         }
-        cinitializePrime(p);
-        let cAlgebra = cMilnorAlgebra_construct(p, generic, null);    
-        cMilnorAlgebra_generateBasis(cAlgebra, max_degree);
+        console.log("data: ", msg.data);
+        
+        let algebraData = msg.data.algebra || {};
+        let moduleData = msg.data.module;
+        algebraData.p = moduleData.p;
+        algebraData.generic = moduleData.generic;
+        algebraData.max_degree = max_degree;
+        moduleData.max_degree = max_degree;
+        let cAlgebra = constructAlgebra(algebraData);
+        console.log("constructed algebra");
         let cModule = constructModule(msg.data.module, cAlgebra);
         let cResolution = cResolution_construct(cModule, max_degree, addClassCallbackPtr, addStructlineCallbackPtr);
         cResolution_resolveThroughDegree(cResolution, max_degree);

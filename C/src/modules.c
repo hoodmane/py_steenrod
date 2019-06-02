@@ -16,8 +16,8 @@ FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint
 
 FiniteDimensionalModule *FiniteDimensionalModule_construct(Algebra *algebra, uint max_degree, uint *graded_dimension){
     max_degree ++;
-    array_print(graded_dimension, max_degree);
     FiniteDimensionalModule *result = FiniteDimensionalModule_allocate(algebra, max_degree, graded_dimension);
+    printf("Module_construct algebra: %llx, max_degree: %d, graded_dimension: %d    addr: %llx\n",(uint64)algebra, max_degree - 1, graded_dimension[0], (uint64)result);    
     result->module.p = algebra->p;
     result->module.algebra = algebra;
     result->module.computeBasis = FiniteDimensionalModule_computeBasis;

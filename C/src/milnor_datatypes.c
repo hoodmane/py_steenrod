@@ -17,6 +17,7 @@ uint get_profile_name(char *buffer, Profile P);
 
 uint Profile_getExponent(Profile P, uint p, uint index){
     if(index < P.p_part_length){
+        printf("P.p_part[%d] : %d\n", index, P.p_part[index]);
         return integer_power(p, P.p_part[index]);
     }
     if(P.truncated){
@@ -28,11 +29,47 @@ uint Profile_getExponent(Profile P, uint p, uint index){
 uint Profile_getName(char *buffer, Profile P){
     uint len = 0;
     len += sprintf(buffer + len, "Profile( truncated=%s, ", P.truncated ? "true" : "false");
-    len += sprintf(buffer + len, "q_part=%x, ", P.q_part);
+    if(P.generic){
+        len += sprintf(buffer + len, "q_part=%x, ", P.q_part);
+    }
     len += sprintf(buffer + len, "p_part=");
-    len += array_toString(buffer, P.p_part, P.p_part_length);
+    len += array_toString(buffer + len, P.p_part, P.p_part_length);
     len += sprintf(buffer + len, ")");
     return len;
+}
+
+Profile *Profile_construct(bool generic, uint q_part_length, uint * q_part, uint p_part_length, uint *p_part, bool truncated){
+    Profile * result = malloc(sizeof(Profile) + p_part_length * sizeof(uint));
+    result->generic = generic;
+    if(q_part_length == 0 && p_part_length == 0 && !truncated){
+        result->restricted = false;
+        result->truncated = false;
+        result->q_part = -1;
+        result->p_part_length = 0;
+        result->p_part = NULL;  
+        return result;      
+    }
+    result->restricted = true;
+    result->truncated = truncated;
+    result->generic = generic;
+    for(uint i = 0; i<q_part_length; i++){
+        result->q_part += (q_part[i] & 1) << i;
+    }
+    result->p_part_length = p_part_length;
+    if(p_part_length > 0){
+        result->p_part = (uint*)(result + 1);
+        memcpy(result->p_part, p_part, p_part_length*sizeof(uint));
+    } else {
+        result->p_part = NULL;
+    }
+    char buffer[200];
+    Profile_getName(buffer, *result);
+    printf("profile: %s   addr: %llx\n",buffer, (uint64)result);
+    return result;
+}
+
+void Profile_free(Profile *profile){
+    free(profile);
 }
 
 void MilnorAlgebra_generateName(MilnorAlgebra *A){
@@ -50,7 +87,6 @@ void MilnorAlgebra_generateName(MilnorAlgebra *A){
     memcpy(result, buffer, len + 1);
     A->name = result;
 }
-
 
 
 

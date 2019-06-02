@@ -105,7 +105,6 @@ void initializeModpLookupTable(uint p){
 
 // n must be in the range 0 <= n <= p * (p-1)
 uint modPLookup(uint p, uint n){
-    // printf("%d ", n);
     return modplookuptable[prime_to_index_map[p]][n];
 }
 
@@ -527,6 +526,7 @@ void Vector_addBasisElement(Vector *target, uint idx, uint c){
 void Vector_addArray(Vector *target, uint *source, uint c){
     ((VectorStd*)target)->implementation->addArray(target, source, c);
 }
+
 void Vector_add(Vector *target, Vector *source, uint c){
     ((VectorStd*)target)->implementation->add(target, source, c);
 }
@@ -544,7 +544,6 @@ void initializeVectorImplementation(uint p){
     } else {
         vectorImplementationTable[prime_to_index_map[p]] = VectorGenericImplementation;
     }
-    printf("vectImpl_addr: %llx\n", (uint64)&vectorImplementationTable[prime_to_index_map[p]]);
     vectorImplementationTable[prime_to_index_map[p]].p = p;
 }
 
@@ -572,7 +571,6 @@ void Vector_print(Vector *v){
 
 
 uint Matrix_getSize(uint p, uint rows, uint cols){
-    // printf("cols: %ud\n", cols);
     assert(cols < MAX_DIMENSION);
     return sizeof(Matrix) 
       + rows * (sizeof(Vector*) + Vector_getContainerSize(p)  + Vector_getSize(p, cols, 0));

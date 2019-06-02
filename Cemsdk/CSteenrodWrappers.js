@@ -10,6 +10,9 @@ let cVector_pack = cwrap("Vector_pack", 'void', ['pointer', 'pointer']);
 // void Vector_unpack(uint * target, Vector * source);
 let cVector_unpack = cwrap("Vector_unpack", 'void', ['pointer', 'pointer']);
 
+let cProfile_construct = cwrap("Profile_construct", 'pointer', ['number', 'pointer', 'number', 'pointer', 'bool']);
+let cProfile_free = cwrap("Profile_free", 'void', ['pointer']);
+
 // Algebra *MilnorAlgebra_construct(uint p, bool generic, Profile *profile);
 let cMilnorAlgebra_construct = Module.cwrap("MilnorAlgebra_construct", 'pointer', ['number', 'bool', 'pointer']);
 
@@ -23,7 +26,7 @@ let cMilnorAlgebra_generateBasis = Module.cwrap("MilnorAlgebra_generateBasis", '
 let cMilnorAlgebra_getDimension = Module.cwrap("MilnorAlgebra_getDimension", 'number', ['pointer', 'number']);
 
 // FiniteDimensionalModule *FiniteDimensionalModule_construct(Algebra *algebra, uint max_generator_degree, uint *graded_dimension);
-let cFiniteDimensionalModule_construct = Module.cwrap("FiniteDimensionalModule_construct", 'pointer', ['pointer', 'number', 'pointer']);
+let cFiniteDimensionalModule_construct = Module.cwrap("FiniteDimensionalModule_construct", 'pointer', ['bool', 'pointer', 'number', 'pointer']);
 
 // void FiniteDimensionalModule_free(FiniteDimensionalModule *module);
 let cFiniteDimensionalModule_free = Module.cwrap("FiniteDimensionalModule_free", 'void', ['pointer']);

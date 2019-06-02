@@ -21,19 +21,29 @@ void MilnorBasisElement_print(MilnorBasisElement *b){
     printf("%s\n", buffer);
 }
 
-
 MilnorAlgebra *MilnorAlgebra_construct(uint p, bool generic, Profile *profile){
-    MilnorAlgebraInternal *algebra = malloc(sizeof(MilnorAlgebraInternal));
+    size_t profile_ppart_size = 0;
+    if(profile != NULL){
+        profile_ppart_size = profile->p_part_length * sizeof(uint);
+    }
+    MilnorAlgebraInternal *algebra = malloc(sizeof(MilnorAlgebraInternal) + profile_ppart_size);
+    printf("Algebra_construct p: %d, generic: %d, Profile: %llx addr: %llx\n", p, generic, (uint64)profile, (uint64)algebra);    
+    printf("    profile->p_part[2] : %d\n", profile->p_part[2]);    
     initializePrime(p);
     algebra->public_algebra.p = p;
     algebra->public_algebra.algebra.p = p;
     algebra->public_algebra.generic = generic;
     if(profile == NULL){
+        algebra->public_algebra.profile.restricted = false;
         algebra->public_algebra.profile.truncated = false;
         algebra->public_algebra.profile.p_part_length = 0;
         algebra->public_algebra.profile.q_part = -1;
+        algebra->public_algebra.profile.p_part_length = 0;
+        algebra->public_algebra.profile.p_part = NULL;
     } else {
         algebra->public_algebra.profile = *profile;
+        algebra->public_algebra.profile.p_part = (uint*)(algebra + 1);
+        memcpy(algebra->public_algebra.profile.p_part, profile->p_part, profile_ppart_size);
     }
 
     algebra->public_algebra.algebra.computeBasis = MilnorAlgebra_generateBasis;
@@ -83,6 +93,9 @@ void generateMilnorBasisPpartTable(MilnorAlgebraInternal *algebra, uint new_max_
     for(uint idx = 0;  idx < MAX_XI_TAU; idx ++){
         profile_list[idx] = Profile_getExponent(algebra->public_algebra.profile, p, idx) - 1;
     }
+    printf("profile_list: ");
+    array_print(profile_list, MAX_XI_TAU);
+    printf("\n");
 
     uint old_max_degree = algebra -> P_table_max_degree;
     if(new_max_degree < old_max_degree){
@@ -144,7 +157,8 @@ void generateMilnorBasisPpartTable(MilnorAlgebraInternal *algebra, uint new_max_
                 // Iterate over the monomials of degree n - |xi| with highest xi xi_old.
                 for(uint i = 0; i < remaining_degree_list.length; i++) {
                     P_part old_p_part = remaining_degree_list.list[i];
-                    if(xi_old == xi && old_p_part.p_part[xi] == profile_list[xi]){
+                    if( profile_list[xi] == 0 
+                        || (xi_old == xi && old_p_part.p_part[xi] == profile_list[xi])){
                         continue;
                     }
                     // Copy the old p_part to a new p_part with length xi + 1.
@@ -305,6 +319,10 @@ void freeMilnorBasisQPartTable(MilnorAlgebraInternal *algebra){
 
 bool MilnorAlgebra_generateBasis(Algebra *public_algebra, uint max_degree) {
     MilnorAlgebraInternal *algebra = (MilnorAlgebraInternal*) public_algebra;
+    printf("generateBasis:    profile->p_part[2] : %d\n", algebra->public_algebra.profile.p_part[2]);
+    printf("generateBasis: profile->p_part: ");
+    array_print(algebra->public_algebra.profile.p_part, algebra->public_algebra.profile.p_part_length);
+    printf("\n");
     uint p = algebra->public_algebra.p;
     initializePrime(p);
     uint old_max_degree = algebra->public_algebra.max_degree;

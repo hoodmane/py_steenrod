@@ -1131,11 +1131,11 @@ function updateGlobalBufferViews() {
 
 
 var STATIC_BASE = 1024,
-    STACK_BASE = 12224,
+    STACK_BASE = 12704,
     STACKTOP = STACK_BASE,
-    STACK_MAX = 5255104,
-    DYNAMIC_BASE = 5255104,
-    DYNAMICTOP_PTR = 11968;
+    STACK_MAX = 5255584,
+    DYNAMIC_BASE = 5255584,
+    DYNAMICTOP_PTR = 12448;
 
 assert(STACK_BASE % 16 === 0, 'stack must start aligned');
 assert(DYNAMIC_BASE % 16 === 0, 'heap must start aligned');
@@ -1624,7 +1624,7 @@ var ASM_CONSTS = [];
 
 
 
-// STATICTOP = STATIC_BASE + 11200;
+// STATICTOP = STATIC_BASE + 11680;
 /* global initializers */ /*__ATINIT__.push();*/
 
 
@@ -1635,7 +1635,7 @@ var ASM_CONSTS = [];
 
 
 /* no memory initializer */
-var tempDoublePtr = 12208
+var tempDoublePtr = 12688
 assert(tempDoublePtr % 8 == 0);
 
 function copyTempFloat(ptr) { // functions, because inlining this code increases code size too much
@@ -1932,6 +1932,18 @@ var real__MilnorAlgebra_getDimension = asm["_MilnorAlgebra_getDimension"]; asm["
   return real__MilnorAlgebra_getDimension.apply(null, arguments);
 };
 
+var real__Profile_construct = asm["_Profile_construct"]; asm["_Profile_construct"] = function() {
+  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+  return real__Profile_construct.apply(null, arguments);
+};
+
+var real__Profile_free = asm["_Profile_free"]; asm["_Profile_free"] = function() {
+  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+  return real__Profile_free.apply(null, arguments);
+};
+
 var real__Resolution_construct = asm["_Resolution_construct"]; asm["_Resolution_construct"] = function() {
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
@@ -2056,6 +2068,14 @@ var _MilnorAlgebra_getDimension = Module["_MilnorAlgebra_getDimension"] = functi
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
   return Module["asm"]["_MilnorAlgebra_getDimension"].apply(null, arguments) };
+var _Profile_construct = Module["_Profile_construct"] = function() {
+  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+  return Module["asm"]["_Profile_construct"].apply(null, arguments) };
+var _Profile_free = Module["_Profile_free"] = function() {
+  assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
+  assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');
+  return Module["asm"]["_Profile_free"].apply(null, arguments) };
 var _Resolution_construct = Module["_Resolution_construct"] = function() {
   assert(runtimeInitialized, 'you need to wait for the runtime to be ready (e.g. wait for main() to be called)');
   assert(!runtimeExited, 'the runtime was exited (use NO_EXIT_RUNTIME to keep it alive after main() exits)');

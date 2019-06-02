@@ -541,6 +541,8 @@ class FiniteSteenrodModule:
             d['name'] = self.name
         if self.file_name:
             d['file_name'] = self.file_name
+        if hasattr(self, "profile"):
+            d['profile'] = self.profile
         d["p"] = self.p
         d["generic"] = self.generic
         d["gens"] = self.gens

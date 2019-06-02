@@ -116,6 +116,20 @@ RP4.file_name = "RP4"
 RP4.validate()
 module_list.append(RP4)
 
+ko = FiniteSteenrodModule(p=2)
+ko.name = "$\\mathit{ko}$"
+ko.file_name = "ko"
+ko.add_basis_element("x0", 0)
+ko.profile = {"truncated" : True, "p_part" : [2,1]}
+module_list.append(ko)
+
+tmf2 = FiniteSteenrodModule(p=2)
+tmf2.name = "$\\mathit{tmf}_{(2)}"
+tmf2.file_name = "tmf2"
+tmf2.add_basis_element("x0", 0)
+tmf2.profile = {"truncated" : True,"p_part" : [3,2,1]}
+module_list.append(tmf2)
+
 
 def standard_modules_to_json():
     for M in module_list:
@@ -133,3 +147,6 @@ def standard_modules_to_json():
     ]
     json_str = json.dumps(module_registry)
     write_file("modules/module_registry.json", json_str)
+
+if __name__ == "__main__":
+    standard_modules_to_json()
