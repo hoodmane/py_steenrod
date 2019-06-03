@@ -9,12 +9,10 @@ import steenrod
 import steenrod_module
 from FreeModule import *
 
-def construct(p, max_generator_degree, max_degree=None):
-    if max_degree == None:
-        max_degree = max_generator_degree
+def construct(p, max_degree):
     milnor_algebra = cMilnorAlgebra.construct(p=p, degree=max_degree+10)
     c_algebra = cast(milnor_algebra.c_algebra, POINTER(c_Algebra))
-    M = CSteenrod.FreeModule_construct(c_algebra, max_generator_degree, max_degree)
+    M = CSteenrod.FreeModule_construct(c_algebra, max_degree)
     return M
 
 def toC(module, max_degree=None):
@@ -29,7 +27,7 @@ def toC(module, max_degree=None):
         number_of_generators_in_degree[degree] += 1
         generator_indices[b] = index
         index_to_generator[(degree, index)] = b
-    c_module = construct(module.p, max_generator_degree, max_degree)
+    c_module = construct(module.p, max_degree)
     c_module.contents.number_of_generators = sum(number_of_generators_in_degree)
     for (i, n) in enumerate(number_of_generators_in_degree):
         c_module.contents.number_of_generators_in_degree[i] = n

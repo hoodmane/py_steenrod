@@ -39,7 +39,6 @@ typedef struct {
     bool generic;
     Profile profile;
     string name;
-    uint max_degree;
 } MilnorAlgebra;
 
 Profile *Profile_construct(bool generic, uint q_part_length, uint * q_part, uint p_part_length, uint *p_part, bool truncated);

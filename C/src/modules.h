@@ -13,6 +13,7 @@
 typedef struct Module {
     uint p;
     uint type;
+    uint max_degree;    
     Algebra *algebra;
 // Methods:
     bool (*computeBasis)(struct Module *this, uint degree);
@@ -28,8 +29,7 @@ typedef struct Module {
 
 typedef struct {
     Module module;
-    uint dimension;
-    uint max_degree;
+    uint max_basis_degree;
     uint *graded_dimension;
     // This goes input_degree --> output_degree --> operation --> input_index --> Vector
     Vector ****actions;
@@ -59,9 +59,6 @@ void FiniteDimensionalModule_actOnBasis(
 
 typedef struct {
     Module module;
-    uint max_generator_degree;
-    uint max_degree;
-    uint number_of_generators;
     uint *number_of_generators_in_degree;
 } FreeModule;
 
@@ -72,7 +69,7 @@ typedef struct {
     uint generator_index;
 } FreeModuleOperationGeneratorPair;
 
-FreeModule *FreeModule_construct(Algebra *algebra, uint max_generator_degree, uint max_degree);
+FreeModule *FreeModule_construct(Algebra *algebra, uint max_degree);
 void FreeModule_free(FreeModule *module);
 
 bool FreeModule_computeBasis(Module *this, uint degree);

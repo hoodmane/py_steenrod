@@ -133,8 +133,8 @@ def wrap_modules(CSteenrod):
     ]
 
 
-    # FreeModule *FreeModule_construct(Algebra * algebra, uint max_generator_degree, uint max_degree);
-    CSteenrod.FreeModule_construct.argtypes = [POINTER(c_Algebra), c_uint, c_uint]
+    # FreeModule *FreeModule_construct(Algebra * algebra, uint max_degree);
+    CSteenrod.FreeModule_construct.argtypes = [POINTER(c_Algebra), c_uint]
     CSteenrod.FreeModule_construct.restype  = POINTER(c_FreeModule)
 
     # void FreeModule_free(FreeModule * module);

@@ -16,6 +16,7 @@ typedef struct {
 
 typedef struct Algebra {
     uint p;
+    uint max_degree; 
     FiltrationOneProductList *product_list; // This determines which indecomposibles have lines drawn for them.
 // Methods:
     bool (*computeBasis)(struct Algebra* this, uint degree);

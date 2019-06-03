@@ -2,23 +2,28 @@
 importScripts("CSteenrod.js");
 importScripts("CSteenrodWrappers.js");
 
-function addClassCallback(hom_deg, int_deg, cocycle) { 
-    self.postMessage({"cmd" : "addClass", "x" : int_deg - hom_deg, "y": hom_deg});
-    // display.updateBatch();
+function getCallbacks(degree_shift){
+    function addClassCallback(hom_deg, int_deg, cocycle) { 
+        self.postMessage({"cmd" : "addClass", "x" : int_deg - hom_deg + degree_shift, "y": hom_deg});
+        // display.updateBatch();
+    }
+    
+    function addStructlineCallback(
+        source_hom_deg, source_int_deg, source_idx, 
+        target_hom_deg, target_int_deg, target_idx
+    ){
+        self.postMessage({"cmd" : "addStructline", 
+            "source" : {"x" : source_int_deg - source_hom_deg + degree_shift, "y": source_hom_deg, "idx": source_idx},
+            "target" : {"x" : target_int_deg - target_hom_deg + degree_shift, "y": target_hom_deg, "idx": target_idx}
+        })
+    }
+    
+    // TODO: remove these addFunctions as part of cleanup?
+    let addClassCallbackPtr = Module.addFunction(addClassCallback);
+    let addStructlineCallbackPtr = Module.addFunction(addStructlineCallback);
+    return {addClassPtr : addClassCallbackPtr, addStructlinePtr : addStructlineCallbackPtr};
 }
 
-function addStructlineCallback(
-    source_hom_deg, source_int_deg, source_idx, 
-    target_hom_deg, target_int_deg, target_idx
-){
-    self.postMessage({"cmd" : "addStructline", 
-        "source" : {"x" : source_int_deg - source_hom_deg, "y": source_hom_deg, "idx": source_idx},
-        "target" : {"x" : target_int_deg - target_hom_deg, "y": target_hom_deg, "idx": target_idx}
-    })
-}
-
-let addClassCallbackPtr = Module.addFunction(addClassCallback);
-let addStructlineCallbackPtr = Module.addFunction(addStructlineCallback);
 
 
 function constructAlgebra(algebraData){
@@ -46,23 +51,23 @@ function constructAlgebra(algebraData){
 }
 
 
-function constructModule(module, cAlgebra){
+function constructFiniteDimensionalModule(module, cAlgebra){
     let p = module.p;
-    let gensArray = new Uint32Array(Object.values(module.gens));
-    let max_degree = Math.max(...Object.values(module.gens));
-    let graded_dimension = new Uint32Array(max_degree + 1);
+    let min_basis_degree = Math.min(...Object.values(module.gens))
+    let max_basis_degree = Math.max(...Object.values(module.gens)) - min_basis_degree + 1;
+    let graded_dimension = new Uint32Array(max_basis_degree);
     let basis_element_indices = {};
     let index_to_basis_element = {};
     for(let [b, degree] of Object.entries(module.gens)){
-        let index = graded_dimension[degree];
-        graded_dimension[degree] ++;
+        let index = graded_dimension[degree - min_basis_degree];
+        graded_dimension[degree - min_basis_degree] ++;
         basis_element_indices[b] = index;
-        index_to_basis_element[degree] = index_to_basis_element[degree] || {}
-        index_to_basis_element[degree][index] = b;
+        index_to_basis_element[degree - min_basis_degree] = index_to_basis_element[degree - min_basis_degree] || {}
+        index_to_basis_element[degree - min_basis_degree][index] = b;
     }
-    let c_array_offset = Module._malloc(4 * Math.max((max_degree + 1), ...graded_dimension));
+    let c_array_offset = Module._malloc(4 * Math.max(max_basis_degree, ...graded_dimension));
     Module.HEAPU32.set(graded_dimension, c_array_offset/4);
-    let cModule = cFiniteDimensionalModule_construct(cAlgebra, max_degree, c_array_offset);
+    let cModule = cFiniteDimensionalModule_construct(cAlgebra, max_basis_degree, c_array_offset);
     for(let {op, input, output} of module.milnor_actions){
         let op_degree;
         if(p==2){
@@ -76,7 +81,7 @@ function constructModule(module, cAlgebra){
         if(op_degree == 0){
             continue;
         }
-        let input_degree = module.gens[input];
+        let input_degree = module.gens[input] - min_basis_degree;
         let input_index = basis_element_indices[input];
         let output_degree = input_degree + op_degree;        
         let op_index = 0; //cMilnorBasisElement.toIndex(algebra, op);        
@@ -94,7 +99,8 @@ function constructModule(module, cAlgebra){
         )
     }
     Module._free(c_array_offset);
-    return cModule;
+    let result = {cModule : cModule, degree_shift : -min_basis_degree};
+    return result;
 }
 
 
@@ -112,6 +118,7 @@ self.onmessage = function(msg){
     runtimePromise.then(() => {
         let p = msg.data.module.p;
         let max_degree = msg.data.max_degree;
+        max_degree++;
         if(typeof(p) != 'number'){
             console.log("p not a number, quitting.");
             return;
@@ -130,8 +137,9 @@ self.onmessage = function(msg){
         moduleData.max_degree = max_degree;
         let cAlgebra = constructAlgebra(algebraData);
         console.log("constructed algebra");
-        let cModule = constructModule(msg.data.module, cAlgebra);
-        let cResolution = cResolution_construct(cModule, max_degree, addClassCallbackPtr, addStructlineCallbackPtr);
+        let module = constructFiniteDimensionalModule(msg.data.module, cAlgebra);
+        let callbacks = getCallbacks(module.degree_shift)
+        let cResolution = cResolution_construct(module.cModule, max_degree, callbacks.addClassPtr, callbacks.addStructlinePtr);
         cResolution_resolveThroughDegree(cResolution, max_degree);
     });
 };

@@ -44,15 +44,15 @@ Resolution * Resolution_construct(
     // Anyways, we are working with the range -1 to max_degree which has max degree - (-1) + 1 = max_degree + 2 entries.
     Resolution *res = malloc(
         sizeof(Resolution)
-        + (max_degree + 2) * sizeof(FreeModule*)
-        + (max_degree + 2) * sizeof(FreeModuleHomomorphism*) // 
-        + (max_degree + 2) * sizeof(int) // internal_degree_to_resolution_stage
+        + (max_degree + 1) * sizeof(FreeModule*)
+        + (max_degree + 1) * sizeof(FreeModuleHomomorphism*) // 
+        + (max_degree + 1) * sizeof(int) // internal_degree_to_resolution_stage
     );
     res->modules = (FreeModule**)(res + 1);
     res->differentials = 
-        (FreeModuleHomomorphism**)(res->modules + (max_degree + 2));
-    res->internal_degree_to_resolution_stage = (int*)(res->differentials + max_degree + 2);
-    memset(res->internal_degree_to_resolution_stage, 0, (max_degree+2)*sizeof(int));
+        (FreeModuleHomomorphism**)(res->modules + (max_degree + 1));
+    res->internal_degree_to_resolution_stage = (int*)(res->differentials + max_degree + 1);
+    memset(res->internal_degree_to_resolution_stage, 0, (max_degree + 1)*sizeof(int));
     
     res->module = (Module*)module;
     res->algebra= module->module.algebra;
@@ -75,7 +75,7 @@ void Resolution_free(Resolution *res){
         return;
     }
     FreeModuleHomomorphism_free(res->differentials[0]);
-    for(uint i = 0; i < res->max_degree + 1; i++){
+    for(uint i = 0; i < res->max_degree; i++){
         FreeModuleHomomorphism_free(res->differentials[i + 1]);
         FreeModule_free(res->modules[i + 1]);
     }
@@ -90,7 +90,7 @@ void Resolution_resolveThroughDegree(Resolution *res, uint degree){
 //             printf("(%d, %d)\n", hom_deg, int_deg);
 //        }
 //    }
-    for(uint int_deg = 0; int_deg <= degree; int_deg ++){
+    for(uint int_deg = 0; int_deg < degree; int_deg ++){
         for(uint hom_deg = 0; hom_deg <= int_deg; hom_deg++){           
             // printf("(%d, %d)\n", hom_deg, int_deg);
             Resolution_step(res, hom_deg, int_deg);
@@ -114,7 +114,7 @@ void Resolution_step(Resolution *res, uint homological_degree, uint degree){
     // Construct new FreeModule.
     if(homological_degree == degree){
         res->modules[homological_degree + 1] = 
-            FreeModule_construct(res->algebra, res->max_degree, res->max_degree);
+            FreeModule_construct(res->algebra, res->max_degree);
         res->differentials[homological_degree + 1] =
             FreeModuleHomomorphism_construct(
                 res->modules[homological_degree + 1], 
@@ -168,16 +168,22 @@ void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_d
 }
 
 
-// Invariants:
+//   It's assumed that before this function runs, we should have a complex whose homology H^{i,j} is 0 when 
+//   i <= homological_degree, j <= degree and at least one of these inequalities is strict.
+//   The output is a complex that's also exact in degree i, j.
+//   Preconditions:
+//      resolution->differentials[homological_degree]->kernel should contain the kernel of the previous differential
+//      if homological_degree == 0, the kernel should be everything in the module.
 void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uint homological_degree, uint degree){
+    assert(degree >= homological_degree);
+    assert(degree < resolution->max_degree);
     uint p = resolution->algebra->p;
     FreeModuleHomomorphism *current_differential  = resolution->differentials[homological_degree + 1];
     FreeModuleHomomorphism *previous_differential = resolution->differentials[homological_degree];
     FreeModule *source = current_differential->source;
     uint source_dimension = module_getDimension(&current_differential->source->module, degree);
     uint target_dimension = module_getDimension(current_differential->target, degree);
-
-    // assert(source->max_generator_degree == degree);
+    assert(current_differential->source->number_of_generators_in_degree[degree] == 0);
 
     // The Homomorphism matrix has size source_dimension x target_dimension, but we are going to augment it with an
     // identity matrix so that gives a matrix with dimensions source_dimension x (target_dimension + source_dimension).
@@ -270,7 +276,6 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     }
     Kernel_free(previous_cycles); // This information can now be found in this differential's coimage_to_image_matrix.
     previous_differential->kernel[degree] = NULL;
-    current_differential->source->number_of_generators += homology_dimension;
     current_differential->source->number_of_generators_in_degree[degree] = homology_dimension;
     // Copy the outputs, currently stored in the coimage_to_image matrix, to the FreeModuleHomomorphism outputs field.
     FreeModuleHomomorphism_AllocateSpaceForNewGenerators(current_differential, degree, homology_dimension);
@@ -342,7 +347,7 @@ Resolution *testResolution(
     //     printf("\n");
     // }
 
-    uint max_generator_degree = 0;
+    uint max_generator_degree = 0 + 1;
     uint graded_dimension[5] = {1,0,1};
     FiniteDimensionalModule *module = 
         FiniteDimensionalModule_construct(algebra, max_generator_degree, graded_dimension);
