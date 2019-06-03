@@ -22,18 +22,42 @@
 // The MilnorAlgebra allocates tables to represent the basis. In order to use, first you must call
 // MilnorAlgebra_generateBasis(max_degree). Then the methods _getBasis, getDimension, and multiply 
 // implement the algebra structure.
+MilnorAlgebra *MilnorAlgebra_initializeFields(MilnorAlgebraInternal *algebra, uint p, bool generic, Profile *profile);
 MilnorAlgebra *MilnorAlgebra_construct(uint p, bool generic, Profile *profile){
-    size_t profile_ppart_size = 0;
+    uint profile_ppart_length = 0;
     if(profile != NULL){
-        profile_ppart_size = profile->p_part_length * sizeof(uint);
+        profile_ppart_length = profile->p_part_length;
     }
-    MilnorAlgebraInternal *algebra = malloc(sizeof(MilnorAlgebraInternal) + profile_ppart_size);
-    // printf("Algebra_construct p: %d, generic: %d, Profile: %llx addr: %llx\n", p, generic, (uint64)profile, (uint64)algebra);    
-    // printf("    profile->p_part[2] : %d\n", profile->p_part[2]);    
+    uint num_products;
+    if(generic){
+        num_products = 2;
+    } else {
+        num_products = 3;
+    }    
+    size_t algebra_size =         
+        sizeof(MilnorAlgebraInternal) 
+        + profile_ppart_length * sizeof(uint) // Store the P list part of the profile here
+        + sizeof(FiltrationOneProductList) // These are for listing out the products.
+            + 2 * num_products * sizeof(uint);
+    MilnorAlgebraInternal *algebra = malloc(algebra_size);
+
+    algebra->public_algebra.profile.p_part = profile_ppart_length > 0 ? (uint*)(algebra + 1) : NULL;
+    Algebra *inner_algebra = &algebra->public_algebra.algebra;    
+    inner_algebra->product_list = (FiltrationOneProductList*)((uint*)(algebra + 1) + profile_ppart_length);
+    inner_algebra->product_list->degrees = (uint*)(inner_algebra->product_list + 1);
+    inner_algebra->product_list->indices = inner_algebra->product_list->degrees + num_products;
+
+    assert((char*)(inner_algebra->product_list->indices + num_products) == ((char *)algebra) + algebra_size);
+    MilnorAlgebra_initializeFields(algebra, p, generic, profile);
+    return (MilnorAlgebra*)algebra;
+}
+
+MilnorAlgebra *MilnorAlgebra_initializeFields(MilnorAlgebraInternal *algebra, uint p, bool generic, Profile *profile){
     initializePrime(p);
     algebra->public_algebra.p = p;
     algebra->public_algebra.algebra.p = p;
     algebra->public_algebra.generic = generic;
+    // Initialize Profile
     if(profile == NULL){
         algebra->public_algebra.profile.restricted = false;
         algebra->public_algebra.profile.truncated = false;
@@ -43,14 +67,14 @@ MilnorAlgebra *MilnorAlgebra_construct(uint p, bool generic, Profile *profile){
         algebra->public_algebra.profile.p_part = NULL;
     } else {
         algebra->public_algebra.profile = *profile;
-        algebra->public_algebra.profile.p_part = (uint*)(algebra + 1);
-        memcpy(algebra->public_algebra.profile.p_part, profile->p_part, profile_ppart_size);
+        memcpy(algebra->public_algebra.profile.p_part, profile->p_part, profile->p_part_length * sizeof(uint));
     }
     // Fill in the Algebra function pointers.
     algebra->public_algebra.algebra.computeBasis = MilnorAlgebra_generateBasis;
     algebra->public_algebra.algebra.getDimension = MilnorAlgebra_getDimension;
     algebra->public_algebra.algebra.multiplyBasisElements = MilnorAlgebra_multiply;
 
+    // Basis tables
     algebra->P_table = NULL;
     algebra->P_table_by_P_length = NULL;
     algebra->P_table_max_degree = 0;
@@ -62,6 +86,25 @@ MilnorAlgebra *MilnorAlgebra_construct(uint p, bool generic, Profile *profile){
     algebra->public_algebra.max_degree = -1;
     algebra->basis_element_to_index_map = NULL;
 
+    // Products
+    // Length field has to match with amount of space we decided to allocate for this
+    // in constructor function directly before this.
+    FiltrationOneProductList *product_list = algebra->public_algebra.algebra.product_list;
+    if(generic){
+        product_list->length = 2;
+        product_list->degrees[0] = 1; // beta
+        product_list->indices[0] = 0;        
+        product_list->degrees[1] = 2 * (p - 1); // P1
+        product_list->indices[1] = 0;
+    } else {
+        product_list->length = 3;
+        product_list->degrees[0] = 1; // Sq1
+        product_list->indices[0] = 0; 
+        product_list->degrees[1] = 2; // Sq2
+        product_list->indices[1] = 0; 
+        product_list->degrees[2] = 1; // Sq4
+        product_list->indices[2] = 0;  
+    }
     return (MilnorAlgebra*)algebra;
 }
 
@@ -79,6 +122,7 @@ MilnorBasisElement_list MilnorAlgebra_getBasis(MilnorAlgebra *public_algebra, ui
     MilnorAlgebraInternal *algebra = (MilnorAlgebraInternal *) public_algebra;
     return algebra->basis_table[degree];
 }
+
 
 
 

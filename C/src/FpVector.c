@@ -376,14 +376,12 @@ void VectorGeneric_addBasisElement(Vector *target, uint index, uint coeff){
 }
 
 void VectorGeneric_addArray(Vector *target, uint *source, uint c){
-    printf("source_addr: %llx\n", (uint64)source);
     VectorStd *t = (VectorStd*) target;
     uint source_idx = 0;
     uint entries[getEntriesPer64Bits(t->implementation->p)];   
     for(uint i = 0; i < t->number_of_limbs; i++){
         uint limb_length = unpackLimb(entries, t, i);
         for(uint j = 0; j < limb_length; j++){
-            printf("    source[%d]: %d\n", source_idx, source[source_idx]);
             entries[j] = modPLookup(t->implementation->p, entries[j] + c*source[source_idx]);
             source_idx++;
         }

@@ -98,6 +98,7 @@ void Resolution_resolveThroughDegree(Resolution *res, uint degree){
    }
 }
 
+void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_degree, uint degree, uint source_idx);
 void Resolution_step(Resolution *res, uint homological_degree, uint degree){
     // Construct kernel -- say that it's everything.
     // We put the module itself in degree zero and we'll want to hit the whole thing.
@@ -129,37 +130,43 @@ void Resolution_step(Resolution *res, uint homological_degree, uint degree){
     uint num_gens = res->modules[homological_degree + 1]->number_of_generators_in_degree[degree];
     for(uint i=0; i < num_gens; i++){
         res->addClass(homological_degree, degree, "");
-    }
+        if(homological_degree > 0){
+            Resolution_computeFiltrationOneProducts(res, homological_degree, degree, i);
+        }
+    } 
     // Products. TODO: handle case distinction by primes.
-    if(homological_degree > 0){
-        FreeModuleHomomorphism *d = res->differentials[homological_degree + 1];
-        FreeModule *T = (FreeModule*)d->target;        
-        for(uint source= 0; source < num_gens; source++){
-            Vector *dx = d->outputs[degree][source];
-            // 1<<j, j < 3
-            for(uint j = 0; j < 3; j++){
-                uint hj_degree = 1 << j;
-                if(hj_degree > degree){
-                    break;
-                }
-                uint gen_degree = degree - hj_degree;
-                uint num_target_generators = T->number_of_generators_in_degree[gen_degree];
-                for(uint target = 0; target < num_target_generators; target++){
-                    uint vector_idx = FreeModule_operationGeneratorToIndex(res->modules[homological_degree], hj_degree, 0, gen_degree, target);
-                    if(vector_idx >= dx->dimension){
-                        printf("Out of bounds index when computing product:\n");
-                        printf("  ==  degree: %d, hom_deg: %d, dim: %d, idx: %d\n", degree, homological_degree, dx->dimension, vector_idx);
-                    } else {
-                        if(Vector_getEntry(dx, vector_idx) != 0){
-                            // There was a product!
-                            res->addStructline(homological_degree - 1, gen_degree, target, homological_degree, degree, source);
-                        }
-                    }
+
+}
+
+void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_degree, uint degree, uint source_idx){
+    FreeModuleHomomorphism *d = res->differentials[homological_degree + 1];
+    FreeModule *T = (FreeModule*)d->target;        
+    Vector *dx = d->outputs[degree][source_idx];
+    FiltrationOneProductList *product_list = res->algebra->product_list;    
+    for(uint j = 0; j < product_list->length; j++){
+        uint op_degree = product_list->degrees[j];
+        uint op_index = product_list->indices[j];
+        if(op_degree > degree){
+            break;
+        }
+        uint gen_degree = degree - op_degree;
+        uint num_target_generators = T->number_of_generators_in_degree[gen_degree];
+        for(uint target = 0; target < num_target_generators; target++){
+            uint vector_idx = FreeModule_operationGeneratorToIndex(
+                res->modules[homological_degree], op_degree, op_index, gen_degree, target);
+            if(vector_idx >= dx->dimension){
+                printf("Out of bounds index when computing product:\n");
+                printf("  ==  degree: %d, hom_deg: %d, dim: %d, idx: %d\n", degree, homological_degree, dx->dimension, vector_idx);
+            } else {
+                if(Vector_getEntry(dx, vector_idx) != 0){
+                    // There was a product!
+                    res->addStructline(homological_degree - 1, gen_degree, target, homological_degree, degree, source_idx);
                 }
             }
         }
     }
 }
+
 
 // Invariants:
 void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uint homological_degree, uint degree){
@@ -367,7 +374,7 @@ testStruct *test(){
     return result;
 }
 
-/**
+/**/
 int main(){
     // Algebra * A = (Algebra*)MilnorAlgebra_construct(5, true, NULL);
     // MilnorAlgebra_generateBasis(A, 100);

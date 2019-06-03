@@ -8,9 +8,15 @@
 
 #include "FpVector.h"
 
+typedef struct {
+    uint length;
+    uint *degrees;
+    uint *indices;
+} FiltrationOneProductList;
 
 typedef struct Algebra {
     uint p;
+    FiltrationOneProductList *product_list; // This determines which indecomposibles have lines drawn for them.
 // Methods:
     bool (*computeBasis)(struct Algebra* this, uint degree);
     uint (*getDimension)(struct Algebra* this, uint degree);
@@ -21,7 +27,7 @@ typedef struct Algebra {
 #define algebra_computeBasis(algebra, degree) (*(algebra)->computeBasis)(algebra, degree)
 #define algebra_getDimension(algebra, degree) (*(algebra)->getDimension)(algebra, degree)
 #define algebra_multiplyBasisElements(algebra, result, coeff, r_deg, r, s_deg, s) (*(algebra)->multiplyBasisElements)(algebra, result, coeff, r_deg, r, s_deg, s)
-
+#define algebra_getFiltrationOneProducts(algebra) (*(algebra)->getFiltrationOneProducts)(algebra)
 
 
 
