@@ -7,8 +7,8 @@ SET(DEBUG_INFO_COMPILE_FLAGS "-g")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEBUG_INFO_COMPILE_FLAGS}")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s TOTAL_MEMORY=20777216")
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g4 -O0 --source-map-base http://localhost:8080/Cemsdk")
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g4 -O0 --source-map-base http://localhost:8080/Cemsdk")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 
 SET(EXTRA_EXPORTED_RUNTIME_METHODS 
     "['ccall', 'cwrap', 'addFunction', 'print', 'getValue', 'setValue']"

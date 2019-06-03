@@ -17,7 +17,7 @@ FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint
 FiniteDimensionalModule *FiniteDimensionalModule_construct(Algebra *algebra, uint max_degree, uint *graded_dimension){
     max_degree ++;
     FiniteDimensionalModule *result = FiniteDimensionalModule_allocate(algebra, max_degree, graded_dimension);
-    printf("Module_construct algebra: %llx, max_degree: %d, graded_dimension: %d    addr: %llx\n",(uint64)algebra, max_degree - 1, graded_dimension[0], (uint64)result);    
+    // printf("Module_construct algebra: %llx, max_degree: %d, graded_dimension: %d    addr: %llx\n",(uint64)algebra, max_degree - 1, graded_dimension[0], (uint64)result);    
     result->module.p = algebra->p;
     result->module.algebra = algebra;
     result->module.computeBasis = FiniteDimensionalModule_computeBasis;
@@ -225,7 +225,13 @@ FreeModule *FreeModule_construct(Algebra *algebra, uint max_generator_degree, ui
 }
 
 void FreeModule_free(FreeModule *module){
-    // TODO: Free other parts of the structure.
+    if(module == NULL){
+        return;
+    }
+    FreeModuleInternal *M = (FreeModuleInternal*) module;
+    for(uint i=0; i<module->max_degree + 1; i++){
+        free(M->generator_to_index_table[i]);
+    }
     free(module);
 }
 
@@ -341,12 +347,27 @@ FreeModuleHomomorphism *FreeModuleHomomorphism_construct(FreeModule *source, Mod
     );
     f->source = source;
     f->target = target;
+    f->max_degree = max_degree;
     f->max_computed_degree = -1;
     f->outputs = (Vector***)(f + 1);
     f->coimage_to_image_isomorphism = (Matrix**)(f->outputs + max_degree + 1);
     f->kernel = (Kernel**)(f->coimage_to_image_isomorphism + max_degree + 1);
     memset(f+1, 0,(max_degree + 1)*(sizeof(Vector**) + sizeof(Matrix*) + sizeof(Kernel*)));
+    assert(f->coimage_to_image_isomorphism[0] == NULL);
+    assert(f->kernel[0] == NULL);
     return f;
+}
+
+void FreeModuleHomomorphism_free(FreeModuleHomomorphism *f){
+    if(f == NULL){
+        return;
+    }
+    for(uint i = 0; i < f->max_degree + 1; i++){
+        Matrix_free(f->coimage_to_image_isomorphism[i]);
+        Kernel_free(f->kernel[i]);
+        free(f->outputs[i]);
+    }
+    free(f);
 }
 
 void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism *f, uint degree, uint num_gens){
@@ -453,6 +474,10 @@ Kernel *Kernel_construct(uint p, uint rows, uint columns){
     k->column_to_pivot_row = (int*)(k + 1);
     k->kernel = Matrix_initialize((char*)(k->column_to_pivot_row + columns), p, rows, columns);
     return k;
+}
+
+void Kernel_free(Kernel *k){
+    free(k);
 }
 
 /*

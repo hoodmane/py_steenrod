@@ -72,6 +72,7 @@ typedef struct {
 uint Matrix_getSize(uint p, uint rows, uint cols);
 Matrix *Matrix_initialize(char *memory, uint p, uint rows, uint cols);
 Matrix *Matrix_construct(uint p, uint rows, uint cols);
+void Matrix_free(Matrix *M);
 
 Matrix *MatrixGeneric_construct(uint p, uint rows, uint cols);
 Matrix *Matrix2_construct(uint p, uint rows, uint cols);

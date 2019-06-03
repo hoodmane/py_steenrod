@@ -32,6 +32,8 @@ Resolution *Resolution_construct(
         uint target_hom_deg, uint target_int_deg, uint target_idx
     )    
 );
+void Resolution_free(Resolution *resolution);
+
 void Resolution_step(Resolution *resolution, uint homological_degree, uint degree);
 void Resolution_resolveThroughDegree(Resolution *res, uint degree);
 

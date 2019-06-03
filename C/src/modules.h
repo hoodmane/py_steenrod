@@ -92,6 +92,7 @@ typedef struct {
     FreeModule *source;
     Module *target;
     Vector ***outputs; // degree --> input_idx --> output
+    uint max_degree;
     uint max_computed_degree;
     Matrix **coimage_to_image_isomorphism;
     Kernel **kernel; // This is redundant with the next module's coimage_to_image_iso
@@ -99,12 +100,15 @@ typedef struct {
 //void initializeFreeModuleHomomorphism(FreeModuleHomomorphism *f, )
 
 FreeModuleHomomorphism *FreeModuleHomomorphism_construct(FreeModule *source, Module *target, uint max_degree);
+void FreeModuleHomomorphism_free(FreeModuleHomomorphism *f);
 void FreeModuleHomomorphism_setOutput(FreeModuleHomomorphism *f, uint gen_degree, uint gen_index, Vector *output);
 void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism *f, Vector *result, uint coeff, uint input_degree, uint input_index);
 
 void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism *f, uint degree, uint num_gens);
 
 void FreeModuleHomomorphism_getMatrix(FreeModuleHomomorphism *f, Matrix *result, uint degree);
+
 Kernel *Kernel_construct(uint p, uint rows, uint columns);
+void Kernel_free(Kernel *k);
 
 #endif //CSTEENROD_MODULES_H

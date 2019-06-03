@@ -39,19 +39,20 @@ Resolution * Resolution_construct(
         uint target_hom_deg, uint target_int_deg, uint target_idx
     )    
 ){
-    printf("Resolution_construct: module: %llx, max_deg: %d, addClass: %llx, addStructline: %llx\n", module, max_degree, addClass, addStructline);
-    printf("    module->max_degree: %d, module->graded_dim[0]: %d\n", module->max_degree, module->graded_dimension[0]);
+    // The 0th index in "modules" and "differentials" is the module we're resolving.
+    // We're constructing an augmented resolution. In math this first module would be placed in index -1.
+    // Anyways, we are working with the range -1 to max_degree which has max degree - (-1) + 1 = max_degree + 2 entries.
     Resolution *res = malloc(
         sizeof(Resolution)
-        + (max_degree + 1) * sizeof(FreeModule*)
-        + (max_degree + 1) * sizeof(FreeModuleHomomorphism*)
-        + (max_degree + 1) * sizeof(int)
+        + (max_degree + 2) * sizeof(FreeModule*)
+        + (max_degree + 2) * sizeof(FreeModuleHomomorphism*) // 
+        + (max_degree + 2) * sizeof(int) // internal_degree_to_resolution_stage
     );
     res->modules = (FreeModule**)(res + 1);
     res->differentials = 
-        (FreeModuleHomomorphism**)(res->modules + (max_degree + 1));
-    res->internal_degree_to_resolution_stage = (int*)(res->differentials + max_degree + 1);
-    memset(res->internal_degree_to_resolution_stage, 0, (max_degree+1)*sizeof(int));
+        (FreeModuleHomomorphism**)(res->modules + (max_degree + 2));
+    res->internal_degree_to_resolution_stage = (int*)(res->differentials + max_degree + 2);
+    memset(res->internal_degree_to_resolution_stage, 0, (max_degree+2)*sizeof(int));
     
     res->module = (Module*)module;
     res->algebra= module->module.algebra;
@@ -68,6 +69,19 @@ Resolution * Resolution_construct(
     res->addStructline = addStructline;
     return res;
 }
+
+void Resolution_free(Resolution *res){
+    if(res == NULL){
+        return;
+    }
+    FreeModuleHomomorphism_free(res->differentials[0]);
+    for(uint i = 0; i < res->max_degree + 1; i++){
+        FreeModuleHomomorphism_free(res->differentials[i + 1]);
+        FreeModule_free(res->modules[i + 1]);
+    }
+    free(res);
+}
+
 
 void Resolution_resolveThroughDegree(Resolution *res, uint degree){
 //     for(uint hom_deg = 0; hom_deg < degree; hom_deg++){
@@ -116,7 +130,7 @@ void Resolution_step(Resolution *res, uint homological_degree, uint degree){
     for(uint i=0; i < num_gens; i++){
         res->addClass(homological_degree, degree, "");
     }
-    // Products:
+    // Products. TODO: handle case distinction by primes.
     if(homological_degree > 0){
         FreeModuleHomomorphism *d = res->differentials[homological_degree + 1];
         FreeModule *T = (FreeModule*)d->target;        
@@ -133,7 +147,8 @@ void Resolution_step(Resolution *res, uint homological_degree, uint degree){
                 for(uint target = 0; target < num_target_generators; target++){
                     uint vector_idx = FreeModule_operationGeneratorToIndex(res->modules[homological_degree], hj_degree, 0, gen_degree, target);
                     if(vector_idx >= dx->dimension){
-                        printf("degree: %d, hom_deg: %d, dim: %d, idx: %d\n", degree, homological_degree, dx->dimension, vector_idx);
+                        printf("Out of bounds index when computing product:\n");
+                        printf("  ==  degree: %d, hom_deg: %d, dim: %d, idx: %d\n", degree, homological_degree, dx->dimension, vector_idx);
                     } else {
                         if(Vector_getEntry(dx, vector_idx) != 0){
                             // There was a product!
@@ -238,7 +253,8 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
             homology_dimension++;
         }
     }
-    free(previous_cycles); // This information can now be found in this differential's coimage_to_image_matrix.
+    Kernel_free(previous_cycles); // This information can now be found in this differential's coimage_to_image_matrix.
+    previous_differential->kernel[degree] = NULL;
     current_differential->source->number_of_generators += homology_dimension;
     current_differential->source->number_of_generators_in_degree[degree] = homology_dimension;
     FreeModuleHomomorphism_AllocateSpaceForNewGenerators(current_differential, degree, homology_dimension);
@@ -282,30 +298,30 @@ Resolution *testResolution(
         uint target_hom_deg, uint target_int_deg, uint target_idx
     )
 ){
-    uint p = 2;
+    uint p = 3;
     bool generic = p!=2;
-    initializePrime(2);
-    uint p_part[3] = {3,2,1};
-    uint p_part_length = 3;
+    initializePrime(p);
+    // uint p_part[3] = {3,2,1};
+    // uint p_part_length = 3;
     // uint p_part[2] = {2,1};
     // uint p_part_length = 2;
-    bool truncated = true;
-    Profile *P = Profile_construct(generic, 0, NULL, p_part_length, p_part, truncated);
-    MilnorAlgebra *A = MilnorAlgebra_construct(2, generic, P);
+    // bool truncated = true;
+    // Profile *P = Profile_construct(generic, 0, NULL, p_part_length, p_part, truncated);
+    MilnorAlgebra *A = MilnorAlgebra_construct(p, generic, NULL);
     Algebra *algebra = (Algebra*) A;
     algebra_computeBasis(algebra, degree);
 
-    char buffer[10000];
-    for(int i = 0; i < degree; i++){
-        MilnorBasisElement_list basis_list = MilnorAlgebra_getBasis(A, i);
-        printf("degree: %d \n", i);
-        for(int i = 0; i < basis_list.length; i++){
-            MilnorBasisElement v = basis_list.list[i];
-            MilnorBasisElement_toString(buffer, &v);
-            printf("  %d: '%s'\n", i , buffer);
-        }
-        printf("\n");
-    }
+    // char buffer[10000];
+    // for(int i = 0; i < degree; i++){
+    //     MilnorBasisElement_list basis_list = MilnorAlgebra_getBasis(A, i);
+    //     printf("degree: %d \n", i);
+    //     for(int i = 0; i < basis_list.length; i++){
+    //         MilnorBasisElement v = basis_list.list[i];
+    //         MilnorBasisElement_toString(buffer, &v);
+    //         printf("  %d: '%s'\n", i , buffer);
+    //     }
+    //     printf("\n");
+    // }
 
     uint max_generator_degree = 0;
     uint graded_dimension[5] = {1,0,1};
@@ -346,7 +362,12 @@ int main(){
     // MilnorAlgebra_generateBasis(A, 100);
     // printf("constructed\n");
     // algebra_computeBasis(A, 10);
-    Resolution *res = testResolution(30, NULL, NULL);
+    Resolution *res = testResolution(3, NULL, NULL);
+    FiniteDimensionalModule_free((FiniteDimensionalModule*)res->module);
+    res->module = NULL;
+    MilnorAlgebra_free((MilnorAlgebra*)res->algebra);
+    res->algebra = NULL;
+    Resolution_free(res);
     return 0;
 }
 //**/

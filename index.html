@@ -198,7 +198,9 @@ function startResolution(dict){
             if(m.x > 0 && m.target.y > m.target.x/2 + 5){
                 return;
             }            
-            sseq.addStructline(classTable[m.source.x][m.source.y][m.source.idx], classTable[m.target.x][m.target.y][m.target.idx]);
+            let source = classTable[m.source.x][m.source.y][m.source.idx]
+            let target = classTable[m.target.x][m.target.y][m.target.idx]
+            sseq.addStructline(source, target);
             sleep(0).then(() => sseq.update());
         }
     })    

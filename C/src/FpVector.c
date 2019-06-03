@@ -598,9 +598,14 @@ Matrix *Matrix_initialize(char *memory, uint p, uint rows, uint columns)  {
 
 Matrix *Matrix_construct(uint p,  uint rows, uint columns)  {
     char *M = malloc(Matrix_getSize(p, rows, columns));
-    // printf("columns: %d, rows: %d\n", columns, rows);
+    printf("columns: %d, rows: %d\n", columns, rows);
     return Matrix_initialize(M, p, rows, columns);
 }
+
+void Matrix_free(Matrix *M){
+    free(M);
+}
+
 
 uint Matrix_getSliceSize(uint p, uint rows){
     return sizeof(Matrix) + rows*(sizeof(Vector*) + Vector_getContainerSize(p));

@@ -89,6 +89,7 @@ class c_Kernel(Structure):
 #     FreeModule *source;
 #     Module *target;
 #     Vector ***outputs; // degree --> input_idx --> output
+#     uint max_degree;
 #     uint max_computed_degree;
 #     Matrix **coimage_to_image_isomorphism;
 #     Kernel **kernel; // This is redundant with the next module's coimage_to_image_iso
@@ -99,6 +100,7 @@ class c_FreeModuleHomomorphism(Structure):
         ("source", POINTER(c_FreeModule)),
         ("target", POINTER(c_Module)),
         ("outputs", POINTER(POINTER(POINTER(c_Vector)))),
+        ("max_degree", c_uint),
         ("max_computed_degree", c_uint),
         ("coimage_to_image_isomorphism", POINTER(POINTER(c_Matrix))),
         ("kernel", POINTER(POINTER(c_Kernel)))

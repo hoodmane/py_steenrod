@@ -27,8 +27,8 @@ MilnorAlgebra *MilnorAlgebra_construct(uint p, bool generic, Profile *profile){
         profile_ppart_size = profile->p_part_length * sizeof(uint);
     }
     MilnorAlgebraInternal *algebra = malloc(sizeof(MilnorAlgebraInternal) + profile_ppart_size);
-    printf("Algebra_construct p: %d, generic: %d, Profile: %llx addr: %llx\n", p, generic, (uint64)profile, (uint64)algebra);    
-    printf("    profile->p_part[2] : %d\n", profile->p_part[2]);    
+    // printf("Algebra_construct p: %d, generic: %d, Profile: %llx addr: %llx\n", p, generic, (uint64)profile, (uint64)algebra);    
+    // printf("    profile->p_part[2] : %d\n", profile->p_part[2]);    
     initializePrime(p);
     algebra->public_algebra.p = p;
     algebra->public_algebra.algebra.p = p;
@@ -319,10 +319,10 @@ void freeMilnorBasisQPartTable(MilnorAlgebraInternal *algebra){
 
 bool MilnorAlgebra_generateBasis(Algebra *public_algebra, uint max_degree) {
     MilnorAlgebraInternal *algebra = (MilnorAlgebraInternal*) public_algebra;
-    printf("generateBasis:    profile->p_part[2] : %d\n", algebra->public_algebra.profile.p_part[2]);
-    printf("generateBasis: profile->p_part: ");
-    array_print(algebra->public_algebra.profile.p_part, algebra->public_algebra.profile.p_part_length);
-    printf("\n");
+    // printf("generateBasis:    profile->p_part[2] : %d\n", algebra->public_algebra.profile.p_part[2]);
+    // printf("generateBasis: profile->p_part: ");
+    // array_print(algebra->public_algebra.profile.p_part, algebra->public_algebra.profile.p_part_length);
+    // printf("\n");
     uint p = algebra->public_algebra.p;
     initializePrime(p);
     uint old_max_degree = algebra->public_algebra.max_degree;
