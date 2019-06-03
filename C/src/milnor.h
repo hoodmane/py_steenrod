@@ -51,6 +51,7 @@ int MilnorElement_toString(string buffer, MilnorAlgebra *algebra, uint degree, V
 int MilnorMatrix_toString(string buffer, uint M[MAX_XI_TAU][MAX_XI_TAU], uint rows, uint cols);
 int MilnorBasisElement_toKey(string buffer, MilnorBasisElement *b);
 int MilnorBasisElement_toString(string buffer, MilnorBasisElement *b);
+void MilnorBasisElement_print(string fmt_string, MilnorBasisElement *b);
 MilnorBasisElement MilnorBasisElement_fromString(MilnorAlgebra *algebra, char *elt_string);
 
 MilnorAlgebra *MilnorAlgebra_construct(uint p, bool generic, Profile *profile);

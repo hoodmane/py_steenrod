@@ -198,7 +198,14 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     }
     // Row reduce
     int column_to_pivot_row[matrix->columns];
+    if(homological_degree == 1 && degree == 76){
+        Matrix_printSlice(matrix, target_dimension, padded_target_dimension);
+    }    
     rowReduce(matrix, column_to_pivot_row, 0, 0);//target_dimension, padded_target_dimension);
+    if(homological_degree == 1 && degree == 76){
+        Matrix_printSlice(matrix, target_dimension, padded_target_dimension);
+    }    
+
 
     // Stage 1: Find kernel of current differential
     // Locate first kernel row
@@ -209,6 +216,7 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
             break;
         }
     }
+    // Every row after the first kernel row is also a kernel row, so now we know how big it is and can allocate space.
     uint kernel_dimension = matrix->rows - first_kernel_row;
     Kernel *kernel = Kernel_construct(p, kernel_dimension, source_dimension);
     // Write pivots into kernel
@@ -224,12 +232,9 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
         Vector_assign(kernel->kernel->matrix[row], slice);
     }
     current_differential->kernel[degree] = kernel;
+
     // Stage 2: Hit kernel of previous differential. 
     Kernel *previous_cycles = previous_differential->kernel[degree];
-    // if(degree == 17){
-    //     printf("    previous_cycles:\n");
-    //     printMatrix(previous_cycles->kernel);
-    // }
     // uint previous_cycle_dimension = previous_cycles->kernel->rows;
     // We no longer care about the kernel rows since we stored them somewhere else, 
     // so we're going to write over them.
@@ -242,10 +247,13 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
             int kernel_vector_row = previous_cycles->column_to_pivot_row[i];
             // assert(kernel_vector_row < previous_kernel->kernel->rows);
             Vector *new_image = previous_cycles->kernel->matrix[kernel_vector_row];
+            // Stack allocate slice
             char slice_memory[Vector_getContainerSize(p)];
             Vector *slice = (Vector*)slice_memory;
+            // Write new image to full_matrix
             Vector_slice(slice, full_matrix->matrix[current_target_row], 0, previous_cycles->kernel->columns);
             Vector_assign(slice, new_image);
+            // Write elementary basis vector into right block of full_matrix
             Vector_slice(slice, full_matrix->matrix[current_target_row], padded_target_dimension, full_matrix->columns);
             Vector_setToZero(slice);
             Vector_setEntry(slice, source_dimension + homology_dimension, 1);
@@ -257,16 +265,20 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     previous_differential->kernel[degree] = NULL;
     current_differential->source->number_of_generators += homology_dimension;
     current_differential->source->number_of_generators_in_degree[degree] = homology_dimension;
+    // Copy the outputs, currently stored in the coimage_to_image matrix, to the FreeModuleHomomorphism outputs field.
     FreeModuleHomomorphism_AllocateSpaceForNewGenerators(current_differential, degree, homology_dimension);
     for(uint i = 0; i < homology_dimension; i++){
         char slice_memory[Vector_getContainerSize(p)]; 
         Vector *slice = (Vector*) slice_memory;
         Vector_slice(slice, full_matrix->matrix[first_kernel_row + i], 0, target_dimension);
+        if(homological_degree == 1 && degree == 76){
+            Vector_print("d1(x1_76) = %s\n", slice);
+        }
         FreeModuleHomomorphism_setOutput(current_differential, degree, i, slice);
     }
     FreeModule_ConstructBlockOffsetTable(source, degree);
 
-    // Now the part of the matrix that contains interesting information is current_target_row * (target_dimension + source_dimension + kernel_size).
+    // The part of the matrix that contains interesting information is current_target_row * (target_dimension + source_dimension + kernel_size).
     // Allocate a matrix coimage_to_image with these dimensions.
     uint coimage_to_image_rows = current_target_row;
     uint coimage_to_image_columns = padded_target_dimension + source_dimension + homology_dimension;
@@ -334,8 +346,7 @@ Resolution *testResolution(
     Resolution_resolveThroughDegree(res, degree);
     for(int i = degree - 1; i >= 0; i--){
         printf("stage %*d: ", 2, i);
-        array_print(&res->modules[i+1]->number_of_generators_in_degree[i], degree - i);
-        printf("\n");
+        array_print("%s\n", &res->modules[i+1]->number_of_generators_in_degree[i], degree - i);
     }
     return res;
 }
@@ -356,13 +367,13 @@ testStruct *test(){
     return result;
 }
 
-/**/
+/**
 int main(){
     // Algebra * A = (Algebra*)MilnorAlgebra_construct(5, true, NULL);
     // MilnorAlgebra_generateBasis(A, 100);
     // printf("constructed\n");
     // algebra_computeBasis(A, 10);
-    Resolution *res = testResolution(3, NULL, NULL);
+    Resolution *res = testResolution(78, NULL, NULL);
     FiniteDimensionalModule_free((FiniteDimensionalModule*)res->module);
     res->module = NULL;
     MilnorAlgebra_free((MilnorAlgebra*)res->algebra);
@@ -370,5 +381,5 @@ int main(){
     Resolution_free(res);
     return 0;
 }
-//**/
+//*/
 

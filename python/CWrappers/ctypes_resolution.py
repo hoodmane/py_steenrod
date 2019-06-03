@@ -29,7 +29,7 @@ class c_Resolution(Structure):
 
 def wrap_resolution(CSteenrod):
     # Resolution *Resolution_construct(FiniteDimensionalModule *module, uint max_filtration, uint max_degree);
-    CSteenrod.Resolution_construct.argtypes = [POINTER(c_FiniteDimensionalModule), c_uint, c_uint]
+    CSteenrod.Resolution_construct.argtypes = [POINTER(c_FiniteDimensionalModule), c_uint, c_void_p, c_void_p]
     CSteenrod.Resolution_construct.restype = POINTER(c_Resolution)
     
     CSteenrod.testResolution.restype = POINTER(c_Resolution)

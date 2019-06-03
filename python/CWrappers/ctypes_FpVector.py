@@ -108,5 +108,8 @@ def wrap_FpVector(CSteenrod):
     CSteenrod.Matrix_construct.argtypes = [c_uint, c_uint, c_uint]
     CSteenrod.Matrix_construct.restype = POINTER(c_Matrix)
 
+    #void Matrix_free(Matrix *matrix);
+    CSteenrod.Matrix_free.argtypes = [POINTER(c_Matrix)]
+
     #void rowReduce(Vector **matrix, int * column_to_pivot_row, uint rows);
     CSteenrod.rowReduce.argtypes = [POINTER(c_Matrix), POINTER(c_int)]

@@ -140,6 +140,12 @@ int MilnorBasisElement_toString(string buffer, MilnorBasisElement *b){
     return len;
 }
 
+void MilnorBasisElement_print(string fmt_string, MilnorBasisElement *b){
+    char buffer[2000];
+    MilnorBasisElement_toString(buffer, b);
+    printf(fmt_string, buffer);
+}
+
 // Note: This function returns a pointer to a substring of the original string.
 // If the given string was allocated dynamically, the caller must not overwrite
 // that pointer with the returned value, since the original pointer must be
@@ -244,7 +250,7 @@ int MilnorElement_toString(string buffer, MilnorAlgebra * algebra, uint degree, 
     return len;
 }
 
-int milnor_matrix_to_string(string buffer, uint M[MAX_XI_TAU][MAX_XI_TAU], uint rows, uint cols){
+int MilnorMatrix_toString(string buffer, uint M[MAX_XI_TAU][MAX_XI_TAU], uint rows, uint cols){
     uint len = 0;
     len += sprintf(buffer + len, "[\n");
     for(int row = 0; row < rows; row++) {

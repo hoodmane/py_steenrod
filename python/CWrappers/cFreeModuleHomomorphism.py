@@ -31,6 +31,17 @@ class cHomomorphism:
     def __call__(self, input):
         return apply(self, input)
 
+    def toMatrix(f, degree):
+        c_source_cast = cast(f.source.c_module, POINTER(c_Module))
+        c_target_cast = cast(f.target.c_module, POINTER(c_Module))
+        input_dimension = CSteenrod.FreeModule_getDimension(c_source_cast, degree)
+        output_dimension = CSteenrod.FreeModule_getDimension(c_target_cast, degree)
+        M = cFpVector.cMatrix(2, input_dimension, output_dimension)
+        CSteenrod.FreeModuleHomomorphism_getMatrix(f.cf, M.cM, degree)
+        result = M.unpack()
+        M.free()
+        return result
+
 
 def fromC(cf, S, T):
     f = cHomomorphism(cf=cf, source=S, target=T)
@@ -55,17 +66,6 @@ def apply(f, element):
         # print(free_module_elt_from_c(f.target, degree, c_result))
     result = cFreeModule.elementFromC(f.target, degree, c_result.vector)
     c_result.free()
-    return result
-
-def toMatrix(f, degree):
-    c_source_cast = cast(f.source.c_module, POINTER(c_Module))
-    c_target_cast = cast(f.target.c_module, POINTER(c_Module))
-    input_dimension = CSteenrod.FreeModule_getDimension(c_source_cast, degree)
-    output_dimension = CSteenrod.FreeModule_getDimension(c_target_cast, degree)
-    cM = cFpVector.cMatrix_construct(2, input_dimension, output_dimension)
-    CSteenrod.FreeModuleHomomorphism_getMatrix(f.cf, cM, degree)
-    result = cFpVector.matrix_from_C(cM)
-    # free matrix
     return result
 
 if __name__ == "__main__":

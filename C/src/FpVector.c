@@ -22,10 +22,10 @@ int array_toString(char *buffer, uint *A, uint length){
     return len;
 }
 
-void array_print(uint *A, uint length){
+void array_print(char *format_string, uint *A, uint length){
     char buffer[1000];
     array_toString(buffer, A, length);
-    printf("%s", buffer);
+    printf(format_string, buffer);
 }
 
 
@@ -376,12 +376,14 @@ void VectorGeneric_addBasisElement(Vector *target, uint index, uint coeff){
 }
 
 void VectorGeneric_addArray(Vector *target, uint *source, uint c){
+    printf("source_addr: %llx\n", (uint64)source);
     VectorStd *t = (VectorStd*) target;
     uint source_idx = 0;
     uint entries[getEntriesPer64Bits(t->implementation->p)];   
     for(uint i = 0; i < t->number_of_limbs; i++){
         uint limb_length = unpackLimb(entries, t, i);
         for(uint j = 0; j < limb_length; j++){
+            printf("    source[%d]: %d\n", source_idx, source[source_idx]);
             entries[j] = modPLookup(t->implementation->p, entries[j] + c*source[source_idx]);
             source_idx++;
         }
@@ -562,10 +564,10 @@ uint Vector_toString(char *buffer, Vector *vector){
     return len;
 }
 
-void Vector_print(Vector *v){
+void Vector_print(char *fmt_string, Vector *v){
     char buffer[10000];
     Vector_toString(buffer, v);
-    printf("%s\n", buffer);
+    printf(fmt_string, buffer);
 }
 
 
@@ -598,7 +600,7 @@ Matrix *Matrix_initialize(char *memory, uint p, uint rows, uint columns)  {
 
 Matrix *Matrix_construct(uint p,  uint rows, uint columns)  {
     char *M = malloc(Matrix_getSize(p, rows, columns));
-    printf("columns: %d, rows: %d\n", columns, rows);
+    // printf("columns: %d, rows: %d\n", columns, rows);
     return Matrix_initialize(M, p, rows, columns);
 }
 
@@ -646,7 +648,7 @@ uint Matrix_toString(char *buffer, Matrix *M){
     return len;
 }
 
-void Matrix_printMatrix(Matrix *matrix){
+void Matrix_print(Matrix *matrix){
     char buffer[10000];
     Matrix_toString(buffer, matrix);
     printf("%s\n", buffer);

@@ -106,6 +106,7 @@ class cVector_iterator:
 
 class cMatrix:
     def __init__(self, p, rows, columns):
+        self.freed = False
         self.p = p
         self.rows = rows
         self.columns = columns
@@ -113,11 +114,18 @@ class cMatrix:
         self.cM = CSteenrod.Matrix_construct(p, rows, columns)
     
     def pack(self, py_M):
-        for i in range(c_M.contents.rows):
-            c_packVector(c_M.contents.matrix[i], py_M[i])
+        for i in range(self.cM.contents.rows):
+            c_packVector(self.cM.contents.matrix[i], py_M[i])
 
-    def unpack(c_M):
-        return [c_unpackVector(c_M.contents.matrix[i]) for i in range(c_M.contents.rows)]
+    def unpack(self):
+        return [
+            cVector(self.p, vector=self.cM.contents.matrix[i]).unpack() 
+            for i in range(self.cM.contents.rows)
+        ]
+
+    def free(self):
+        self.freed = True
+        CSteenrod.Matrix_free(self.cM)
 
 
 def c_row_reduce(c_M):

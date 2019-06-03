@@ -12,7 +12,7 @@ typedef unsigned long long uint64;
 typedef long long int64;
 typedef unsigned int uint;
 int array_toString(char *buffer, uint *A, uint length);
-void array_print(uint *A, uint length);
+void array_print(char *format_string, uint *A, uint length);
 
 
 uint modPLookup(uint p, uint n);
@@ -60,7 +60,7 @@ void Vector_add(Vector *target, Vector *source, uint c);
 void Vector_scale(Vector *target, uint c);
 
 uint Vector_toString(char *buffer, Vector *v);
-void Vector_print(Vector *v);
+void Vector_print(char *fmt_string, Vector *v);
 
 typedef struct {
     uint p;

@@ -10,7 +10,7 @@ import steenrod
 import steenrod_module
 
 def resolve(module, degree):
-    cRes = CSteenrod.Resolution_construct(module.c_module, degree, degree)
+    cRes = CSteenrod.Resolution_construct(module.c_module, degree, 0, 0)
     CSteenrod.Resolution_resolveThroughDegree(cRes, degree)
     return cRes
 
@@ -44,26 +44,26 @@ def checkDifferential(d, x):
             return prod1  + prod2
 
 if __name__ == "__main__":
-    # A = cMilnorAlgebra.construct(p=2, degree=50)
-    # Sq = A.Sq
-    # M = steenrod_module.FiniteSteenrodModule(p=2)
-    # x0 = M.add_basis_element("x0", 0)
-    # M.validate()
-    # cM = cFiniteDimensionalModule.toC(M)
-    # print("resolve")
-    # res = resolve(M, 30)
-    # print("done resolving")
-    res = CSteenrod.testResolution(30, 0, 0);
-    print(res.contents.modules[2].contents.max_generator_degree)
+    degree = 85
+    A = cMilnorAlgebra.construct(p=3, degree=degree)
+    Sq = A.Sq
+    M = steenrod_module.FiniteSteenrodModule(p=3)
+    x0 = M.add_basis_element("x0", 0)
+    M.validate()
+    cM = cFiniteDimensionalModule.toC(M)
+    res = resolve(M, degree)
+    print("done resolving")
+    # res = CSteenrod.testResolution(85, 0, 0);
+    # print(res.contents.modules[2].contents.max_generator_degree)
     res_modules = []
-    for i in range(8):
-        F = cFreeModule.fromC(res.contents.modules[i+1], A, "x" + str(i))
+    for i in range(degree):
+        F = cFreeModule.fromC(res.contents.modules[i+1], A, "x" + str(i) + "_")
         res_modules.append(F)
         globals()["F" + str(i)] = F
         for i in F.gens:
             globals()[i] = F.get_generator(i)
 
-    for i in range(1, 8):
+    for i in range(1, degree):
         globals()["d" + str(i)] = cFreeModuleHomomorphism.fromC(res.contents.differentials[i+1], res_modules[i], res_modules[i-1])
 
 

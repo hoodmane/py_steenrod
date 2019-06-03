@@ -90,7 +90,7 @@ def elementFromArray(module, degree, result_array):
     return module.get_element(result)
 
 def elementFromC(module, degree, c_elt):
-    result_array = cFpVector.cVector(vector=c_elt).unpack()
+    result_array = cFpVector.cVector(module.p, vector=c_elt).unpack()
     return elementFromArray(module, degree, result_array)
 
 def act(module, op, element):
