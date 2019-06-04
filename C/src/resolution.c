@@ -242,7 +242,7 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     // Copy kernel matrix into kernel
     for(uint row = 0; row < kernel_dimension; row++){
         char slice_memory[Vector_getContainerSize(p)];
-        Vector *slice = (Vector*)slice_memory;
+        Vector *slice = Vector_initialize(p, slice_memory, NULL, 0, 0);
         Vector_slice(slice, matrix->matrix[first_kernel_row + row], padded_target_dimension, padded_target_dimension + source_dimension);
         Vector_assign(kernel->kernel->matrix[row], slice);
     }
@@ -264,7 +264,7 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
             Vector *new_image = previous_cycles->kernel->matrix[kernel_vector_row];
             // Stack allocate slice
             char slice_memory[Vector_getContainerSize(p)];
-            Vector *slice = (Vector*)slice_memory;
+            Vector *slice = Vector_initialize(p, slice_memory, NULL, 0, 0);
             // Write new image to full_matrix
             Vector_slice(slice, full_matrix->matrix[current_target_row], 0, previous_cycles->kernel->columns);
             Vector_assign(slice, new_image);
@@ -283,7 +283,7 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     FreeModuleHomomorphism_AllocateSpaceForNewGenerators(current_differential, degree, homology_dimension);
     for(uint i = 0; i < homology_dimension; i++){
         char slice_memory[Vector_getContainerSize(p)]; 
-        Vector *slice = (Vector*) slice_memory;
+        Vector *slice = Vector_initialize(p, slice_memory, NULL, 0, 0);
         Vector_slice(slice, full_matrix->matrix[first_kernel_row + i], 0, target_dimension);
         if(homological_degree == 1 && degree == 76){
             Vector_print("d1(x1_76) = %s\n", slice);
@@ -301,7 +301,7 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     // Copy matrix contents to coimage_to_image
     for(uint i = 0; i < coimage_to_image_rows; i++) {
         char slice_memory[Vector_getContainerSize(p)]; 
-        Vector *slice = (Vector*) slice_memory;
+        Vector *slice = Vector_initialize(p, slice_memory, NULL, 0, 0);
         Vector_slice(slice, full_matrix->matrix[i], 0, coimage_to_image_columns);
         Vector_assign(coimage_to_image->matrix[i], slice);
     }
@@ -381,7 +381,7 @@ testStruct *test(){
     return result;
 }
 
-/**/
+/**
 int main(){
     // Algebra * A = (Algebra*)MilnorAlgebra_construct(5, true, NULL);
     // MilnorAlgebra_generateBasis(A, 100);

@@ -108,7 +108,6 @@ MilnorAlgebra *MilnorAlgebra_initializeFields(MilnorAlgebraInternal *algebra, ui
         product_list->degrees[2] = 4; // Sq4
         product_list->indices[2] = 0;  
     }
-    array_print("ma_cons Ppart: %s\n", algebra->public_algebra.profile.p_part, algebra->public_algebra.profile.p_part_length);
     return (MilnorAlgebra*)algebra;
 }
 
@@ -321,7 +320,7 @@ void generateMilnorBasisQpartTable(MilnorAlgebraInternal *algebra, uint new_max_
     uint bit_string_max = 1 << new_max_tau;
     //The residue starts out as 1, but we update by 1 - # of trailing 0's.
     //On the first pass, # of trailing 0's is old_max_tau, so initialize residue = old_max_tau
-    uint residue = old_max_tau;
+    int residue = old_max_tau % q;
     for(uint bit_string = bit_string_min;  bit_string < bit_string_max; bit_string++) {
         // Iterate over trailing zero bits
         uint v = (bit_string ^ (bit_string - 1)) >> 1;
@@ -375,7 +374,6 @@ void freeMilnorBasisQPartTable(MilnorAlgebraInternal *algebra){
 // Here we allocate the memory for these structures and dispatch to the generic and 2 cases.
 bool MilnorAlgebra_generateBasis(Algebra *public_algebra, uint max_degree) {
     MilnorAlgebraInternal *algebra = (MilnorAlgebraInternal*) public_algebra;
-    array_print("gmb Ppart: %s\n", algebra->public_algebra.profile.p_part, algebra->public_algebra.profile.p_part_length);    
     uint p = algebra->public_algebra.p;
     initializePrime(p);
     uint old_max_degree = algebra->public_algebra.algebra.max_degree;
@@ -830,7 +828,13 @@ void MilnorProductFull(MilnorAlgebraInternal *algebra, uint *result, MilnorBasis
     uint m1_times_f_dimension = algebra->basis_table[m1_times_f_degree].length;
     uint m1_times_f[m1_times_f_dimension];
     memset(m1_times_f, 0, m1_times_f_dimension * sizeof(uint));
+    // uint out_degree = m1_times_f_degree + m2.p_degree;
+    // uint out_dimension = algebra->basis_table[out_degree].length;
     MilnorProductFullQpart(algebra, m1_times_f, m1, m2.q_part);
+    // Vector *m1_times_f_test = Vector_construct(p, m1_times_f_dimension, 0);
+    // Vector_pack(m1_times_f_test, m1_times_f);
+    // MilnorElement_print("m1_times_f: %s\n", algebra, m1_times_f_degree, m1_times_f_test);
+    // Vector_free(m1_times_f_test);
 
     // Now for the Milnor matrices.  For each entry '(e,r): coeff' in answer,
     // multiply r with s.  Record coefficient for matrix and multiply by coeff.
@@ -839,7 +843,7 @@ void MilnorProductFull(MilnorAlgebraInternal *algebra, uint *result, MilnorBasis
         memcpy(result, m1_times_f, m1_times_f_dimension * sizeof(uint));
         return;
     }
-
+    // Vector *result_test = Vector_construct(p, out_dimension, 0);
     for (uint i = 0; i < m1_times_f_dimension; i++) {
         if (m1_times_f[i] == 0) {
             continue;
@@ -851,6 +855,10 @@ void MilnorProductFull(MilnorAlgebraInternal *algebra, uint *result, MilnorBasis
         uint prod_dimension = algebra->basis_table[prod_degree].length;
         uint prod[prod_dimension];
         MilnorProductEven(algebra, prod, r, s);
+        // Vector *prod_test = Vector_construct(p, prod_dimension, 0);
+        // Vector_pack(prod_test, prod);
+        // MilnorElement_print("prod: %s\n", algebra, prod_degree, prod_test);
+        // Vector_free(prod_test);
         for (uint j = 0; j < prod_dimension; j++) {
             // Watch out: many of the entries in prod correspond to basis vectors that
             // have nonzero Q part. The result of MilnorProductEven is guaranteed to have
@@ -862,9 +870,13 @@ void MilnorProductFull(MilnorAlgebraInternal *algebra, uint *result, MilnorBasis
             m.q_degree = er_mono.q_degree;
             m.q_part = er_mono.q_part;
             uint out_idx = MilnorBasisElement_toIndex((MilnorAlgebra *) algebra, m);
-            result[out_idx] = (coeff * prod[j]) % p;
+            result[out_idx] += coeff * prod[j];
+            result[out_idx] = result[out_idx] % p;
         }
+        // Vector_pack(result_test, result);
+        // MilnorElement_print("result: %s\n\n", algebra, out_degree, result_test);
     }
+    // Vector_free(result_test);
 }
 
 
@@ -894,7 +906,7 @@ void MilnorAlgebra_multiply(Algebra *public_algebra, Vector *result, uint coeff,
 
 
 
-/**
+/**/
 int main() {
     char buffer[10000];
 
@@ -964,8 +976,8 @@ int main() {
 
     MilnorBasisElement A,B;
     //(A5.Q(1) * A5.P(2), A5.P(1, 1))
-    A = MilnorBasisElement_fromString(algebra, "P(10)");
-    B = MilnorBasisElement_fromString(algebra, "P(9)");
+    A = MilnorBasisElement_fromString(algebra, "P(4, 1)");
+    B = MilnorBasisElement_fromString(algebra, "Q(0,1) * P(1)");
     uint A_idx = MilnorBasisElement_toIndex(algebra, A);
     uint B_idx = MilnorBasisElement_toIndex(algebra, B);
     uint A_deg = A.p_degree + A.q_degree;

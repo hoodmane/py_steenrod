@@ -262,7 +262,6 @@ def product_full(m1, m2, p):
     """
     (f, s) = m2
     m1_times_f = product_full_Qpart(m1, f, p)
-#    print("m1_times_f", m1_times_f, "\n")
     # Now for the Milnor matrices.  For each entry '(e,r): coeff' in answer,
     # multiply r with s.  Record coefficient for matrix and multiply by coeff.
     # Store in 'result'.

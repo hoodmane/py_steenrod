@@ -2,6 +2,11 @@
 // Created by Hood on 5/8/2019.
 //
 
+// This file takes care of most of the prime specific basic math.
+// It computes mod p binomial and multinomial coefficients, the degrees of taus and xi's,
+// and inverses mod p. The function initializePrime(p) must be called before any work
+// can be done (without immediately segfaulting).
+
 #ifndef CSTEENROD_COMBINATORICS_H
 #define CSTEENROD_COMBINATORICS_H
 #include <stdbool.h>
@@ -16,17 +21,17 @@ typedef unsigned int uint;
 //   Boole[PrimeQ[#]] PrimePi[#] - 1 & /@ Range[0, 255]
 extern int prime_to_index_map[256];
 
-int ModPositive(int n, int p);
-uint MinusOneToTheN(uint p, uint n);
-uint integer_power(uint a, uint b);
-int power_mod(int p, int b, int e);
-
-uint p_to_the_n_minus_1_over_p_minus_1(uint p, uint n);
-uint logp(uint p, uint n);
-void basepExpansion(uint * buffer, uint p, uint n);
-
 void initializePrime(uint p);
 void freePrimes();
+
+
+int ModPositive(int n, int p);      
+uint MinusOneToTheN(uint p, uint n);
+uint integer_power(uint a, uint b); // Compute a^b
+int power_mod(int p, int b, int e); // Compute b^e mod p
+
+uint logp(uint p, uint n);
+void basepExpansion(uint * buffer, uint p, uint n); // Used for Lucas's theorem
 
 int inverse(uint p, int k);
 
@@ -37,11 +42,5 @@ uint Binomial(uint p, uint n, uint k);
 
 uint* getXiDegrees(uint);
 uint* getTauDegrees(uint);
-
-uint getBitlength(uint);
-uint getBitMask(uint p);
-uint getEntriesPer64Bits(uint);
-
-uint modPLookup(uint p, uint n);
 
 #endif //CSTEENROD_COMBINATORICS_H

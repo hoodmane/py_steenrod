@@ -47,6 +47,7 @@ void Profile_free(Profile *profile);
 // Implemented in milnor_datatypes.c
 // These methods write a string to a buffer and return the length of the string written.
 int MilnorElement_toString(string buffer, MilnorAlgebra *algebra, uint degree, Vector *m);
+void MilnorElement_print(string fmt_string, MilnorAlgebra *algebra, uint degree, Vector *m);
 int MilnorMatrix_toString(string buffer, uint M[MAX_XI_TAU][MAX_XI_TAU], uint rows, uint cols);
 int MilnorBasisElement_toKey(string buffer, MilnorBasisElement *b);
 int MilnorBasisElement_toString(string buffer, MilnorBasisElement *b);

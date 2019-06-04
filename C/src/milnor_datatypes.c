@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "milnor.h"
 #include "FpVector.h"
@@ -248,6 +249,13 @@ int MilnorElement_toString(string buffer, MilnorAlgebra * algebra, uint degree, 
         len += sprintf(buffer + len, "0");
     }
     return len;
+}
+
+void MilnorElement_print(string fmt_string, MilnorAlgebra * algebra, uint degree, Vector * m){
+    char buffer[2000];
+    uint len = MilnorElement_toString(buffer, algebra, degree, m);
+    assert(len < 2000);
+    printf(fmt_string, buffer);
 }
 
 int MilnorMatrix_toString(string buffer, uint M[MAX_XI_TAU][MAX_XI_TAU], uint rows, uint cols){

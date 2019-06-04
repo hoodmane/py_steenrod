@@ -1,8 +1,6 @@
 from ctypes import *
 
 # typedef struct  {
-#     struct VectorInterface_s * interface;
-#     uint p;
 #     uint dimension;
 #     uint size;
 #     uint offset;

@@ -2,9 +2,17 @@
 // Created by Hood on 4/29/2019.
 //
 
+// This file takes care of most of the prime specific basic math.
+// It computes mod p binomial and multinomial coefficients, the degrees of taus and xi's,
+// and inverses mod p. The other spot where prime dependent lookup tables arise is in
+// FpVector.c. In particular, we run some prime depending initialization functions that
+// are defined over there -- they are private to just these two files I guess.
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "combinatorics.h"
 #include "FpVector.h"
@@ -14,13 +22,42 @@ void initializeInverseTable(uint p);
 void initializeBinomialTable(uint p);
 void initializeXiTauDegrees(uint p);
 
+// Defined in FpVector.c
+void initializeModpLookupTable(uint p);
+void initializeLimbBitIndexLookupTable(uint p);
+void initializeVectorImplementation(uint p);
+
+uint **binomial_table[MAX_PRIME_INDEX] = {0};
+
+void initializePrime(uint p){
+    assert(p < MAX_PRIME); // Prime too big otherwise
+    assert(prime_to_index_map[p]!= -1); // p isn't a prime
+
+    if(binomial_table[prime_to_index_map[p]] != NULL){
+        return; // Prime already initialized
+    }
+    initializeBinomialTable(p);
+    initializeInverseTable(p);
+    initializeXiTauDegrees(p);
+    initializeModpLookupTable(p);
+    initializeLimbBitIndexLookupTable(p);
+    initializeVectorImplementation(p);
+}
+void freePrimes() {
+//    freeBinomialTables();
+//    freeInverseTables();
+//    freeXiTauDegreess();
+}
+
 uint directBinomial(uint p, uint n, uint k);
 uint Multinomial2(uint len, uint* l);
 uint Binomial2(uint n, uint k );
 uint MultinomialOdd(uint p, uint len, uint* l);
 uint BinomialOdd(uint p, uint n, uint k);
 
-
+// This indexes primes into our lookup tables. All nonprime indices have a -1.
+// Generated with Mathematica:
+//   Boole[PrimeQ[#]] PrimePi[#] - 1 & /@ Range[0, 255]
 int prime_to_index_map[256] = {
     -1, -1, 0, 1, -1, 2, -1, 3, -1, -1, -1, 4, -1, 5, -1, -1, -1, 6, -1, 
     7, -1, -1, -1, 8, -1, -1, -1, -1, -1, 9, -1, 10, -1, -1, -1, -1, -1, 
@@ -39,6 +76,8 @@ int prime_to_index_map[256] = {
     52, -1, -1, -1, -1, -1, -1, -1, -1, -1, 53, -1, -1, -1, -1
 };
 
+// Used in calculating Qpart of MilnorBasis.
+// We don't often need signed integers.
 int ModPositive(int  n, int p){
     return ((n % p) + p) % p;
 }
@@ -47,6 +86,8 @@ uint MinusOneToTheN(uint p, uint n){
     return (n & 1) ? p-1 : 1;
 }
 
+// integer power
+// Oftentimes we actually need all powers in a row, so this doesn't get much use.
 uint integer_power(uint b, uint e){
     uint result = 1;
     while(e > 0){
@@ -59,6 +100,8 @@ uint integer_power(uint b, uint e){
     return result;
 }
 
+// Compute p^b mod e. Same algorithm as above except we reduce mod p after every step.
+// We use this for computing modulo inverses.
 int power_mod(int p, int b, int e){
     int result = 1;
 //      b is b^{2^i} mod p
@@ -75,6 +118,12 @@ int power_mod(int p, int b, int e){
 
 uint *inverse_table[MAX_PRIME_INDEX] = {0};
 
+/**
+ * Finds the inverse of k mod p.
+ * Uses Fermat's little theorem: x^(p-1) = 1 mod p ==> x^(p-2) = x^(-1).
+ * @param k an integer
+ * @return the inverse of k mod p.
+ */
 void initializeInverseTable(uint p){
     uint* table = malloc(p*sizeof(uint));
     for(uint n = 0; n < p; n ++){
@@ -86,18 +135,15 @@ void initializeInverseTable(uint p){
 
 /**
  * Finds the inverse of k mod p.
- * Uses Fermat's little theorem: x^(p-1) = 1 mod p ==> x^(p-2) = x^(-1).
- * @param k an integer
- * @return the inverse of k mod p.
+ * Uses a the lookup table we initialized.
  */
 int inverse(uint p, int k){
     return inverse_table[prime_to_index_map[p]][k];
 }
 
-uint p_to_the_n_minus_1_over_p_minus_1(uint p, uint n){
-    return (integer_power(p, n) - 1) / (p - 1);
-}
-
+/** 
+ * Discrete log base p of n.
+ */
 uint logp(uint p, uint n) {
     uint result = 0;
     while(n > 0){
@@ -107,7 +153,11 @@ uint logp(uint p, uint n) {
     return result;
 }
 
-void basepExpansion(uint * result, uint p, uint n){
+/**
+ * Expand n base p and write the result into buffer result.
+ * Result has to have length greater than logp(p, n) or we'll have a buffer overflow.
+ */
+void basepExpansion(uint *result, uint p, uint n){
     uint i = 0;
     for( ; n > 0; n /= p){
         result[i] = n % p;
@@ -115,37 +165,10 @@ void basepExpansion(uint * result, uint p, uint n){
     }
 }
 
-uint **binomial_table[MAX_PRIME_INDEX] = {0};
-
-// Defined in FpVector.c
-void initializeModpLookupTable(uint p);
-void initializeLimbBitIndexLookupTable(uint p);
-void initializeVectorImplementation(uint p);
-
-void initializePrime(uint p){
-    if(p > MAX_PRIME){
-        // Fatal error: max prime allowed is 251
-    }
-    if(prime_to_index_map[p]==-1){
-        // Fatal error: p is not prime.
-    }
-    if(binomial_table[prime_to_index_map[p]] != NULL){
-        return; // Prime already initialized
-    }
-    initializeBinomialTable(p);
-    initializeInverseTable(p);
-    initializeXiTauDegrees(p);
-    initializeModpLookupTable(p);
-    initializeLimbBitIndexLookupTable(p);
-    initializeVectorImplementation(p);
-}
-void freePrimes() {
-//    freeBinomialTables();
-//    freeInverseTables();
-//    freeXiTauDegreess();
-}
-
-
+/**
+ * Makes a lookup table for n choose k when n and k are both less than p.
+ * Lucas's theorem reduces general binomial coefficients to this case.
+ */
 void initializeBinomialTable(uint p){
     uint** table = (uint**) malloc(p*p*sizeof(uint) + p*sizeof(uint*));
     uint * current_row_ptr = (uint*)(table + p);
@@ -200,6 +223,7 @@ uint Binomial2(uint n, uint k ) {
 }
 
 //Mod p multinomial coefficient of l. If p is 2, more efficient to use Multinomial2.
+//This uses Lucas's theorem to reduce to n choose k for n, k < p.
 uint MultinomialOdd(uint p, uint len, uint* l){
     uint total = 0;
     for(uint i = 0; i < len; i++){
@@ -261,6 +285,9 @@ uint Binomial(uint p, uint n, uint k){
 uint * xi_degrees[MAX_PRIME_INDEX] = {0};
 uint * tau_degrees[MAX_PRIME_INDEX] = {0};
 
+/**
+ * Build the table of degrees of xi and tau.
+ */
 void initializeXiTauDegrees(uint p){
     uint * xi = (uint*)malloc(MAX_XI_TAU * sizeof(uint));
     uint * tau = (uint*)malloc(MAX_XI_TAU * sizeof(uint));

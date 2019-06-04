@@ -115,8 +115,11 @@ def test_slice(p, dim, min, max):
     v = cVector(p, dim)
     k = [random.randint(0,p-1) for x in range(dim)]
     v.pack(k)
+    print("slicing")
     w = v[min:max]
+    print("sliced")
     result = w.unpack()
+    print("seg?")
     assert result == k[min:max]
     v.free()
     w.free()
