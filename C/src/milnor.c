@@ -26,7 +26,7 @@ MilnorAlgebra *MilnorAlgebra_initializeFields(MilnorAlgebraInternal *algebra, ui
 MilnorAlgebra *MilnorAlgebra_construct(uint p, bool generic, Profile *profile){
     uint profile_ppart_length = 0;
     if(profile != NULL){
-        profile_ppart_length = profile->p_part_length;
+        profile_ppart_length = profile->p_part_length + 1;
     }
     uint num_products;
     if(generic){
@@ -41,6 +41,7 @@ MilnorAlgebra *MilnorAlgebra_construct(uint p, bool generic, Profile *profile){
             + 2 * num_products * sizeof(uint);
     MilnorAlgebraInternal *algebra = malloc(algebra_size);
 
+    // This next assignment gets written over in initializer so we'll need to do it again...
     algebra->public_algebra.profile.p_part = profile_ppart_length > 0 ? (uint*)(algebra + 1) : NULL;
     Algebra *inner_algebra = &algebra->public_algebra.algebra;    
     inner_algebra->product_list = (FiltrationOneProductList*)((uint*)(algebra + 1) + profile_ppart_length);
@@ -66,8 +67,10 @@ MilnorAlgebra *MilnorAlgebra_initializeFields(MilnorAlgebraInternal *algebra, ui
         algebra->public_algebra.profile.p_part_length = 0;
         algebra->public_algebra.profile.p_part = NULL;
     } else {
-        algebra->public_algebra.profile = *profile;
+        algebra->public_algebra.profile = *profile; // Oh no, this writes over p_part.
+        algebra->public_algebra.profile.p_part = (uint*)(algebra + 1); // Fix it.
         memcpy(algebra->public_algebra.profile.p_part, profile->p_part, profile->p_part_length * sizeof(uint));
+        array_print("profile: %s\n", algebra->public_algebra.profile.p_part,algebra->public_algebra.profile.p_part_length);
     }
     // Fill in the Algebra function pointers.
     algebra->public_algebra.algebra.computeBasis = MilnorAlgebra_generateBasis;
@@ -102,9 +105,10 @@ MilnorAlgebra *MilnorAlgebra_initializeFields(MilnorAlgebraInternal *algebra, ui
         product_list->indices[0] = 0; 
         product_list->degrees[1] = 2; // Sq2
         product_list->indices[1] = 0; 
-        product_list->degrees[2] = 1; // Sq4
+        product_list->degrees[2] = 4; // Sq4
         product_list->indices[2] = 0;  
     }
+    array_print("ma_cons Ppart: %s\n", algebra->public_algebra.profile.p_part, algebra->public_algebra.profile.p_part_length);
     return (MilnorAlgebra*)algebra;
 }
 
@@ -371,6 +375,7 @@ void freeMilnorBasisQPartTable(MilnorAlgebraInternal *algebra){
 // Here we allocate the memory for these structures and dispatch to the generic and 2 cases.
 bool MilnorAlgebra_generateBasis(Algebra *public_algebra, uint max_degree) {
     MilnorAlgebraInternal *algebra = (MilnorAlgebraInternal*) public_algebra;
+    array_print("gmb Ppart: %s\n", algebra->public_algebra.profile.p_part, algebra->public_algebra.profile.p_part_length);    
     uint p = algebra->public_algebra.p;
     initializePrime(p);
     uint old_max_degree = algebra->public_algebra.algebra.max_degree;
@@ -425,6 +430,7 @@ void MilnorAlgebra_freeBasis(MilnorAlgebra *public_algebra){
 // In the nongeneric case, we just copy the P_part table into basis_table and
 // populate the basis element to index map with the inverse.
 void GenerateMilnorBasis2(MilnorAlgebraInternal *algebra, uint old_max_degree, uint new_max_degree){
+    array_print("gmb2 Ppart: %s\n", algebra->public_algebra.profile.p_part, algebra->public_algebra.profile.p_part_length);
     generateMilnorBasisPpartTable(algebra, new_max_degree);
 
     MilnorBasisElement_list *table = algebra->basis_table;

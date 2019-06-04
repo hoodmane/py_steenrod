@@ -10,7 +10,8 @@ let cVector_pack = cwrap("Vector_pack", 'void', ['pointer', 'pointer']);
 // void Vector_unpack(uint * target, Vector * source);
 let cVector_unpack = cwrap("Vector_unpack", 'void', ['pointer', 'pointer']);
 
-let cProfile_construct = cwrap("Profile_construct", 'pointer', ['number', 'pointer', 'number', 'pointer', 'bool']);
+// Profile *Profile_construct(bool generic, uint q_part_length, uint * q_part, uint p_part_length, uint *p_part, bool truncated);
+let cProfile_construct = cwrap("Profile_construct", 'pointer', ['bool', 'number', 'pointer', 'number', 'pointer', 'bool']);
 let cProfile_free = cwrap("Profile_free", 'void', ['pointer']);
 
 // Algebra *MilnorAlgebra_construct(uint p, bool generic, Profile *profile);

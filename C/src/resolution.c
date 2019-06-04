@@ -54,6 +54,8 @@ Resolution * Resolution_construct(
     res->internal_degree_to_resolution_stage = (int*)(res->differentials + max_degree + 1);
     memset(res->internal_degree_to_resolution_stage, 0, (max_degree + 1)*sizeof(int));
     
+    printf("mults: %d\n", module->module.algebra->product_list->length);
+
     res->module = (Module*)module;
     res->algebra= module->module.algebra;
     res->max_degree = max_degree;
@@ -142,7 +144,7 @@ void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_d
     FreeModuleHomomorphism *d = res->differentials[homological_degree + 1];
     FreeModule *T = (FreeModule*)d->target;        
     Vector *dx = d->outputs[degree][source_idx];
-    FiltrationOneProductList *product_list = res->algebra->product_list;    
+    FiltrationOneProductList *product_list = res->algebra->product_list; 
     for(uint j = 0; j < product_list->length; j++){
         uint op_degree = product_list->degrees[j];
         uint op_index = product_list->indices[j];
@@ -322,16 +324,16 @@ Resolution *testResolution(
         uint target_hom_deg, uint target_int_deg, uint target_idx
     )
 ){
-    uint p = 3;
+    uint p = 2;
     bool generic = p!=2;
     initializePrime(p);
-    // uint p_part[3] = {3,2,1};
-    // uint p_part_length = 3;
+    uint p_part[3] = {3,2,1};
+    uint p_part_length = 3;
     // uint p_part[2] = {2,1};
     // uint p_part_length = 2;
-    // bool truncated = true;
-    // Profile *P = Profile_construct(generic, 0, NULL, p_part_length, p_part, truncated);
-    MilnorAlgebra *A = MilnorAlgebra_construct(p, generic, NULL);
+    bool truncated = true;
+    Profile *P = Profile_construct(generic, 0, NULL, p_part_length, p_part, truncated);
+    MilnorAlgebra *A = MilnorAlgebra_construct(p, generic, P);
     Algebra *algebra = (Algebra*) A;
     algebra_computeBasis(algebra, degree);
 
@@ -385,7 +387,7 @@ int main(){
     // MilnorAlgebra_generateBasis(A, 100);
     // printf("constructed\n");
     // algebra_computeBasis(A, 10);
-    Resolution *res = testResolution(78, NULL, NULL);
+    Resolution *res = testResolution(50, NULL, NULL);
     FiniteDimensionalModule_free((FiniteDimensionalModule*)res->module);
     res->module = NULL;
     MilnorAlgebra_free((MilnorAlgebra*)res->algebra);

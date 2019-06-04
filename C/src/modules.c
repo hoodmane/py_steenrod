@@ -328,6 +328,7 @@ FreeModuleOperationGeneratorPair FreeModule_indexToOpGen(FreeModule *this, uint 
 
 // FreeModuleHomomorphisms
 
+// max_degree is one larger than the highest degree in which you are allowed to access this module.
 FreeModuleHomomorphism *FreeModuleHomomorphism_construct(FreeModule *source, Module *target, uint max_degree){
     FreeModuleHomomorphism *f = malloc(
         sizeof(FreeModuleHomomorphism) 
@@ -361,6 +362,9 @@ void FreeModuleHomomorphism_free(FreeModuleHomomorphism *f){
 }
 
 void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism *f, uint degree, uint num_gens){
+    assert(degree < f->max_degree);
+    assert(f->max_computed_degree <= degree);
+    f->max_computed_degree = degree + 1;
     FreeModuleInternal *module = (FreeModuleInternal*) f->source;
     uint p = module->module.p;
     uint dimension = module_getDimension(f->target, degree);
@@ -394,6 +398,7 @@ void FreeModuleHomomorphism_setOutput(FreeModuleHomomorphism *f, uint input_degr
 
 // Run FreeModule_ConstructBlockOffsetTable(source, degree) before using this on an input in that degree
 void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism *f, Vector *result, uint coeff, uint input_degree, uint input_index){
+    assert(input_degree < f->max_degree);
     assert(((FreeModuleInternal*)f->source)->basis_element_to_opgen_table[input_degree] != NULL);
     assert(input_index < FreeModule_getDimension((Module*)f->source, input_degree));
     FreeModuleOperationGeneratorPair operation_generator = 
