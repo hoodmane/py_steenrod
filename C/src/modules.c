@@ -175,7 +175,7 @@ void FiniteDimensionalModule_actOnBasis(Module *this, Vector *result, uint coeff
         return;
     }
     char output_block_memory[Vector_getContainerSize(this->p)];    
-    Vector *output_block = (Vector*)output_block_memory;     
+    Vector *output_block = Vector_initialize(this->p, output_block_memory, NULL, 0, 0);     
     Vector_slice(output_block, result, 0, module->graded_dimension[mod_degree + op_degree]); 
     Vector_add(output_block, &module->actions[mod_degree][mod_degree + op_degree][op_index][mod_index], coeff);
 }
