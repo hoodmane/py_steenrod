@@ -4,6 +4,9 @@ from ctypes_algebra import *
 # typedef struct Module {
 #     uint p;
 #     Algebra * algebra;
+#     uint type;
+#     uint max_degree; 
+#     uint degree_shift
 # // Methods:
 #     bool (*computeBasis)(struct Module* this, uint degree);
 #     uint (*getDimension)(struct Module* this, uint degree);
@@ -16,6 +19,9 @@ class c_Module(Structure):
 c_Module._fields_ = [
         ("p", c_uint),
         ("algebra", POINTER(c_Algebra)),
+        ("type", c_uint),
+        ("max_degree", c_uint),
+        ("degree_shift", c_uint),
         ("compute_basis",CFUNCTYPE(c_bool, POINTER(c_Module), c_uint)),
         ("getBasisDimension", CFUNCTYPE(c_uint, POINTER(c_Module), c_uint)),
         ("actOnBasis", CFUNCTYPE(c_uint, 
@@ -26,35 +32,29 @@ c_Module._fields_ = [
 
 # typedef struct {
 #     Module module;
-#     uint dimension;
-#     uint max_degree;
-#     uint * number_of_basis_elements_in_degree;
+#     uint max_basis_degree;
+#     uint *graded_dimension;
+#     uint degree_shift;
 #     // This goes input_degree --> output_degree --> operation --> input_index --> Vector
-#     Vector **** actions;
+#     Vector ****actions;
 # } FiniteDimensionalModule;
 
 class c_FiniteDimensionalModule(Structure):
     _fields_ = [
         ("module", c_Module),
-        ("dimension", c_uint),
-        ("max_degree",c_uint),
-        ("number_of_basis_elements_in_degree", POINTER(c_uint)),
+        ("max_basis_degree", c_uint),
+        ("graded_dimension", POINTER(c_uint)),
+        ("degree_shift",c_uint),
         ("actions", POINTER(POINTER(POINTER(POINTER(c_Vector)))))
     ]    
 
 # typedef struct {
 #     Module module;
-#     uint max_generator_degree;
-#     uint max_degree;
-#     uint number_of_generators;
 #     uint *number_of_generators_in_degree;
 # } FreeModule;
 class c_FreeModule(Structure):
     _fields_ = [
         ("module", c_Module),
-        ("max_generator_degree", c_uint),
-        ("max_degree", c_uint),
-        ("number_of_generators", c_uint),
         ("number_of_generators_in_degree",POINTER(c_uint))
     ]    
 

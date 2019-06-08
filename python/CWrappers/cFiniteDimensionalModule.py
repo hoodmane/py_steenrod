@@ -12,7 +12,7 @@ from FreeModule import *
 def toC(module):
     module.generate_milnor_action()
     max_degree = max(module.gens.values())
-    module.c_algebra = cMilnorAlgebra.construct(p=module.milnor_algebra.p, degree=max_degree+10)
+    module.c_algebra = cMilnorAlgebra.cMilnorAlgebra(p=module.milnor_algebra.p, max_degree=max_degree+10)
     number_of_basis_elements_in_degree = [0] * (max_degree + 1)
     basis_element_indices = {}
     index_to_basis_element = {}
@@ -24,13 +24,9 @@ def toC(module):
     c_list_of_uints_type = (max_degree + 1) * c_uint
     c_number_of_basis_elements_in_degree = c_list_of_uints_type(*number_of_basis_elements_in_degree)
 
-    algebra = module.milnor_algebra
-    cMilnorAlgebra.construct_C_algebra(algebra)
-    c_algebra = cast(module.milnor_algebra.c_algebra, POINTER(c_Algebra))
-    cMilnorAlgebra.generateBasis(module.milnor_algebra, max_degree)
-    c_module = CSteenrod.FiniteDimensionalModule_construct(c_algebra, max_degree, c_number_of_basis_elements_in_degree)
+    module.c_algebra.generateBasis(max_degree)
+    c_module = CSteenrod.FiniteDimensionalModule_construct(module.c_algebra.c_alg_ptr, max_degree, c_number_of_basis_elements_in_degree)
     module.c_module = c_module
-    module.c_algebra = c_algebra
     module.basis_element_indices = basis_element_indices
     module.index_to_basis_element = index_to_basis_element
     module.number_of_basis_elements_in_degree = number_of_basis_elements_in_degree

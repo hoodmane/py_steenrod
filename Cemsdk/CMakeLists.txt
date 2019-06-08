@@ -24,6 +24,11 @@ SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
 )
 
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
+    '_AdemAlgebra_construct', '_AdemAlgebra_free', \
+    '_AdemAlgebra_generateBasis', '_AdemAlgebra_getDimension'"
+)
+
+SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
     '_FiniteDimensionalModule_construct', '_FiniteDimensionalModule_free', \
     '_FiniteDimensionalModule_setAction'"
 )
@@ -55,6 +60,9 @@ add_executable(CSteenrod
         ../C/src/milnor.h
         ../C/src/milnor_datatypes.c
         ../C/src/milnor_private.h
+        ../C/src/adem.h
+        ../C/src/adem.c
+        ../C/src/adem_io.c
         ../C/src/modules.c
     )
 

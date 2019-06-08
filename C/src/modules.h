@@ -12,9 +12,10 @@
 
 typedef struct Module {
     uint p;
+    Algebra *algebra;    
     uint type;
-    uint max_degree;    
-    Algebra *algebra;
+    uint max_degree; 
+    uint degree_shift;       
 // Methods:
     bool (*computeBasis)(struct Module *this, uint degree);
     uint (*getDimension)(struct Module *this, uint degree);
@@ -31,6 +32,7 @@ typedef struct {
     Module module;
     uint max_basis_degree;
     uint *graded_dimension;
+    uint degree_shift;
     // This goes input_degree --> output_degree --> operation --> input_index --> Vector
     Vector ****actions;
 } FiniteDimensionalModule;

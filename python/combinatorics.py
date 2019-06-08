@@ -72,7 +72,7 @@ def multinomial_odd(l, p):
 
 def binomial_odd(n, k, p):
     """Binomial odd: just use multinomial_odd on [n-k, k]."""
-    if n < k:
+    if n < k or k < 0:
         return 0
     return multinomial_odd([n-k, k], p)
 

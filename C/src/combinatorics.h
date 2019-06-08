@@ -36,7 +36,12 @@ void basepExpansion(uint * buffer, uint p, uint n); // Used for Lucas's theorem
 int inverse(uint p, int k);
 
 uint Multinomial(uint p, uint len, uint l[]);
-uint Binomial(uint p, uint n, uint k);
+uint Multinomial2(uint len, uint l[]);
+uint MultinomialOdd(uint p, uint len, uint l[]);
+
+uint Binomial(uint p, int n, int k);
+uint Binomial2(uint n, uint k);
+uint BinomialOdd(uint p, int n, int k);
 
 #define MAX_XI_TAU 10
 

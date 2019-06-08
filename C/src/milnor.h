@@ -9,8 +9,6 @@
 #include "combinatorics.h"
 #include "algebra.h"
 
-typedef char *string;
-
 typedef struct {
     bool generic;
     bool restricted;
@@ -35,10 +33,9 @@ typedef struct {
 
 typedef struct {
     Algebra algebra;
-    uint p;
     bool generic;
     Profile profile;
-    string name;
+    int (*sort_order)(const void *a, const void *b); 
 } MilnorAlgebra;
 
 Profile *Profile_construct(bool generic, uint q_part_length, uint * q_part, uint p_part_length, uint *p_part, bool truncated);
@@ -46,26 +43,28 @@ void Profile_free(Profile *profile);
 
 // Implemented in milnor_datatypes.c
 // These methods write a string to a buffer and return the length of the string written.
-int MilnorElement_toString(string buffer, MilnorAlgebra *algebra, uint degree, Vector *m);
-void MilnorElement_print(string fmt_string, MilnorAlgebra *algebra, uint degree, Vector *m);
-int MilnorMatrix_toString(string buffer, uint M[MAX_XI_TAU][MAX_XI_TAU], uint rows, uint cols);
-int MilnorBasisElement_toKey(string buffer, MilnorBasisElement *b);
-int MilnorBasisElement_toString(string buffer, MilnorBasisElement *b);
-void MilnorBasisElement_print(string fmt_string, MilnorBasisElement *b);
-MilnorBasisElement MilnorBasisElement_fromString(MilnorAlgebra *algebra, char *elt_string);
+uint MilnorAlgebra_element_toString(char *buffer, MilnorAlgebra *algebra, uint degree, Vector *m);
+void MilnorAlgebra_element_print(char *fmt_string, MilnorAlgebra *algebra, uint degree, Vector *m);
+uint MilnorMatrix_toString(char *buffer, uint M[MAX_XI_TAU][MAX_XI_TAU], uint rows, uint cols);
+uint MilnorAlgebra_basisElement_toKey(char *buffer, MilnorBasisElement *b);
+uint MilnorAlgebra_basisElement_toString(char *buffer, MilnorAlgebra *algebra, MilnorBasisElement *b);
+char *MilnorAlgebra_basisElement_constructString(MilnorAlgebra *algebra, MilnorBasisElement *b);
+void MilnorAlgebra_basisElement_print(char *fmt_string, MilnorAlgebra *algebra, MilnorBasisElement *b);
+MilnorBasisElement MilnorAlgebra_basisElement_fromString(MilnorAlgebra *algebra, char *elt_string);
+
+// Implemented in milnor.c
 
 MilnorAlgebra *MilnorAlgebra_construct(uint p, bool generic, Profile *profile);
 void MilnorAlgebra_free(MilnorAlgebra *);
 
-// Implemented in milnor.c
-bool MilnorAlgebra_generateBasis(Algebra *algebra, uint max_degree);
+void MilnorAlgebra_generateBasis(Algebra *this, uint max_degree);
 void MilnorAlgebra_freeBasis(MilnorAlgebra *algebra);
 
-uint MilnorAlgebra_getDimension(Algebra *algebra, uint degree);
+uint MilnorAlgebra_getDimension(Algebra *this, uint degree, uint excess);
 MilnorBasisElement_list MilnorAlgebra_getBasis(MilnorAlgebra *algebra, uint degree);
-MilnorBasisElement MilnorBasisElement_fromIndex(MilnorAlgebra *algebra, uint degree, uint index);
-uint MilnorBasisElement_toIndex(MilnorAlgebra *algebra,  MilnorBasisElement b);
+MilnorBasisElement MilnorAlgebra_basisElement_fromIndex(MilnorAlgebra *algebra, uint degree, uint index);
+uint MilnorAlgebra_basisElement_toIndex(MilnorAlgebra *algebra,  MilnorBasisElement b);
 
-void MilnorAlgebra_multiply(Algebra *algebra, Vector *result, uint coeff, uint r_degree, uint r_index, uint s_degree, uint s_index);
+void MilnorAlgebra_multiply(Algebra *this, Vector *result, uint coeff, uint r_degree, uint r_index, uint s_degree, uint s_index, uint excess);
 
 #endif //CSTEENROD_MILNOR_H

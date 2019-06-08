@@ -43,22 +43,23 @@ typedef struct {
     khash_t(monomial_index_map) ** basis_element_to_index_map;
 } MilnorAlgebraInternal;
 
-void milnor_algebra_generate_name(MilnorAlgebra *A);
-uint Profile_getExponent(Profile P, uint p, uint index);
+void MilnorAlgebra__generateName(MilnorAlgebra *A);
+uint Profile__getExponent(Profile P, uint p, uint index);
 
 // Private functions
-void generateMilnorBasisPpartTable(MilnorAlgebraInternal * algebra, uint n);
-void freeMilnorBasisPpartTable(MilnorAlgebraInternal * algebra);
-void generateMilnorBasisQpartTable(MilnorAlgebraInternal * algebra, uint n );
-void freeMilnorBasisQPartTable(MilnorAlgebraInternal * algebra);
+void MilnorAlgebra__generatePpartTable(MilnorAlgebraInternal * algebra, uint n);
+void MilnorAlgebra__freePpartTable(MilnorAlgebraInternal * algebra);
+void MilnorAlgebra__generateQpartTable(MilnorAlgebraInternal * algebra, uint n );
+void MilnorAlgebra__freeQPartTable(MilnorAlgebraInternal * algebra);
 
-void GenerateMilnorBasis2(MilnorAlgebraInternal * algebra, uint old_n, uint n);
-void GenerateMilnorBasisGeneric(MilnorAlgebraInternal * algebra, uint old_n, uint n);
+void MilnorAlgebra__generateBasis2(MilnorAlgebraInternal * algebra, uint old_n, uint n);
+void MilnorAlgebra__generateBasisGeneric(MilnorAlgebraInternal * algebra, uint old_n, uint n);
 
-void MilnorProductEven(MilnorAlgebraInternal * algebra, uint * result, MilnorBasisElement r_elt, MilnorBasisElement s_elt);
-void MilnorProductFullQpart(MilnorAlgebraInternal * algebra, uint * result, MilnorBasisElement m1, uint f);
+void MilnorAlgebra__multiplyFull(MilnorAlgebraInternal *algebra, uint *result, MilnorBasisElement m1, MilnorBasisElement m2);
+void MilnorAlgebra__multiplyEven(MilnorAlgebraInternal * algebra, uint * result, MilnorBasisElement r_elt, MilnorBasisElement s_elt);
+void MilnorAlgebra__multiplyQpart(MilnorAlgebraInternal * algebra, uint * result, MilnorBasisElement m1, uint f);
 
-void initialize_milnor_matrix(uint M[MAX_XI_TAU][MAX_XI_TAU], P_part r, P_part s);
-bool step_milnor_matrix(uint  p, uint M[MAX_XI_TAU][MAX_XI_TAU], P_part r, P_part s);
+void milnor_matrix_initialize(uint M[MAX_XI_TAU][MAX_XI_TAU], P_part r, P_part s);
+bool milnor_matrix_step(uint p, uint M[MAX_XI_TAU][MAX_XI_TAU], P_part r, P_part s);
 
 #endif //C_MILNOR_PRIVATE_H

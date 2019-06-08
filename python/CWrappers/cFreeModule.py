@@ -39,19 +39,19 @@ def toC(module, max_degree=None):
 
 def fromC(cF, algebra, name_prefix):
     max_generator_degree = cF.contents.max_generator_degree
-
+    print(1)
     number_of_generators_in_degree = [None] * (max_generator_degree + 1)
     for i in range(max_generator_degree + 1):
         number_of_generators_in_degree[i] = cF.contents.number_of_generators_in_degree[i]    
     generator_indices = {}
     index_to_generator = {}
-
+    print(2)
     F = FreeModule(algebra=algebra)
     F.c_module = cF
     F.c_algebra = cMilnorAlgebra.construct(p=algebra.p, degree=max_generator_degree+10)        
     F.generator_indices = generator_indices
     F.index_to_generator = index_to_generator
-
+    print(3)
     for i in range(max_generator_degree + 1):
         for j in range(number_of_generators_in_degree[i]):
             gen_name = name_prefix + str(i)

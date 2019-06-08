@@ -50,10 +50,6 @@ void freePrimes() {
 }
 
 uint directBinomial(uint p, uint n, uint k);
-uint Multinomial2(uint len, uint* l);
-uint Binomial2(uint n, uint k );
-uint MultinomialOdd(uint p, uint len, uint* l);
-uint BinomialOdd(uint p, uint n, uint k);
 
 // This indexes primes into our lookup tables. All nonprime indices have a -1.
 // Generated with Mathematica:
@@ -131,6 +127,7 @@ void initializeInverseTable(uint p){
     }
     inverse_table[prime_to_index_map[p]] = table;
 }
+
 
 
 /**
@@ -211,7 +208,7 @@ uint Multinomial2(uint len, uint* l){
 
 //Mod 2 binomial coefficient n choose k
 uint Binomial2(uint n, uint k ) {
-    if(n < k || k < 0){
+    if(n < k){
         return 0;
     } else {
         if(((n-k) & k) == 0){
@@ -255,8 +252,8 @@ uint MultinomialOdd(uint p, uint len, uint* l){
 }
 
 //Mod p binomial coefficient n choose k. If p is 2, more efficient to use Binomial2.
-uint BinomialOdd(uint p, uint n, uint k) {
-    if( n < k || k < 0 ){
+uint BinomialOdd(uint p, int n, int k) {
+    if( n < k || k < 0){
         return 0;
     }
     uint l[2] = { n-k, k };
@@ -273,7 +270,7 @@ uint Multinomial(uint p, uint len, uint l[]) {
 }
 
 //Dispatch to Binomial2 or BinomialOdd
-uint Binomial(uint p, uint n, uint k){
+uint Binomial(uint p, int n, int k){
     if(p == 2){
         return Binomial2(n, k);
     } else {

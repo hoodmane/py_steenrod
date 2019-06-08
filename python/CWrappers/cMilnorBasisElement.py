@@ -20,7 +20,7 @@ def toC(algebra, b):
 
 def toIndex(algebra, b):
     c_MBE = toC(algebra, b)
-    return CSteenrod.MilnorBasisElement_toIndex(algebra.c_algebra, c_MBE)
+    return CSteenrod.MilnorAlgebra_basisElement_toIndex(algebra.c_algebra, c_MBE)
 
 def fromC(algebra, b):
     bitstring = b.q_part
@@ -42,5 +42,5 @@ def fromC(algebra, b):
     return b
 
 def fromIndex(algebra, degree, idx):
-    b = CSteenrod.MilnorBasisElement_fromIndex(algebra.c_algebra, degree, idx)
+    b = CSteenrod.MilnorAlgebra_basisElement_fromIndex(algebra.c_algebra, degree, idx)
     return fromC(algebra, b)

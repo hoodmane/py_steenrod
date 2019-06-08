@@ -26,6 +26,22 @@ let cMilnorAlgebra_generateBasis = Module.cwrap("MilnorAlgebra_generateBasis", '
 // uint MilnorAlgebra_getDimension(Algebra *algebra, uint degree);
 let cMilnorAlgebra_getDimension = Module.cwrap("MilnorAlgebra_getDimension", 'number', ['pointer', 'number']);
 
+
+
+// Algebra *MilnorAlgebra_construct(uint p, bool generic, Profile *profile);
+let cAdemAlgebra_construct = Module.cwrap("AdemAlgebra_construct", 'pointer', ['number', 'bool', 'pointer']);
+
+// void MilnorAlgebra_free(MilnorAlgebra *);
+let cAdemAlgebra_free = Module.cwrap("AdemAlgebra_free", 'void', ['pointer']);
+
+// bool MilnorAlgebra_generateBasis(Algebra *algebra, uint max_degree);
+let cAdemAlgebra_generateBasis = Module.cwrap("AdemAlgebra_generateBasis", 'bool', ['pointer', 'number']);
+
+// uint MilnorAlgebra_getDimension(Algebra *algebra, uint degree);
+let cAdemAlgebra_getDimension = Module.cwrap("AdemAlgebra_getDimension", 'number', ['pointer', 'number']);
+
+
+
 // FiniteDimensionalModule *FiniteDimensionalModule_construct(Algebra *algebra, uint max_generator_degree, uint *graded_dimension);
 let cFiniteDimensionalModule_construct = Module.cwrap("FiniteDimensionalModule_construct", 'pointer', ['bool', 'pointer', 'number', 'pointer']);
 

@@ -70,7 +70,6 @@ function groupBy(xs, key) {
 };
 
 function URLHashToDictionary(url_hash){
-    console.log("url_hash:", url_hash);
     if(!url_hash){
         return undefined;
     }
@@ -83,7 +82,6 @@ function getURLDictionary(){
     let url = new URL(document.location);
     let kv = {};
     for(let [k,v] of url.searchParams.entries()){
-        console.log(k,v);
         kv[k] = v;
     }
     return kv;
@@ -144,21 +142,18 @@ IO.loadFromServer("modules/module_registry.json").then((json) => {
 
 function main(){
     let params = getURLDictionary();
-    console.log(params);
     if(params.module){
-        console.log("true case");
         worker.terminate();
         main_div.style.display = '';
-        console.log(main_div.offsetHeight);
+        // console.log(main_div.offsetHeight);
         startResolution(params);
     } else {
-        console.log("false case");
         worker.terminate();        
         let page_indicator = document.getElementById('page_indicator') || {};
         page_indicator.innerText = "";
         main_div.style.display = 'none';
         // main_div.style.minHeight = 0;
-        console.log(main_div.offsetHeight);
+        // console.log(main_div.offsetHeight);
     }
 }
 
@@ -205,8 +200,7 @@ function startResolution(dict){
         }
     })    
     IO.loadFromServer(`modules/${module_file_name}.json`).then((module) => {
-        console.log(module);
-        console.log(main_div.offsetHeight);
+        // console.log(module);
         document.getElementById('page_indicator').innerHTML = katexMathInDelims(module.name);
         worker.postMessage({
             "algebra": { "profile" : module.profile },

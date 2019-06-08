@@ -179,6 +179,15 @@ class AdemAlgebra:
         """Turns a basis element b into an AdemElement."""
         return AdemElement({b : 1}, algebra=self)
 
+    def basis_degree(self, b):
+        """Get degree of a basis vector. Implements abstract method of Vector."""
+        if self.generic:
+            result = 2*(self.p - 1) * sum(b[1::2])
+            result += sum(b[::2])
+        else:
+            result = sum(b)
+        return result
+
     def getInadmissiblePairs(self, max_degree):
         """Returns all triples (a+b, Sqa, Sqb) such that Sqa*Sqb is inadmissible."""
         p = self.p

@@ -39,7 +39,7 @@ int array_toString(char *buffer, uint *A, uint length){
     buffer[0] = '[';
     buffer[1] = '\0';
     int len = 1;
-    for (int i = 0; i < length; i++) {
+    for (uint i = 0; i < length; i++) {
         len += sprintf(buffer + len, "%d, ", A[i]);
     }
     len += sprintf(buffer + len, "]");
@@ -139,7 +139,7 @@ uint modPLookup(uint p, uint n){
     return modplookuptable[prime_to_index_map[p]][n];
 }
 
-uint Vector_getContainerSize(uint p){
+uint Vector_getContainerSize(uint p __attribute__((unused))){
     return sizeof(VectorPrivate);
 }
 
@@ -493,7 +493,7 @@ void Vector2_addBasisElement(Vector *target, uint index, uint coeff){
     *result ^= ((uint64)coeff << limb_index.bit_index);
 }
 
-void Vector2_addArray(Vector *target, uint *source, uint c){
+void Vector2_addArray(Vector *target, uint *source, uint c __attribute__((unused))){
     VectorPrivate *t = (VectorPrivate*) target;
     uint bit_length = 1;
     uint source_idx = 0;
@@ -651,7 +651,7 @@ Matrix *Matrix_initialize(char *memory, uint p, uint rows, uint columns)  {
     matrix->rows = rows;
     matrix->columns = columns;
     matrix->matrix = vector_ptr;
-    for(int row = 0; row < rows; row++){
+    for(uint row = 0; row < rows; row++){
         *vector_ptr = Vector_initialize(p, container_ptr, values_ptr, columns, 0);
         vector_ptr ++;
         container_ptr += container_size;
@@ -688,7 +688,7 @@ Matrix *Matrix_slice(Matrix *M, char *memory, uint row_min, uint row_max, uint c
     VectorPrivate **matrix_ptr = (VectorPrivate**)result->matrix; 
     VectorPrivate *vector_ptr = (VectorPrivate*)(matrix_ptr + num_rows);
     Vector *initialized_vector_ptr;
-    for(int i = 0; i < num_rows; i++){
+    for(uint i = 0; i < num_rows; i++){
         *matrix_ptr = vector_ptr;
         initialized_vector_ptr = Vector_initialize(M->p, (char*)vector_ptr, NULL, 0, 0);
         Vector_slice(initialized_vector_ptr, M->matrix[i], column_min, column_max);
@@ -703,7 +703,7 @@ Matrix *Matrix_slice(Matrix *M, char *memory, uint row_min, uint row_max, uint c
 uint Matrix_toString(char *buffer, Matrix *M){
     int len = 0;
     len += sprintf(buffer + len, "    [\n");
-    for(int i = 0; i < M->rows; i++){
+    for(uint i = 0; i < M->rows; i++){
         len += sprintf(buffer + len, "        ");
         len += Vector_toString(buffer + len, M->matrix[i]);
         len += sprintf(buffer + len, ",\n");
@@ -795,7 +795,7 @@ void rowReduce(Matrix *M, int *column_to_pivot_row, uint col_end, uint col_start
             printf("row(%d) *= %d\n", pivot, c_inv);
             Matrix_printSlice(M, col_end, col_start);
         }
-        for(int i = 0; i < rows; i++){
+        for(uint i = 0; i < rows; i++){
             // Between pivot and pivot_row, we already checked that the pivot column is 0, so skip ahead a bit.
             if(i == pivot){
                 i = pivot_row;

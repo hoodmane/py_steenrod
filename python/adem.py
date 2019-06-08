@@ -59,9 +59,9 @@ def adem_2(a, b):
     """Return the adem relation Sqa * Sqb when p=2"""
     if b == 0:
         return {(a,) : 1}
-    elif a == 0:
+    if a == 0:
         return {(b,) : 1}
-    elif a >= 2*b:
+    if a >= 2*b:
         return {(a, b) : 1}
     result = {}
     for j in range(1 + a//2):
@@ -85,24 +85,34 @@ def adem_generic(A, bockstein, B, *, p):
         return {(0, A, bockstein, B, 0) : 1}
     
     result = {}
-    for j in range(1 + A//p):
-        coeff = combinatorics.binomial_odd((B-j) * (p-1) - 1 + bockstein, A - p*j, p)
-        coeff *= (-1)**(A+j)
-        coeff = coeff % p
-        if coeff != 0 and j == 0:
-            result[(bockstein, A+B, 0)] = coeff
-        elif coeff != 0 and j != 0:
-            result[(bockstein, A+B-j, 0, j, 0)] = coeff
-
-    if bockstein == 1:
-        for j in range(1 + (A-1)//p):
-            coeff = combinatorics.binomial_odd((B-j) * (p-1) - 1, A - p*j - 1, p)
-            coeff *= (-1)**(A+j-1)
+    for e1 in range(1 + bockstein):
+        e2 = bockstein - e1
+        for j in range(1 + (A - e1)//p):
+            coeff = combinatorics.binomial_odd((B-j) * (p-1) - 1 + e1, A - p*j - e2, p)
+            coeff *= (-1)**(A+j + e2)
             coeff = coeff % p
             if coeff != 0 and j == 0:
-                result[(0, A+B, 1)] = coeff
-            if coeff != 0 and j != 0:
-                result[(0, A+B-j, 1, j, 0)] = coeff
+                result[(e1, A+B, e2)] = coeff
+            elif coeff != 0 and j != 0:
+                result[(e1, A+B-j, e2, j, 0)] = coeff 
+    # for j in range(1 + (A-0)//p):
+    #     coeff = combinatorics.binomial_odd((B-j) * (p-1) - 1 + bockstein, A - p*j, p)
+    #     coeff *= (-1)**(A+j-0)
+    #     coeff = coeff % p
+    #     if coeff != 0 and j == 0:
+    #         result[(bockstein, A+B, 0)] = coeff
+    #     elif coeff != 0 and j != 0:
+    #         result[(bockstein, A+B-j, 0, j, 0)] = coeff
+
+    # if bockstein == 1:
+    #     for j in range(1 + (A-1)//p):
+    #         coeff = combinatorics.binomial_odd((B-j) * (p-1) - 1 + 1 - 1, A - p*j - 1, p)
+    #         coeff *= (-1)**(A+j-1)
+    #         coeff = coeff % p
+    #         if coeff != 0 and j == 0:
+    #             result[(0, A+B, 1)] = coeff
+    #         if coeff != 0 and j != 0:
+    #             result[(0, A+B-j, 1, j, 0)] = coeff
     return result
 
 def adem(a, b, c=None, *, algebra):
@@ -143,62 +153,72 @@ def adem(a, b, c=None, *, algebra):
             raise ValueError("When p = 2, c should be None")
         return adem_2(a, b)
 
-@memoized
+
 def make_mono_admissible_2(mono):
+    result = {}
+    make_mono_admissible_2_helper(result, list(mono))
+    return result
+
+def make_mono_admissible_2_helper(result, mono):
     """Reduce a monomial into a linear combination of admissible monomials when p = 2"""
-    if len(mono) == 1:
-        return {mono: 1}
-    if len(mono) == 2:
-        return adem_2(*mono)
     # check to see if admissible:
     nonadmissible_indices = [j for j in range(len(mono) - 1) if mono[j] < 2*mono[j+1]]
     if not nonadmissible_indices:
-        return {mono: 1}
-    result = {}
+        mono = tuple(mono)
+        if mono in result:
+            del result[mono]
+        else:
+            result[mono] = 1
+        return
     j = nonadmissible_indices[0]
+    ab = mono[j:j+2]
     y = adem_2(mono[j], mono[j+1])
     for x in y:
-        new = mono[:j] + x + mono[j+2:]
-        new = make_mono_admissible_2(new)
-        for m in new:
-            if m not in result:
-                result[m] = 0
-            result[m] += y[x] * new[m]
-            result[m] = result[m] % 2
-            if result[m] == 0:
-                del result[m]
+        if len(x) == 2:
+            mono[j:j+2] = x # modify mono in place =)
+            new = mono
+        else:
+            new = mono[:j] + [x[0]] + mono[j+2:] # make a new shorter one.
+        make_mono_admissible_2_helper(result, new)
+    mono[j:j+2] = ab # Put monomial back the way we found it.
+
+def make_mono_admissible_generic(mono, p):
+    result = {}
+    make_mono_admissible_generic_helper(result, 1, list(mono), p)
     return result
 
-@memoized
-def make_mono_admissible_generic(mono, p):
+def make_mono_admissible_generic_helper(result, coeff, mono, p):
     """Reduce a monomial into a linear combination of admissible monomials for the generic Steenrod algebra"""
     # check to see if admissible:
+    # print(mono, coeff)
     nonadmissible_indices = [
         j for j in range(1, len(mono) - 2, 2)
         if mono[j] < mono[j+1] + p * mono[j+2]
     ]
     if not nonadmissible_indices:
-        return {mono: 1}
+        # It's admissible, just add it to the result.
+        mono = tuple(mono)
+        if mono in result:
+            result[mono] += coeff # y[x] * new[m]
+            result[mono] = result[mono] % p
+            if result[mono] == 0:
+                del result[mono]
+        else:
+            result[mono] = coeff # * new[m]        
+        return 
+
     j = nonadmissible_indices[0]
-    ans = {}
     y = adem_generic(*mono[j:j+3], p=p)
     for x in y:
         new_x = list(x)
         new_x[0] = mono[j-1] + x[0]
+        # add bocksteins together
         if len(mono) >= j+3:
             new_x[-1] = mono[j+3] + x[-1]
+        # If this next conditional fails, there are two bocksteins in a row.
         if new_x[0] <= 1 and new_x[-1] <= 1:
-            new = mono[:j-1] + tuple(new_x) + mono[j+4:]
-            new = make_mono_admissible_generic(new, p)
-            for m in new:
-                if m in ans:
-                    ans[m] += y[x] * new[m]
-                    ans[m] = ans[m] % p
-                    if ans[m] == 0:
-                        del ans[m]
-                else:
-                    ans[m] = y[x] * new[m]
-    return ans
+            new = mono[:j-1] + new_x + mono[j+4:]
+            make_mono_admissible_generic_helper(result, y[x]*coeff, new, p)
 
 
 def make_mono_admissible(mono, *, algebra):
@@ -256,7 +276,7 @@ def make_mono_admissible(mono, *, algebra):
 
 def product_2(m1, m2):
     """Multiply monomials m1 and m2 and write the result in the Adem basis for p = 2."""
-    return make_mono_admissible_2(m1 + m2)
+    return make_mono_admissible_2(list(m1) + list(m2))    
 
 def product_generic(m1, m2, p):
     """Multiply monomials m1 and m2 and write the result in the Adem basis in the generic case."""
@@ -297,7 +317,7 @@ def basis_2(n, *, bound=1):
 def basis_generic(n, *, p, bound=1):
     """Get the basis for the n dimensional part of the Steenrod algebra."""
     if n == 0:
-        return ((0,),)
+        return ((0,),) # 
     if n == 1:
         return ((1,),)
     result = []

@@ -11,6 +11,8 @@
 
 #include "combinatorics.h"
 #include "algebra.h"
+#include "milnor.h"
+#include "adem.h"
 #include "modules.h"
 #include "resolution.h"
 
@@ -19,13 +21,13 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
 
 void printCallback(Resolution * res, uint homological_degree, uint degree, uint num_gens);
 
-void addClass_doNothing(uint hom_deg, uint int_deg, char *cocycle_name){
+void addClass_doNothing(uint hom_deg __attribute__((unused)), uint int_deg __attribute__((unused)), char *cocycle_name __attribute__((unused))){
     // printf("hom_deg: %d, int_deg: %d\n", hom_deg, int_deg);
 }
 
 void addStructline_doNothing(
-    uint source_hom_deg, uint source_int_deg, uint source_idx, 
-    uint target_hom_deg, uint target_int_deg, uint target_idx
+    uint source_hom_deg __attribute__((unused)), uint source_int_deg __attribute__((unused)), uint source_idx __attribute__((unused)), 
+    uint target_hom_deg __attribute__((unused)), uint target_int_deg __attribute__((unused)), uint target_idx __attribute__((unused))
 ){
     // printf("\n\nhom_deg: %d, mod_deg: %d, num_gens: %d\n", homological_degree, degree, num_gens);
 }
@@ -54,8 +56,6 @@ Resolution * Resolution_construct(
     res->internal_degree_to_resolution_stage = (int*)(res->differentials + max_degree + 1);
     memset(res->internal_degree_to_resolution_stage, 0, (max_degree + 1)*sizeof(int));
     
-    printf("mults: %d\n", module->module.algebra->product_list->length);
-
     res->module = (Module*)module;
     res->algebra= module->module.algebra;
     res->max_degree = max_degree;
@@ -208,7 +208,7 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     Matrix *matrix = Matrix_slice(full_matrix, slice_matrix_memory, 0, source_dimension, 0, padded_target_dimension + source_dimension);
     FreeModuleHomomorphism_getMatrix(current_differential, matrix, degree);
     // Write the identity matrix into the right block
-    for(int i = 0; i < source_dimension; i++){
+    for(uint i = 0; i < source_dimension; i++){
         Vector_setEntry(matrix->matrix[i], padded_target_dimension + i, 1);
     }
     // Row reduce
@@ -314,8 +314,6 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
 }
 
 
-
-#include "milnor.h"
 Resolution *testResolution(
     uint degree, 
     void (*addClass)(uint hom_deg, uint int_deg, char *cocycle_name),
@@ -324,16 +322,17 @@ Resolution *testResolution(
         uint target_hom_deg, uint target_int_deg, uint target_idx
     )
 ){
-    uint p = 2;
+    uint p = 3;
     bool generic = p!=2;
     initializePrime(p);
-    uint p_part[3] = {3,2,1};
-    uint p_part_length = 3;
+    // uint p_part[3] = {3,2,1};
+    // uint p_part_length = 3;
     // uint p_part[2] = {2,1};
     // uint p_part_length = 2;
-    bool truncated = true;
-    Profile *P = Profile_construct(generic, 0, NULL, p_part_length, p_part, truncated);
-    MilnorAlgebra *A = MilnorAlgebra_construct(p, generic, P);
+    // bool truncated = true;
+    // Profile *P = NULL; // Profile_construct(generic, 0, NULL, p_part_length, p_part, truncated);
+    // MilnorAlgebra *A = MilnorAlgebra_construct(p, generic, P);
+    AdemAlgebra *A = AdemAlgebra_construct(p, generic, false);
     Algebra *algebra = (Algebra*) A;
     algebra_computeBasis(algebra, degree);
 
@@ -355,8 +354,8 @@ Resolution *testResolution(
         FiniteDimensionalModule_construct(algebra, max_generator_degree, graded_dimension);
     // uint output[1] = {1};
     // FiniteDimensionalModule_setAction(module, 2, 0, 0, 0, output);
+    // degree--;
     Resolution *res = Resolution_construct(module, degree, addClass, addStructline);
-
     Resolution_resolveThroughDegree(res, degree);
     for(int i = degree - 1; i >= 0; i--){
         printf("stage %*d: ", 2, i);
@@ -381,16 +380,16 @@ testStruct *test(){
     return result;
 }
 
-/**
+/**/
 int main(){
     // Algebra * A = (Algebra*)MilnorAlgebra_construct(5, true, NULL);
     // MilnorAlgebra_generateBasis(A, 100);
     // printf("constructed\n");
     // algebra_computeBasis(A, 10);
-    Resolution *res = testResolution(50, NULL, NULL);
+    Resolution *res = testResolution(20, NULL, NULL);
     FiniteDimensionalModule_free((FiniteDimensionalModule*)res->module);
     res->module = NULL;
-    MilnorAlgebra_free((MilnorAlgebra*)res->algebra);
+    // MilnorAlgebra_free((MilnorAlgebra*)res->algebra);
     res->algebra = NULL;
     Resolution_free(res);
     return 0;

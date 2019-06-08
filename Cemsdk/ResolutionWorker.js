@@ -2,8 +2,29 @@
 importScripts("CSteenrod.js");
 importScripts("CSteenrodWrappers.js");
 
+let t0 = performance.now();
+let t_last = t0;
+function getTime(){
+    let t_cur = performance.now();
+    let duration = (t_cur - t_last) / 1000;
+    t_last = t_cur;
+    return duration;
+}
+function getTotalTime(){
+    let t_cur = performance.now();
+    return (t_cur - t0) / 1000;
+}
+let last_timestamp_stem = 0;
+let timestamp_interval = 10;
 function getCallbacks(degree_shift){
     function addClassCallback(hom_deg, int_deg, cocycle) { 
+        if(int_deg >= last_timestamp_stem + timestamp_interval){
+            let total_time = getTotalTime().toFixed(2) + " seconds";
+            let last_ten_stems_time = getTime().toFixed(2) + " seconds";
+            console.log(`Time to compute stems ${last_timestamp_stem} to ${last_timestamp_stem + timestamp_interval}: ${last_ten_stems_time}`);
+            console.log(`Total time to compute first ${int_deg} stems: ${total_time}`);
+            last_timestamp_stem += timestamp_interval;
+        }
         self.postMessage({"cmd" : "addClass", "x" : int_deg - hom_deg + degree_shift, "y": hom_deg});
         // display.updateBatch();
     }
@@ -30,23 +51,24 @@ function constructAlgebra(algebraData){
     let p = algebraData.p;
     let generic = algebraData.generic;
     cinitializePrime(p);
-    let cProfile = 0;
-    if(algebraData.profile){
-        let q_part = algebraData.profile.q_part || [];
-        let p_part = algebraData.profile.p_part;
-        let truncated = algebraData.profile.truncated;        
-        let c_qpart_offset = Module._malloc(4 * (q_part.length + p_part.length));
-        let c_ppart_offset = c_qpart_offset + 4*q_part.length;
-        Module.HEAPU32.set(new Uint32Array(q_part), c_qpart_offset/4);
-        Module.HEAPU32.set(new Uint32Array(p_part), c_ppart_offset/4);
-        cProfile = cProfile_construct(p != 2, q_part.length, c_qpart_offset, p_part.length, c_ppart_offset, truncated);
-        Module._free(c_qpart_offset);
-    }
-    console.log("cMilnorAlgebra_construct");    
-    let cAlgebra = cMilnorAlgebra_construct(p, generic, cProfile);
-    cProfile_free(cProfile); 
-    console.log("cMilnorAlgebra_generateBasis");
-    cMilnorAlgebra_generateBasis(cAlgebra, algebraData.max_degree);
+    // let cProfile = 0;
+    // if(algebraData.profile){
+    //     let q_part = algebraData.profile.q_part || [];
+    //     let p_part = algebraData.profile.p_part;
+    //     let truncated = algebraData.profile.truncated;        
+    //     let c_qpart_offset = Module._malloc(4 * (q_part.length + p_part.length));
+    //     let c_ppart_offset = c_qpart_offset + 4*q_part.length;
+    //     Module.HEAPU32.set(new Uint32Array(q_part), c_qpart_offset/4);
+    //     Module.HEAPU32.set(new Uint32Array(p_part), c_ppart_offset/4);
+    //     cProfile = cProfile_construct(p != 2, q_part.length, c_qpart_offset, p_part.length, c_ppart_offset, truncated);
+    //     Module._free(c_qpart_offset);
+    // }
+    // let cAlgebra = cMilnorAlgebra_construct(p, generic, cProfile);
+    // cProfile_free(cProfile); 
+    // cMilnorAlgebra_generateBasis(cAlgebra, algebraData.max_degree);
+    let cAlgebra = cAdemAlgebra_construct(p, generic, false);
+    // cProfile_free(cProfile); 
+    cAdemAlgebra_generateBasis(cAlgebra, algebraData.max_degree);    
     return cAlgebra;
 }
 
@@ -127,7 +149,6 @@ self.onmessage = function(msg){
             console.log("max_degree not a number, quitting.");
             return;
         }
-        console.log("data: ", msg.data);
         
         let algebraData = msg.data.algebra || {};
         let moduleData = msg.data.module;
@@ -136,9 +157,9 @@ self.onmessage = function(msg){
         algebraData.max_degree = max_degree;
         moduleData.max_degree = max_degree;
         let cAlgebra = constructAlgebra(algebraData);
-        console.log("constructed algebra");
         let module = constructFiniteDimensionalModule(msg.data.module, cAlgebra);
-        let callbacks = getCallbacks(module.degree_shift)
+        let callbacks = getCallbacks(module.degree_shift);
+        t0 = performance.now();
         let cResolution = cResolution_construct(module.cModule, max_degree, callbacks.addClassPtr, callbacks.addStructlinePtr);
         cResolution_resolveThroughDegree(cResolution, max_degree);
     });
