@@ -1,7 +1,7 @@
 import os,sys
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 from ctypes_wrap import *
-import cMilnorAlgebra
+import cAlgebra
 import cFiniteDimensionalModule
 import cFreeModule
 import cFreeModuleHomomorphism
@@ -13,6 +13,14 @@ def resolve(module, degree):
     cRes = CSteenrod.Resolution_construct(module.c_module, degree, 0, 0)
     CSteenrod.Resolution_resolveThroughDegree(cRes, degree)
     return cRes
+
+def printDimensionsToFile(cRes, filename):
+    buffer = (c_char * 1000000)()
+    CSteenrod.Resolution_gradedDimensionString(buffer, cRes)
+    charp = c_char_p(buffer[:])
+    s = charp.value.decode("utf-8")
+    steenrod_module.write_file(filename, s)
+
 
 def checkDsquaredZero(source, d_first, d_second):
     for g in source.gens:
@@ -44,29 +52,33 @@ def checkDifferential(d, x):
             return prod1  + prod2
 
 if __name__ == "__main__":
-    degree = 50
-    A = cMilnorAlgebra.cMilnorAlgebra(p=3, max_degree=degree)
-    Sq = A.Sq
-    M = steenrod_module.FiniteSteenrodModule(p=3)
+    degree = 75
+    p = 2
+    algebra_type = "AdemAlgebra"
+    filename = "%s%s_%s" % (algebra_type, p, degree)
+    A = cAlgebra.getAlgebra(algebra_type, p=p, max_degree=degree)
+    # P = A.P
+    # bP = A.py_algebra.bP
+    # b = A.py_algebra.b()
+    M = steenrod_module.FiniteSteenrodModule(p=p)
     x0 = M.add_basis_element("x0", 0)
     M.validate()
-    cM = cFiniteDimensionalModule.toC(M)
+    cM = cFiniteDimensionalModule.toC(M, algebra_type)
     res = resolve(M, degree)
-    print("done resolving")
-    # print(res.contents.modules[2].contents.max_generator_degree)
-    res_modules = []
+    # print("done resolving")
+    # # print(res.contents.modules[2].contents.max_generator_degree)
+    # res_modules = []
     # for i in range(degree-1):
-    #     print(i)
     #     F = cFreeModule.fromC(res.contents.modules[i+1], A, "x" + str(i) + "_")
-    #     print("fromC")
     #     res_modules.append(F)
     #     globals()["F" + str(i)] = F
     #     for i in F.gens:
     #         globals()[i] = F.get_generator(i)
 
-    # for i in range(1, degree):
+    # for i in range(1, degree-1):
     #     globals()["d" + str(i)] = cFreeModuleHomomorphism.fromC(res.contents.differentials[i+1], res_modules[i], res_modules[i-1])
 
+    #printDimensionsToFile(res, "output_data/%s.json" % filename)
 
 
     # for i in range(8):

@@ -87,7 +87,7 @@ def adem_generic(A, bockstein, B, *, p):
     result = {}
     for e1 in range(1 + bockstein):
         e2 = bockstein - e1
-        for j in range(1 + (A - e1)//p):
+        for j in range(1 + A//p):
             coeff = combinatorics.binomial_odd((B-j) * (p-1) - 1 + e1, A - p*j - e2, p)
             coeff *= (-1)**(A+j + e2)
             coeff = coeff % p
@@ -95,24 +95,6 @@ def adem_generic(A, bockstein, B, *, p):
                 result[(e1, A+B, e2)] = coeff
             elif coeff != 0 and j != 0:
                 result[(e1, A+B-j, e2, j, 0)] = coeff 
-    # for j in range(1 + (A-0)//p):
-    #     coeff = combinatorics.binomial_odd((B-j) * (p-1) - 1 + bockstein, A - p*j, p)
-    #     coeff *= (-1)**(A+j-0)
-    #     coeff = coeff % p
-    #     if coeff != 0 and j == 0:
-    #         result[(bockstein, A+B, 0)] = coeff
-    #     elif coeff != 0 and j != 0:
-    #         result[(bockstein, A+B-j, 0, j, 0)] = coeff
-
-    # if bockstein == 1:
-    #     for j in range(1 + (A-1)//p):
-    #         coeff = combinatorics.binomial_odd((B-j) * (p-1) - 1 + 1 - 1, A - p*j - 1, p)
-    #         coeff *= (-1)**(A+j-1)
-    #         coeff = coeff % p
-    #         if coeff != 0 and j == 0:
-    #             result[(0, A+B, 1)] = coeff
-    #         if coeff != 0 and j != 0:
-    #             result[(0, A+B-j, 1, j, 0)] = coeff
     return result
 
 def adem(a, b, c=None, *, algebra):

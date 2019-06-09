@@ -21,7 +21,7 @@
  * Private fields:
  *      vectorImplementation -- A bundle of function pointers for the arithmetic. The arithmetic operations are different at 2 vs not 2
  *                              because at 2 we can just bit xor to add, whereas with other primes we have to do a bit more work.
- *      number_of_limbs      -- A convenience field. Equal to ceil((dimension + offset)/entriesPer64Bits), also equal to size/sizeof(uint64)
+ *      number_of_limbs      -- A convenience field. Equal to ceil((dimension + offset/bit_length)/entriesPer64Bits), also equal to size/sizeof(uint64)
  *      limbs                -- The actual backing for the vector.
  */ 
           
@@ -42,6 +42,7 @@ int array_toString(char *buffer, uint *A, uint length){
     for (uint i = 0; i < length; i++) {
         len += sprintf(buffer + len, "%d, ", A[i]);
     }
+    len -=2; // get rid of trailing ", "
     len += sprintf(buffer + len, "]");
     return len;
 }
@@ -188,7 +189,8 @@ size_t Vector_getSize(uint p, uint dimension, uint offset){
  */
 uint Vector_getPaddedDimension(uint p, uint dimension, uint offset){
     uint entries_per_limb = getEntriesPer64Bits(p);
-    return ((dimension + offset + entries_per_limb - 1)/entries_per_limb)*entries_per_limb;
+    uint bit_length = getBitlength(p);
+    return ((dimension + offset/bit_length + entries_per_limb - 1)/entries_per_limb)*entries_per_limb;
 }
 
 /**
@@ -344,8 +346,9 @@ uint Vector_getEntry(Vector *vector, uint index){
     assert(vector != NULL);
     assert(index < vector->dimension);
     VectorPrivate *v = (VectorPrivate*) vector;    
+    uint bit_length = getBitlength(v->implementation->p);    
     uint64 bit_mask = getBitMask(v->implementation->p);
-    LimbBitIndexPair limb_index = getLimbBitIndexPair(v->implementation->p, index + v->offset);
+    LimbBitIndexPair limb_index = getLimbBitIndexPair(v->implementation->p, index + v->offset/bit_length);
     uint64 result = v->limbs[limb_index.limb];
     result >>= limb_index.bit_index;
     result &= bit_mask;
@@ -356,8 +359,9 @@ void Vector_setEntry(Vector *vector, uint index, uint value){
     assert(vector != NULL);
     assert(index < vector->dimension);
     VectorPrivate *v = (VectorPrivate*) vector;    
+    uint bit_length = getBitlength(v->implementation->p);    
     uint64 bit_mask = getBitMask(v->implementation->p);
-    LimbBitIndexPair limb_index = getLimbBitIndexPair(v->implementation->p, index + v->offset);
+    LimbBitIndexPair limb_index = getLimbBitIndexPair(v->implementation->p, index + v->offset/bit_length);
     uint64 *result = &(v->limbs[limb_index.limb]);
     *result &= ~(bit_mask << limb_index.bit_index);
     *result |= (((uint64)value) << limb_index.bit_index);
@@ -377,7 +381,8 @@ void Vector_slice(Vector *result, Vector *source, uint start, uint end){
         r->limbs = NULL;
         return;    
     }
-    LimbBitIndexPair limb_index = getLimbBitIndexPair(r->implementation->p, start + source->offset);
+    uint bit_length = getBitlength(s->implementation->p);
+    LimbBitIndexPair limb_index = getLimbBitIndexPair(r->implementation->p, start + source->offset/bit_length);
     r->offset = limb_index.bit_index;
     r->size = Vector_getSize(r->implementation->p, r->dimension, r->offset);
     r->number_of_limbs = r->size/sizeof(uint64);
@@ -429,7 +434,8 @@ void VectorGeneric_addBasisElement(Vector *target, uint index, uint coeff){
     assert(index < target->dimension);
     VectorPrivate *t = (VectorPrivate*) target;    
     uint64 bit_mask = getBitMask(t->implementation->p);
-    LimbBitIndexPair limb_index = getLimbBitIndexPair(t->implementation->p, index + target->offset);
+    uint bit_length = getBitlength(t->implementation->p);    
+    LimbBitIndexPair limb_index = getLimbBitIndexPair(t->implementation->p, index + target->offset/bit_length);
     uint64 *result = &(t->limbs[limb_index.limb]);
     uint64 new_entry = *result >> limb_index.bit_index;
     new_entry &= bit_mask;
@@ -488,7 +494,8 @@ void VectorGeneric_scale(Vector *target, uint coeff){
 void Vector2_addBasisElement(Vector *target, uint index, uint coeff){
     assert(index < target->dimension);
     VectorPrivate *t = (VectorPrivate*) target;    
-    LimbBitIndexPair limb_index = getLimbBitIndexPair(t->implementation->p, index + target->offset);
+    uint bit_length = getBitlength(t->implementation->p);
+    LimbBitIndexPair limb_index = getLimbBitIndexPair(t->implementation->p, index + target->offset/bit_length);
     uint64 *result = &(t->limbs[limb_index.limb]);
     *result ^= ((uint64)coeff << limb_index.bit_index);
 }
@@ -512,12 +519,12 @@ void Vector2_addArray(Vector *target, uint *source, uint c __attribute__((unused
 }
 
 void Vector2_add(Vector *target, Vector *source, uint coeff){
-    assert(
-        target->dimension == source->dimension 
-        && target->offset == source->offset 
-    );    
+    assert(target->dimension == source->dimension);
+    assert(target->offset == source->offset);
     VectorPrivate *t = (VectorPrivate*) target;
-    VectorPrivate *s = (VectorPrivate*) source;    
+    VectorPrivate *s = (VectorPrivate*) source;
+    assert(t->implementation == s->implementation);
+    uint bit_length = getBitlength(t->implementation->p); 
     uint64 *target_ptr = t->limbs;
     uint64 *source_ptr = s->limbs;
     if(t->number_of_limbs == 0){
@@ -528,7 +535,7 @@ void Vector2_add(Vector *target, Vector *source, uint coeff){
         source_limb = *source_ptr;
         uint64 bit_mask = -1;
         uint bit_min = source->offset;
-        uint bit_max = (source->offset + source->dimension) % 64;
+        uint bit_max = (source->offset + source->dimension * bit_length) % 64;
         bit_max = bit_max ? bit_max : 64;
         if(bit_max - bit_min < 64){
             bit_mask = (1LL << (bit_max - bit_min)) - 1;
@@ -552,7 +559,7 @@ void Vector2_add(Vector *target, Vector *source, uint coeff){
     source_limb = *source_ptr;
     // Mask out high order bits
     uint64 bit_mask = -1;
-    uint bit_max = (source->offset + source->dimension) % 64;
+    uint bit_max = (source->offset + source->dimension*bit_length) % 64;
     if(bit_max){
         bit_mask = (1LL<<bit_max) - 1;
     }

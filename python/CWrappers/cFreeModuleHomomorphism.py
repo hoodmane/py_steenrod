@@ -2,8 +2,7 @@ import os,sys
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 from ctypes_wrap import *
 import cFpVector
-import cMilnorBasisElement
-import cMilnorAlgebra
+import cAlgebra
 import cFreeModule
 import steenrod
 import steenrod_module
@@ -29,7 +28,7 @@ class cHomomorphism:
         self.target = target
     
     def __call__(self, input):
-        return apply(self, input)
+        return self.apply(input)
 
     def toMatrix(f, degree):
         c_source_cast = cast(f.source.c_module, POINTER(c_Module))
@@ -41,32 +40,32 @@ class cHomomorphism:
         result = M.unpack()
         M.free()
         return result
-
+        
+    def apply(f, element):
+        degree = element.degree()
+        c_source = f.source.c_module
+        c_target_cast = cast(f.target.c_module, POINTER(c_Module))
+        output_dimension = CSteenrod.FreeModule_getDimension(c_target_cast, degree)
+        c_result = cFpVector.cVector(f.source.p, output_dimension)
+        for ((elt_op, gen), coeff) in element.items():
+            elt_op_deg = elt_op.degree()
+            elt_op = next(iter(elt_op))
+            elt_op_idx = f.source.c_algebra.idxFromPy(elt_op)
+            gen_deg = f.source.gens[gen]
+            gen_idx = f.source.generator_indices[gen]
+            # print(elt_op_deg, elt_op_idx, gen_deg, gen_idx)
+            elt_idx = CSteenrod.FreeModule_operationGeneratorToIndex(f.source.c_module, elt_op_deg, elt_op_idx, gen_deg, gen_idx)
+            # print(elt_op, gen)
+            # print("degree: ", degree, "idx: ", elt_idx)
+            CSteenrod.FreeModuleHomomorphism_applyToBasisElement(f.cf, c_result.vector, coeff, degree, elt_idx)
+            # print(free_module_elt_from_c(f.target, degree, c_result))
+        result = cFreeModule.elementFromC(f.target, degree, c_result.vector)
+        c_result.free()
+        return result
 
 def fromC(cf, S, T):
     f = cHomomorphism(cf=cf, source=S, target=T)
     return f
-
-def apply(f, element):
-    degree = element.degree()
-    c_source = f.source.c_module
-    c_target_cast = cast(f.target.c_module, POINTER(c_Module))
-    output_dimension = CSteenrod.FreeModule_getDimension(c_target_cast, degree)
-    c_result = cFpVector.cVector(f.source.p, output_dimension)
-    for ((elt_op, gen), coeff) in element.items():
-        elt_op_deg = elt_op.degree()
-        elt_op = next(iter(elt_op))
-        elt_op_idx = cMilnorBasisElement.toIndex(f.source.c_algebra, elt_op)
-        gen_deg = f.source.gens[gen]
-        gen_idx = f.source.generator_indices[gen]
-        elt_idx = CSteenrod.FreeModule_operationGeneratorToIndex(f.source.c_module, elt_op_deg, elt_op_idx, gen_deg, gen_idx)
-        # print(elt_op, gen)
-        # print("degree: ", degree, "idx: ", elt_idx)
-        CSteenrod.FreeModuleHomomorphism_applyToBasisElement(f.cf, c_result.vector, coeff, degree, elt_idx)
-        # print(free_module_elt_from_c(f.target, degree, c_result))
-    result = cFreeModule.elementFromC(f.target, degree, c_result.vector)
-    c_result.free()
-    return result
 
 if __name__ == "__main__":
     A = steenrod.MilnorAlgebra(p=2)

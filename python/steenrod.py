@@ -153,7 +153,7 @@ class AdemAlgebra:
     def __repr__(self):
         result = "AdemAlgebra(p=%s" % self.p
         if self.generic != (self.p != 2):
-            result += ", generic=" + self.generic
+            result += ", generic=%s" % self.generic
         result += ")"
         return result
         

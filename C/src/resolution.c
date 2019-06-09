@@ -125,6 +125,7 @@ void Resolution_step(Resolution *res, uint homological_degree, uint degree){
             );
     }
     // Do the work
+    // printf("(%d, %d)\n", homological_degree, degree);
     Resolution_generateOldKernelAndComputeNewKernel(res, homological_degree, degree);
 
     // Report the answers.
@@ -183,6 +184,7 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     FreeModuleHomomorphism *current_differential  = resolution->differentials[homological_degree + 1];
     FreeModuleHomomorphism *previous_differential = resolution->differentials[homological_degree];
     FreeModule *source = current_differential->source;
+
     uint source_dimension = module_getDimension(&current_differential->source->module, degree);
     uint target_dimension = module_getDimension(current_differential->target, degree);
     assert(current_differential->source->number_of_generators_in_degree[degree] == 0);
@@ -201,25 +203,27 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     uint columns = padded_target_dimension + source_dimension + rows;
     char matrix_memory[Matrix_getSize(p, rows, columns)];
     Matrix *full_matrix = Matrix_initialize(matrix_memory, p, rows, columns);
-
     // For the first stage we just want the part of size source_dimension x (padded_target_dimension + source_dimension).
     // Slice matrix out of full_matrix.
     char slice_matrix_memory[Matrix_getSliceSize(p, source_dimension)];
     Matrix *matrix = Matrix_slice(full_matrix, slice_matrix_memory, 0, source_dimension, 0, padded_target_dimension + source_dimension);
     FreeModuleHomomorphism_getMatrix(current_differential, matrix, degree);
+
     // Write the identity matrix into the right block
     for(uint i = 0; i < source_dimension; i++){
         Vector_setEntry(matrix->matrix[i], padded_target_dimension + i, 1);
     }
+
     // Row reduce
     int column_to_pivot_row[matrix->columns];
-    if(homological_degree == 1 && degree == 76){
-        Matrix_printSlice(matrix, target_dimension, padded_target_dimension);
-    }    
+    // if(homological_degree <= 2 && degree == 17){
+    //     printf("\n%d\n",homological_degree);
+    //     Matrix_printSlice(matrix, target_dimension, padded_target_dimension);
+    // }    
     rowReduce(matrix, column_to_pivot_row, 0, 0);//target_dimension, padded_target_dimension);
-    if(homological_degree == 1 && degree == 76){
-        Matrix_printSlice(matrix, target_dimension, padded_target_dimension);
-    }    
+    // if(homological_degree <= 2 && degree == 17){
+    //     Matrix_printSlice(matrix, target_dimension, padded_target_dimension);
+    // }    
 
 
     // Stage 1: Find kernel of current differential
@@ -268,6 +272,7 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
             // Write new image to full_matrix
             Vector_slice(slice, full_matrix->matrix[current_target_row], 0, previous_cycles->kernel->columns);
             Vector_assign(slice, new_image);
+            // Vector_print("    new_image: %s\n", slice);
             // Write elementary basis vector into right block of full_matrix
             Vector_slice(slice, full_matrix->matrix[current_target_row], padded_target_dimension, full_matrix->columns);
             Vector_setToZero(slice);
@@ -313,6 +318,21 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     resolution->internal_degree_to_resolution_stage[degree] ++;
 }
 
+uint Resolution_gradedDimensionString(char *buffer, Resolution *resolution){
+    uint len = 0;
+    len += sprintf(buffer + len, "[\n");
+    for(uint i = 0; i < resolution->max_degree; i++){
+        len += sprintf(buffer + len, "  ");
+        len += array_toString(buffer + len, 
+                    &resolution->modules[i+1]->number_of_generators_in_degree[i], 
+                    resolution->max_degree - i
+                );
+        len += sprintf(buffer + len, ",\n");
+    }
+    len -= 2;
+    len += sprintf(buffer + len, "\n]\n");
+    return len;
+}
 
 Resolution *testResolution(
     uint degree, 
@@ -330,9 +350,9 @@ Resolution *testResolution(
     // uint p_part[2] = {2,1};
     // uint p_part_length = 2;
     // bool truncated = true;
-    // Profile *P = NULL; // Profile_construct(generic, 0, NULL, p_part_length, p_part, truncated);
-    // MilnorAlgebra *A = MilnorAlgebra_construct(p, generic, P);
-    AdemAlgebra *A = AdemAlgebra_construct(p, generic, false);
+    Profile *P = NULL; // Profile_construct(generic, 0, NULL, p_part_length, p_part, truncated);
+    MilnorAlgebra *A = MilnorAlgebra_construct(p, generic, P);
+    // AdemAlgebra *A = AdemAlgebra_construct(p, generic, false);
     Algebra *algebra = (Algebra*) A;
     algebra_computeBasis(algebra, degree);
 
@@ -357,36 +377,51 @@ Resolution *testResolution(
     // degree--;
     Resolution *res = Resolution_construct(module, degree, addClass, addStructline);
     Resolution_resolveThroughDegree(res, degree);
-    for(int i = degree - 1; i >= 0; i--){
-        printf("stage %*d: ", 2, i);
-        array_print("%s\n", &res->modules[i+1]->number_of_generators_in_degree[i], degree - i);
-    }
+    // for(int i = degree - 1; i >= 0; i--){
+    //     printf("stage %*d: ", 2, i);
+    //     array_print("%s\n", &res->modules[i+1]->number_of_generators_in_degree[i], degree - i);
+    // }
     return res;
-}
-
-typedef struct {
-    uint a;
-    uint b;
-    uint *c;
-} testStruct;
-
-testStruct *test(){
-    testStruct *result = malloc(sizeof(testStruct) + 2*sizeof(int));
-    result->a = 50;
-    result->b = 12;
-    result->c = (uint*)(result + 1);
-    result->c[0] = 17;
-    result->c[1] = 33;
-    return result;
 }
 
 /**/
 int main(){
-    // Algebra * A = (Algebra*)MilnorAlgebra_construct(5, true, NULL);
-    // MilnorAlgebra_generateBasis(A, 100);
-    // printf("constructed\n");
-    // algebra_computeBasis(A, 10);
-    Resolution *res = testResolution(20, NULL, NULL);
+    uint p = 3;
+    uint degree = 70;
+    bool generic = p!=2;
+    initializePrime(p);
+    // uint p_part[3] = {3,2,1};
+    // uint p_part_length = 3;
+    // uint p_part[2] = {2,1};
+    // uint p_part_length = 2;
+    // bool truncated = true;
+    Profile *P = NULL; // Profile_construct(generic, 0, NULL, p_part_length, p_part, truncated);
+    MilnorAlgebra *A = MilnorAlgebra_construct(p, generic, P);
+    // AdemAlgebra *A = AdemAlgebra_construct(p, generic, false);
+    Algebra *algebra = (Algebra*) A;
+    algebra_computeBasis(algebra, degree);
+
+    // char buffer[10000];
+    // for(int i = 0; i < degree; i++){
+    //     MilnorBasisElement_list basis_list = MilnorAlgebra_getBasis(A, i);
+    //     printf("degree: %d \n", i);
+    //     for(int i = 0; i < basis_list.length; i++){
+    //         MilnorBasisElement v = basis_list.list[i];
+    //         MilnorBasisElement_toString(buffer, &v);
+    //         printf("  %d: '%s'\n", i , buffer);
+    //     }
+    //     printf("\n");
+    // }
+
+    uint max_generator_degree = 0 + 1;
+    uint graded_dimension[5] = {1,0,1};
+    FiniteDimensionalModule *module = 
+        FiniteDimensionalModule_construct(algebra, max_generator_degree, graded_dimension);
+    // uint output[1] = {1};
+    // FiniteDimensionalModule_setAction(module, 2, 0, 0, 0, output);
+    // degree--;
+    Resolution *res = Resolution_construct(module, degree, NULL, NULL);
+    Resolution_resolveThroughDegree(res, degree);
     FiniteDimensionalModule_free((FiniteDimensionalModule*)res->module);
     res->module = NULL;
     // MilnorAlgebra_free((MilnorAlgebra*)res->algebra);

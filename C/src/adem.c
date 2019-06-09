@@ -50,6 +50,7 @@ typedef struct {
 } AdemAlgebraInternal;
 
 void AdemAlgebra__initializeFields(AdemAlgebraInternal *algebra, uint p, bool generic, bool unstable);
+uint AdemAlgebra__generateName(AdemAlgebra *algebra); // defined in adem_io
 AdemAlgebra *AdemAlgebra_construct(uint p, bool generic, bool unstable){
     uint num_products;
     if(generic){
@@ -70,6 +71,7 @@ AdemAlgebra *AdemAlgebra_construct(uint p, bool generic, bool unstable){
     assert((char*)(inner_algebra->product_list->indices + num_products) == ((char *)algebra) + algebra_size);
 
     AdemAlgebra__initializeFields(algebra, p, generic, unstable);
+    AdemAlgebra__generateName((AdemAlgebra*)algebra);
     return (AdemAlgebra*)algebra;    
 }
 
@@ -428,7 +430,9 @@ AdemBasisElement *AdemAlgebra_basisElement_fromIndex(AdemAlgebra *public_algebra
     AdemAlgebraInternal *algebra = (AdemAlgebraInternal *)public_algebra;
     assert(degree < public_algebra->algebra.max_degree);
     assert(index < algebra->basis_table[degree].length);
-    return algebra->basis_table[degree].list[index];
+    AdemBasisElement *result = algebra->basis_table[degree].list[index];
+    assert(AdemAlgebra_basisElement_toIndex(public_algebra, result) == index);
+    return result;
 }
 
 uint AdemAlgebra_basisElement_toIndex(AdemAlgebra *public_algebra,  AdemBasisElement *b){
@@ -462,6 +466,7 @@ void AdemAlgebra_multiply(Algebra *this, Vector *result, uint coeff,
     AdemAlgebra *algebra = (AdemAlgebra*)this;
     assert(r_index < AdemAlgebra_getDimension(this, r_degree, excess));
     assert(s_index < AdemAlgebra_getDimension(this, s_degree, excess));
+
     if(s_degree == 0){
         // If s is of length 0 then max_idx "r->P_length" is off the edge of the list and it segfaults.
         // Avoid this by returning early in this case.
@@ -470,21 +475,35 @@ void AdemAlgebra_multiply(Algebra *this, Vector *result, uint coeff,
     }
     AdemBasisElement *r = AdemAlgebra_basisElement_fromIndex(algebra, r_degree, r_index);
     AdemBasisElement *s = AdemAlgebra_basisElement_fromIndex(algebra, s_degree, s_index);
-    if(algebra->generic
-        && (r->bocksteins >> (r->P_length)) & (s->bocksteins & 1)){
-            return;
-    }
     AdemBasisElement monomial;
     monomial.P_length = r->P_length + s->P_length;
     monomial.degree = r->degree + s->degree;
+
     monomial.bocksteins = 0;
+    if(algebra->generic
+        && (r->bocksteins >> (r->P_length)) & (s->bocksteins & 1)){
+        // If there is a bockstein at the end of r and one at the beginning of s, these run into each other
+        // and the output is 0.
+        return;
+    } else if(algebra->generic){
+        monomial.bocksteins = r->bocksteins;
+        monomial.bocksteins |= s->bocksteins << (r->P_length);
+    }
+
+    if(algebra->generic && s->P_length == 0){ 
+        // In this case s is just a bockstein. This causes the same trouble as the 
+        // s is the identity case we already covered (because s->P_length == 0), 
+        // so we just handle it separately.
+        monomial.Ps = r->Ps;
+        uint idx = AdemAlgebra_basisElement_toIndex(algebra, &monomial);
+        Vector_addBasisElement(result, idx, coeff);
+        return;
+    }
     uint memory[monomial.P_length];
     memcpy(memory, r->Ps, r->P_length * sizeof(uint));
     memcpy(memory + r->P_length, s->Ps, s->P_length * sizeof(uint));
     monomial.Ps = memory;
     if(algebra->generic){
-        monomial.bocksteins = r->bocksteins;
-        monomial.bocksteins |= s->bocksteins << (r->P_length);
         AdemAlgebra__makeMonoAdmissibleGeneric(algebra, result, coeff, &monomial);
     } else {
         AdemAlgebra__makeMonoAdmissible2(algebra, result, &monomial, r->P_length - 1, r->P_length);
@@ -589,7 +608,7 @@ void AdemAlgebra__makeMonoAdmissibleGeneric(AdemAlgebra *algebra, Vector *result
             // Two bocksteins run into each other.
             continue;
         }
-        for(uint j=0; j <= (x-e1)/p; j++){
+        for(uint j=0; j <= x/p; j++){
             uint c = BinomialOdd(p, (y-j) * (p-1) + e1 - 1, x - p*j - e2);
             if(c == 0){
                 continue;
@@ -605,11 +624,9 @@ void AdemAlgebra__makeMonoAdmissibleGeneric(AdemAlgebra *algebra, Vector *result
                 monomial->Ps[idx] = x + y;
                 memcpy(buffer, monomial->Ps, (idx + 1)*sizeof(uint));
                 memcpy(buffer + idx + 1, monomial->Ps + idx + 2, (monomial->P_length - idx - 2)*sizeof(uint));
-                AdemBasisElement temp_mono;
                 temp_mono.degree = monomial->degree;
                 temp_mono.P_length = monomial->P_length - 1;
                 temp_mono.Ps = buffer;
-                
                 temp_mono.bocksteins = monomial->bocksteins;
                 // Mask out bottom idx bits of original bocksteins.
                 temp_mono.bocksteins &= ((1<<(idx + 1)) - 1);
@@ -635,6 +652,8 @@ void AdemAlgebra__makeMonoAdmissibleGeneric(AdemAlgebra *algebra, Vector *result
             AdemAlgebra__makeMonoAdmissibleGeneric(algebra, result, c, &temp_mono);
         }
     }
+    monomial->Ps[first_inadmissible_index] = x;
+    monomial->Ps[first_inadmissible_index + 1] = y;
 }
 
 // for e1 in range(1 + bockstein):
@@ -650,10 +669,10 @@ void AdemAlgebra__makeMonoAdmissibleGeneric(AdemAlgebra *algebra, Vector *result
 
 /**
 int main(){
-    char buffer[2000];
+    char buffer[5000];
     uint p = 3;
     bool generic = p != 2;
-    uint max_degree = 30;    
+    uint max_degree = 100;    
     AdemAlgebra *algebra = AdemAlgebra_construct(p, generic, false);
     // algebra->sort_order = AdemAlgebra_excessSortOrder;
     AdemAlgebra_generateBasis((Algebra*)algebra, max_degree);
@@ -668,10 +687,12 @@ int main(){
     // }
 
     AdemBasisElement *A, *B;
-    A = AdemAlgebra_basisElement_fromString(algebra, "P4 b");
+    A = AdemAlgebra_basisElement_fromString(algebra, "P12 P4 bP1");
+    // A = AdemAlgebra_basisElement_fromString(algebra, "P13");
     // AdemBasisElement unit = (AdemBasisElement){0};
-    // B = &unit;
-    B = AdemAlgebra_basisElement_fromString(algebra, "P2");
+    // A = &unit;
+    B = AdemAlgebra_basisElement_fromString(algebra, "P1");
+    // B = AdemAlgebra_basisElement_fromString(algebra, "P6 b P1");
     uint A_idx = AdemAlgebra_basisElement_toIndex(algebra, A);
     uint B_idx = AdemAlgebra_basisElement_toIndex(algebra, B);
     

@@ -2,18 +2,17 @@ import os,sys
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 from ctypes_wrap import *
 import cFpVector
-import cMilnorAlgebra
+import cAlgebra
 import steenrod
 import steenrod_module
 from FreeModule import *
 
 
-
-def toC(module):
+def toC(module, algebra_type):
     module.generate_milnor_action()
-    max_degree = max(module.gens.values())
-    module.c_algebra = cMilnorAlgebra.cMilnorAlgebra(p=module.milnor_algebra.p, max_degree=max_degree+10)
-    number_of_basis_elements_in_degree = [0] * (max_degree + 1)
+    max_degree = max(module.gens.values()) + 1
+    module.c_algebra = cAlgebra.getAlgebra(algebra_type, p=module.milnor_algebra.p, max_degree=max_degree)
+    number_of_basis_elements_in_degree = [0] * max_degree
     basis_element_indices = {}
     index_to_basis_element = {}
     for (b, degree) in module.gens.items():
@@ -21,7 +20,7 @@ def toC(module):
         number_of_basis_elements_in_degree[degree] += 1
         basis_element_indices[b] = index
         index_to_basis_element[(degree, index)] = b
-    c_list_of_uints_type = (max_degree + 1) * c_uint
+    c_list_of_uints_type = max_degree * c_uint
     c_number_of_basis_elements_in_degree = c_list_of_uints_type(*number_of_basis_elements_in_degree)
 
     module.c_algebra.generateBasis(max_degree)
@@ -47,7 +46,7 @@ def toC(module):
             c_vector
         )
         c_vector.free()
-    return module
+    return c_module
 
 def act(module, op, gen):
     c_module = module.c_module

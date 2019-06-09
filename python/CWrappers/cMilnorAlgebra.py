@@ -3,8 +3,6 @@ sys.path.insert(1, os.path.join(sys.path[0], '..'))
 from ctypes import *
 from ctypes_wrap import *
 from cFpVector import *
-import cMilnorBasisElement
-
 import steenrod
 
 class cMilnorBasisElement:
@@ -137,23 +135,30 @@ class cMilnorElement:
         self.cVect.free()
 
 class cMilnorAlgebra:
-    def __init__(self, p, generic=None, max_degree=0):
+    def __init__(self, p, generic=None, max_degree=None):
         if generic is None:
             generic = p != 2
         self.p = p
         self.generic = generic
-        self.c_algebra =  CSteenrod.MilnorAlgebra_construct(p, generic, POINTER(c_Profile)())
+        if (p, generic) in cMilnorAlgebra.cAlgebras:
+            self.c_algebra = cMilnorAlgebra.cAlgebras[(p, generic)]
+        else:
+            self.c_algebra =  CSteenrod.MilnorAlgebra_construct(p, generic, POINTER(c_Profile)())
+            cMilnorAlgebra.cAlgebras[(p, generic)] = self.c_algebra
         self.py_algebra = steenrod.MilnorAlgebra.getInstance(p, generic)
         self.c_alg_ptr = cast(self.c_algebra, POINTER(c_Algebra))
+        self.basis_type = cMilnorBasisElement
         self.max_degree = 0
-        self.generateBasis(max_degree)
         self.bases = {}
         self.Sq = self.py_algebra.Sq
         self.P = self.py_algebra.P
         self.Q = self.py_algebra.Q
+        if max_degree:
+            self.generateBasis(max_degree)        
 
     def generateBasis(self, max_degree):
         if(max_degree > self.max_degree):
+            print("py generating basis:", max_degree)
             CSteenrod.MilnorAlgebra_generateBasis(self.c_alg_ptr, max_degree)
             self.max_degree = max_degree
 
@@ -195,6 +200,9 @@ class cMilnorAlgebra:
         result.free()
         return py_res
 
+    def basisEltFromIdx(self, degree, idx):
+        return self.getBasis(degree)[idx]        
+
     def idxFromPy(self, b):
         bitstring = 0
         p_part = b
@@ -216,7 +224,8 @@ class cMilnorAlgebra:
         degree = self.py_algebra.basis_q_degree(b) + self.py_algebra.basis_p_degree(b)
         idx = self.idxFromPy(b)
         return self.getBasis(degree)[idx]
-                
+
+cMilnorAlgebra.cAlgebras = {}
 
 
 

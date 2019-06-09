@@ -54,9 +54,11 @@ class cAdemBasisElement:
         if self.algebra.generic:
             bocksteins = [0] * (length + 1)
             bitstring = self.c_elt.contents.bocksteins
+            i = 0
             while bitstring != 0:
                 if bitstring & 1 != 0:
                     bocksteins[i] = 1
+                i += 1
                 bitstring >>= 1
         Ps = [0] * length
         for i in range(length):
@@ -66,7 +68,8 @@ class cAdemBasisElement:
             result[0::2] = bocksteins
             result[1::2] = Ps
         else:
-            result = tuple(Ps)
+            result = Ps
+        result = tuple(result)
         self.py_rep = result
         return result
 
@@ -139,20 +142,22 @@ class cAdemElement:
         self.cVect.free()
 
 class cAdemAlgebra:
-    def __init__(self, p, generic=None, max_degree=0):
+    def __init__(self, p, generic=None, max_degree = None):
         if generic is None:
             generic = p != 2
         self.p = p
         self.generic = generic
-        self.c_algebra =  CSteenrod.AdemAlgebra_construct(p, generic, POINTER(c_Profile)())
+        self.c_algebra =  CSteenrod.AdemAlgebra_construct(p, generic, False)    
         self.py_algebra = steenrod.AdemAlgebra.getInstance(p, generic)
         self.c_alg_ptr = cast(self.c_algebra, POINTER(c_Algebra))
         self.max_degree = 0
-        self.generateBasis(max_degree)
+        self.basis_type = cAdemBasisElement
         self.bases = {}
         self.Sq = self.py_algebra.Sq
         self.P = self.py_algebra.P
         self.b = self.py_algebra.b
+        if max_degree:
+            self.generateBasis(max_degree)
 
     def generateBasis(self, max_degree):
         if(max_degree > self.max_degree):
@@ -197,6 +202,9 @@ class cAdemAlgebra:
         # result.free()
         return py_res
 
+    def basisEltFromIdx(self, degree, idx):
+        return self.getBasis(degree)[idx]
+
     def idxFromPy(self, b):
         bitstring = 0
         p_part = b
@@ -217,7 +225,8 @@ class cAdemAlgebra:
         degree = self.py_algebra.basis_q_degree(b) + self.py_algebra.basis_p_degree(b)
         idx = self.idxFromPy(b)
         return self.getBasis(degree)[idx]
-                
+
+cAdemAlgebra.cAlgebras = {}                
 
 
 
@@ -231,4 +240,3 @@ if __name__ == "__main__":
     Sq = A.py_algebra.Sq
     P = A.py_algebra.P
     #A3 = makeCAdemAlgebra(p=3, dim=200)
-    

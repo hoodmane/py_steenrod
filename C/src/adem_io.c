@@ -2,6 +2,21 @@
 #include <string.h>
 #include "adem.h"
 
+
+uint AdemAlgebra__generateName(AdemAlgebra *algebra){
+    char buffer[1000];
+    uint len = 0;
+    len += sprintf(buffer + len, "AdemAlgebra(p=%d", algebra->algebra.p);
+    if(algebra->generic != (algebra->algebra.p != 2)){
+        len += sprintf(buffer + len, ", generic=%s", algebra->generic ? "true" : "false");
+    }
+    len += sprintf(buffer + len, ")");
+    char *result = malloc((len + 1) * sizeof(char));
+    memcpy(result, buffer, (len + 1) * sizeof(char));
+    algebra->algebra.name = result;
+    return len;
+}
+
 uint AdemAlgebra_basisElement_toKey(char *buffer, AdemBasisElement *b){
     // Note that we ignore the degree and excess fields.
     // These are calculated fields, and we don't want to force calculating code to
@@ -41,7 +56,7 @@ uint AdemAlgebra_basisElement_toString(char *buffer, AdemAlgebra *algebra, AdemB
     if(bockstein && bockstein){
         len += sprintf(buffer + len, "b");
     } else if(b->P_length == 0){
-        buffer[0] = '0';
+        buffer[0] = '1';
         buffer[1] = '\0';
         len = 1;
     } else { // delete trailing space.

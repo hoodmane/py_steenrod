@@ -78,7 +78,7 @@ void MilnorAlgebra__generateName(MilnorAlgebra *A){
     uint len = 0;
     len += sprintf(buffer + len, "MilnorAlgebra(p=%d", A->algebra.p);
     if(A->generic != (A->algebra.p != 2)){
-        len += sprintf(buffer + len, ", %s", A->generic ? "true" : "false");
+        len += sprintf(buffer + len, ", generic=%s", A->generic ? "true" : "false");
     }
     if(A->profile.restricted){
         len += sprintf(buffer + len, ", ");

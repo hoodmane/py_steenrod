@@ -885,6 +885,7 @@ void MilnorAlgebra_multiply(Algebra *this, Vector *result, uint coeff, uint r_de
     MilnorBasisElement r, s;
     assert(r_index < MilnorAlgebra_getDimension(this, r_degree, excess));
     assert(s_index < MilnorAlgebra_getDimension(this, s_degree, excess));
+
     r = MilnorAlgebra_basisElement_fromIndex((MilnorAlgebra*)algebra, r_degree, r_index);
     s = MilnorAlgebra_basisElement_fromIndex((MilnorAlgebra*)algebra, s_degree, s_index);
     uint output_degree = r_degree + s_degree;
@@ -893,6 +894,7 @@ void MilnorAlgebra_multiply(Algebra *this, Vector *result, uint coeff, uint r_de
     assert(output_degree < algebra->public_algebra.algebra.max_degree);
     uint product_array[output_dimension];
     memset(product_array, 0, output_dimension * sizeof(uint));
+
     if(algebra->public_algebra.generic){
         MilnorAlgebra__multiplyFull(algebra, product_array, r, s);
     } else {

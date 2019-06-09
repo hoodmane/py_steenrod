@@ -190,7 +190,10 @@ class Vector(dict):
     def __repr__(self):
         result = []
         items = list(self.items())
-        items.sort()
+        try:
+            items.sort()
+        except TypeError:
+            pass
         for (b,c) in items:
             if c == 1:
                 coeff = ""

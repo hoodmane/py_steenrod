@@ -141,4 +141,7 @@ C/csteen
 C/.vscode
 *.code-workspace
 
-Cemsdk/js_spectralsequences
+js_spectralsequences
+mnt
+Cemsdk/CSteenrod.wasm.map
+Cemsdk/CSteenrod.wast

@@ -29,7 +29,9 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
-#define MAX_DIMENSION 100000
+// The code will always segfault if this is 150000, so this is about as much memory
+// as I can ever stack allocate.
+#define MAX_DIMENSION 147500
 typedef unsigned long long uint64;
 typedef long long int64;
 typedef unsigned int uint;

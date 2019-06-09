@@ -32,6 +32,7 @@ def test_adem_mult():
     assert P(1) * P(1) == 2*P(2)
     assert P(1) * bP(1) == bP(2) + P(2) * beta
     assert P(2) * P(1) == Adem3.zero()
+    assert P(3) * bP(1) == bP(3,1)
 
 def test_milnor_mult():
     """
