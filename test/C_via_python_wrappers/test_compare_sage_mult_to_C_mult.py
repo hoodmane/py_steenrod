@@ -11,7 +11,7 @@ p_max_deg_pairs = [(2, 40), (3, 100), (5,200), (7,400)]
 sage_products_dict = {}
 for algebra_type in ["Adem", "Milnor"]:
     for (p, max_deg) in p_max_deg_pairs:
-        with open('output_data/sage_steenrod_mults_%s_%s_max_%s.json' % (p, algebra_type, max_deg)) as external_json:  
+        with open('output_data/sage_steenrod_mults/sage_steenrod_mults_%s_%s_max_%s.json' % (p, algebra_type, max_deg)) as external_json:  
             sage_products_dict[(algebra_type, p)] = json.load(external_json)
 
 def basis_elt_to_tuples(k):

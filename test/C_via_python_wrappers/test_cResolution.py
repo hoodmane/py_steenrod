@@ -8,10 +8,10 @@ import pytest
 from cResolution import *
 external_dims_dict = {}
 
-with open('output_data/S2-100-external.json') as external_json:  
+with open('output_data/stems/S2-100-external.json') as external_json:  
     external_dims_dict[2] = json.load(external_json)
 
-with open('output_data/S3-100-external.json') as external_json:  
+with open('output_data/stems/S3-100-external.json') as external_json:  
     external_dims_dict[3] = json.load(external_json)
 
 def getDimensions(cRes):
