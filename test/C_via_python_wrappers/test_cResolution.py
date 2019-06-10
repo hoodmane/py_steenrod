@@ -28,7 +28,7 @@ def test_resolution(algebra_type, p, degree):
     M = steenrod_module.FiniteSteenrodModule(p=p)
     x0 = M.add_basis_element("x0", 0)
     M.validate()
-    cM = cFiniteDimensionalModule.toC(M, algebra_type)
+    cFiniteDimensionalModule.toC(M, algebra_type)
     res = resolve(M, degree)
     our_dims = getDimensions(res)
     external_dims = external_dims_dict[p]

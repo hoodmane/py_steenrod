@@ -385,20 +385,46 @@ Resolution *testResolution(
 }
 
 /**/
-int main(){
-    uint p = 3;
-    uint degree = 70;
+int main(int argc, char *argv[]){
+    uint p = 2;
+    // uint degree = 70;
     bool generic = p!=2;
     initializePrime(p);
+    uint degree;
+    if(argc > 2){
+        char *end;
+        p = strtoul(argv[2], &end, 10);
+    } else {
+        p = 2;
+    }
+
+    if(argc > 3){
+        char *end;
+        degree = strtoul(argv[3], &end, 10);
+    } else {
+        degree = 50;
+    }
+
     // uint p_part[3] = {3,2,1};
     // uint p_part_length = 3;
     // uint p_part[2] = {2,1};
     // uint p_part_length = 2;
     // bool truncated = true;
-    Profile *P = NULL; // Profile_construct(generic, 0, NULL, p_part_length, p_part, truncated);
-    MilnorAlgebra *A = MilnorAlgebra_construct(p, generic, P);
-    // AdemAlgebra *A = AdemAlgebra_construct(p, generic, false);
-    Algebra *algebra = (Algebra*) A;
+    // Profile *P = NULL; // Profile_construct(generic, 0, NULL, p_part_length, p_part, truncated);
+    // MilnorAlgebra *A = MilnorAlgebra_construct(p, generic, P);
+    Algebra *algebra;
+    if(argc > 1){
+        if(strcmp(argv[1], "Adem") == 0){
+            algebra = (Algebra*) AdemAlgebra_construct(p, generic, false);
+        } else if(strcmp(argv[1], "Milnor") == 0){
+            algebra = (Algebra*)MilnorAlgebra_construct(p, generic, NULL);
+        } else {
+            printf("Unrecognized algebra '%s', using Adem by default.\n", argv[1]);
+            algebra = (Algebra*) AdemAlgebra_construct(p, generic, false);
+        }
+    } else {
+        algebra = (Algebra*) AdemAlgebra_construct(p, generic, false);
+    }
     algebra_computeBasis(algebra, degree);
 
     // char buffer[10000];
