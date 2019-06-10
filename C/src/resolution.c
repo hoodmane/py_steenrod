@@ -386,10 +386,7 @@ Resolution *testResolution(
 
 /**/
 int main(int argc, char *argv[]){
-    uint p = 2;
-    // uint degree = 70;
-    bool generic = p!=2;
-    initializePrime(p);
+    uint p;
     uint degree;
     if(argc > 2){
         char *end;
@@ -404,6 +401,10 @@ int main(int argc, char *argv[]){
     } else {
         degree = 50;
     }
+
+    // uint degree = 70;
+    bool generic = p!=2;
+    initializePrime(p);
 
     // uint p_part[3] = {3,2,1};
     // uint p_part_length = 3;
