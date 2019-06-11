@@ -376,7 +376,7 @@ Resolution *testResolution(
     // FiniteDimensionalModule_setAction(module, 2, 0, 0, 0, output);
     // degree--;
     Resolution *res = Resolution_construct(module, degree, addClass, addStructline);
-    // Resolution_resolveThroughDegree(res, degree);
+    Resolution_resolveThroughDegree(res, degree);
 
     // for(int i = degree - 1; i >= 0; i--){
     //     printf("stage %*d: ", 2, i);
