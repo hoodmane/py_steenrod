@@ -384,7 +384,7 @@ Resolution *testResolution(
     return res;
 }
 
-/**
+/**/
 int main(int argc, char *argv[]){
     uint p;
     uint degree;

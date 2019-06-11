@@ -405,10 +405,20 @@ static void AdemAlgebra__generateBasisElementToIndexMap(AdemAlgebraInternal *alg
     }
 }
 
+static void AdemAlgebra__generateMultiplicationTableGeneric(AdemAlgebraInternal *algebra, uint old_max_degree, uint max_degree);
 static void AdemAlgebra__generateMultiplicationTableGeneric_step(AdemAlgebraInternal *algebra, uint n, uint x, uint idx);
+static void AdemAlgebra__generateMultiplicationTable2(AdemAlgebraInternal *algebra, uint old_max_degree, uint max_degree);
 static void AdemAlgebra__generateMultiplicationTable2_step(AdemAlgebraInternal *algebra, uint n, uint x, uint idx);
 
 static void AdemAlgebra__generateMultiplicationTable(AdemAlgebraInternal *algebra, uint old_max_degree, uint max_degree){
+    if(algebra->public_algebra.generic){
+        // AdemAlgebra__generateMultiplicationTableGeneric(algebra, old_max_degree, max_degree);
+    } else {
+        AdemAlgebra__generateMultiplicationTable2(algebra, old_max_degree, max_degree);
+    }
+}
+
+static void AdemAlgebra__generateMultiplicationTable2(AdemAlgebraInternal *algebra, uint old_max_degree, uint max_degree){
     // degree -> first_square -> admissibile sequence idx -> result vector
     algebra->multiplication_table = realloc(
             algebra->multiplication_table,
@@ -450,24 +460,69 @@ static void AdemAlgebra__generateMultiplicationTable(AdemAlgebraInternal *algebr
         assert((char*)current_ptr_3 == (char*)top_of_table + table_size); 
         algebra->multiplication_table[n] = top_of_table;
     }
-    if(algebra->public_algebra.generic){
-        for(uint n=old_max_degree; n < max_degree; n++){       
-            for(uint x = n; x > 0; x--){
-                for(uint idx = 0; idx < AdemAlgebra_getDimension((Algebra*)algebra, n-x, -1); idx++){
-                    AdemAlgebra__generateMultiplicationTableGeneric_step(algebra, n, x, idx);
-                }
-            }         
-        }
-    } else {
-        for(uint n=old_max_degree; n < max_degree; n++){       
-            for(uint x = n; x > 0; x--){
-                for(uint idx = 0; idx < AdemAlgebra_getDimension((Algebra*)algebra, n-x, -1); idx++){
-                    AdemAlgebra__generateMultiplicationTable2_step(algebra, n, x, idx);
-                }
-            }         
-        }
+    for(uint n=old_max_degree; n < max_degree; n++){       
+        for(uint x = n; x > 0; x--){
+            for(uint idx = 0; idx < AdemAlgebra_getDimension((Algebra*)algebra, n-x, -1); idx++){
+                AdemAlgebra__generateMultiplicationTable2_step(algebra, n, x, idx);
+            }
+        }         
     }
 }
+
+static void AdemAlgebra__generateMultiplicationTableGeneric(AdemAlgebraInternal *algebra, uint old_max_degree, uint max_degree){
+    // degree -> first_square -> admissibile sequence idx -> result vector
+    algebra->multiplication_table = realloc(
+            algebra->multiplication_table,
+            max_degree * sizeof(Vector ***)
+        );
+    uint p = algebra->public_algebra.algebra.p;
+    size_t vector_container_size = Vector_getContainerSize(p);
+    if(old_max_degree == 0){
+        old_max_degree++;
+    }
+    for(uint n=old_max_degree; n < max_degree; n++){
+        uint output_dimension = algebra->basis_table[n].length;
+        size_t vector_size = Vector_getSize(p, output_dimension, 0);
+        size_t total_vector_size = vector_size + vector_container_size;
+        uint total_outputs = 0;
+        for(uint i=1; i<=n; i++){
+            for(uint b = 0; b <= 1; b++){
+                total_outputs += AdemAlgebra_getDimension((Algebra*)algebra, n-i-b, -1);
+            }
+        }
+        size_t table_size = (n+1) * sizeof(Vector **);
+        table_size += total_outputs * sizeof(Vector*);
+        table_size += total_outputs * total_vector_size;
+        Vector ***top_of_table = (Vector***)malloc(table_size);
+        Vector ***current_ptr_1 = top_of_table;
+        Vector **current_ptr_2 = (Vector **)(current_ptr_1 + n + 1);
+        char *current_ptr_3 = (char*)(current_ptr_2 + total_outputs);
+        current_ptr_1 ++; // Skip first_square = 0
+        for(uint i = 1; i <= n; i++){
+            *current_ptr_1 = current_ptr_2;
+            uint dimension = AdemAlgebra_getDimension((Algebra*)algebra, n-i, -1);
+            for(uint j=0; j < dimension; j++){
+                *current_ptr_2 = Vector_initialize(p, current_ptr_3, current_ptr_3 + vector_container_size, output_dimension, 0);
+                current_ptr_3 += total_vector_size;
+                current_ptr_2++;
+            }
+            current_ptr_1++;
+        }
+        assert(current_ptr_1 == top_of_table + n + 1);
+        assert(current_ptr_2 == (Vector**)current_ptr_1 + total_outputs);
+        assert((char*)current_ptr_3 == (char*)top_of_table + table_size); 
+        algebra->multiplication_table[n] = top_of_table;
+    }
+    for(uint n=old_max_degree; n < max_degree; n++){       
+        for(uint x = n; x > 0; x--){
+            for(uint idx = 0; idx < AdemAlgebra_getDimension((Algebra*)algebra, n-x, -1); idx++){
+                AdemAlgebra__generateMultiplicationTable2_step(algebra, n, x, idx);
+            }
+        }         
+    }
+}
+
+
 
 static void AdemAlgebra__generateMultiplicationTableGeneric_step(AdemAlgebraInternal *algebra, uint n, uint x, uint idx){
 
@@ -790,7 +845,7 @@ static void AdemAlgebra__makeMonoAdmissibleGeneric(AdemAlgebra *algebra, Vector 
 //         elif coeff != 0 and j != 0:
 //             result[(e1, A+B-j, e2, j, 0)] = coeff 
 
-/**/
+/**
 int main(){
     char buffer[5000];
     uint p = 2;
