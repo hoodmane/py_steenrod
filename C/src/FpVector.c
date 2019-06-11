@@ -594,18 +594,22 @@ VectorImplementation Vector2Implementation = {
 
 // The generic methods depend on the implementation, so we look it up on the target.
 void Vector_addBasisElement(Vector *target, uint idx, uint c){
+    assert(c < ((VectorPrivate*)target)->implementation->p);
     ((VectorPrivate*)target)->implementation->addBasisElement(target, idx, c);
 }
 
 void Vector_addArray(Vector *target, uint *source, uint c){
+    assert(c < ((VectorPrivate*)target)->implementation->p);
     ((VectorPrivate*)target)->implementation->addArray(target, source, c);
 }
 
 void Vector_add(Vector *target, Vector *source, uint c){
+    assert(c < ((VectorPrivate*)target)->implementation->p);
     ((VectorPrivate*)target)->implementation->add(target, source, c);
 }
 
 void Vector_scale(Vector *target, uint c){
+    assert(c < ((VectorPrivate*)target)->implementation->p);
     ((VectorPrivate*)target)->implementation->scale(target, c);
 }
 

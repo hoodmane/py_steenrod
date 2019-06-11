@@ -118,10 +118,13 @@ void MilnorAlgebra_free(MilnorAlgebra *algebra){
     free(algebra);
 }
 
-uint MilnorAlgebra_getDimension(Algebra *this, uint degree, uint excess __attribute__((unused))) {
+uint MilnorAlgebra_getDimension(Algebra *this, int degree, uint excess __attribute__((unused))) {
     MilnorAlgebraInternal *algebra = (MilnorAlgebraInternal *) this;
     assert(algebra->basis_table != NULL);
     assert(degree < this->max_degree);
+    if(degree < 0){
+        return 0;
+    }
     return algebra->basis_table[degree].length;
 }
 

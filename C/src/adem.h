@@ -43,7 +43,7 @@ void AdemAlgebra_free(AdemAlgebra *algebra);
 void AdemAlgebra_generateBasis(Algebra *this, uint max_degree);
 void AdemAlgebra_freeBasis(AdemAlgebra *algebra);
 
-uint AdemAlgebra_getDimension(Algebra *this, uint degree, uint excess);
+uint AdemAlgebra_getDimension(Algebra *this, int degree, uint excess);
 AdemBasisElement_list AdemAlgebra_getBasis(AdemAlgebra *algebra, uint degree);
 AdemBasisElement *AdemAlgebra_basisElement_fromIndex(AdemAlgebra *algebra, uint degree, uint index);
 uint AdemAlgebra_basisElement_toIndex(AdemAlgebra *algebra,  AdemBasisElement *b);

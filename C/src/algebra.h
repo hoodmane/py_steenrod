@@ -21,7 +21,7 @@ typedef struct Algebra {
     FiltrationOneProductList *product_list; // This determines which indecomposibles have lines drawn for them.
 // Methods:
     void (*computeBasis)(struct Algebra* this, uint degree);
-    uint (*getDimension)(struct Algebra* this, uint degree, uint excess);
+    uint (*getDimension)(struct Algebra* this, int degree, uint excess);
     void (*multiplyBasisElements)(struct Algebra* this, Vector *result, uint coeff, uint r_degree, uint r, uint s_degree, uint s, uint excess);
 } Algebra;
 

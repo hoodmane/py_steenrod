@@ -181,12 +181,12 @@ def make_mono_admissible_generic_helper(result, coeff, mono, p):
         # It's admissible, just add it to the result.
         mono = tuple(mono)
         if mono in result:
-            result[mono] += coeff # y[x] * new[m]
+            result[mono] += coeff
             result[mono] = result[mono] % p
             if result[mono] == 0:
                 del result[mono]
         else:
-            result[mono] = coeff # * new[m]        
+            result[mono] = coeff      
         return 
 
     j = nonadmissible_indices[0]
@@ -200,7 +200,7 @@ def make_mono_admissible_generic_helper(result, coeff, mono, p):
         # If this next conditional fails, there are two bocksteins in a row.
         if new_x[0] <= 1 and new_x[-1] <= 1:
             new = mono[:j-1] + new_x + mono[j+4:]
-            make_mono_admissible_generic_helper(result, y[x]*coeff, new, p)
+            make_mono_admissible_generic_helper(result, (y[x]*coeff)%p, new, p)
 
 
 def make_mono_admissible(mono, *, algebra):

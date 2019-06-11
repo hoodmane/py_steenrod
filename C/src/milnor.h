@@ -60,7 +60,7 @@ void MilnorAlgebra_free(MilnorAlgebra *);
 void MilnorAlgebra_generateBasis(Algebra *this, uint max_degree);
 void MilnorAlgebra_freeBasis(MilnorAlgebra *algebra);
 
-uint MilnorAlgebra_getDimension(Algebra *this, uint degree, uint excess);
+uint MilnorAlgebra_getDimension(Algebra *this, int degree, uint excess);
 MilnorBasisElement_list MilnorAlgebra_getBasis(MilnorAlgebra *algebra, uint degree);
 MilnorBasisElement MilnorAlgebra_basisElement_fromIndex(MilnorAlgebra *algebra, uint degree, uint index);
 uint MilnorAlgebra_basisElement_toIndex(MilnorAlgebra *algebra,  MilnorBasisElement b);

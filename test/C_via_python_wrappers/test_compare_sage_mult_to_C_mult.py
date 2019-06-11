@@ -7,7 +7,7 @@ import pytest
 
 import cAlgebra 
 
-p_max_deg_pairs = [(2, 40), (3, 100), (5,200), (7,400)]
+p_max_deg_pairs = [(2, 40),(3,100), (3, 100), (5,200), (7,400)]
 sage_products_dict = {}
 for algebra_type in ["Adem", "Milnor"]:
     for (p, max_deg) in p_max_deg_pairs:
@@ -39,5 +39,8 @@ def test_Adem_exhaustive(algebra_type, p, max_deg):
                 sage_res_dict[k] = v
             sage_res = A.py_algebra.get_element(sage_res_dict)
             assert res == sage_res
+            if res != sage_res:
+                return
+            
                          
 
