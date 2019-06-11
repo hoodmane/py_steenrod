@@ -52,7 +52,7 @@ def checkDifferential(d, x):
             return prod1  + prod2
 
 if __name__ == "__main__":
-    degree = 75
+    degree = 50
     p = 2
     algebra_type = "AdemAlgebra"
     filename = "%s%s_%s" % (algebra_type, p, degree)
@@ -67,16 +67,16 @@ if __name__ == "__main__":
     res = resolve(M, degree)
     # print("done resolving")
     # # print(res.contents.modules[2].contents.max_generator_degree)
-    # res_modules = []
-    # for i in range(degree-1):
-    #     F = cFreeModule.fromC(res.contents.modules[i+1], A, "x" + str(i) + "_")
-    #     res_modules.append(F)
-    #     globals()["F" + str(i)] = F
-    #     for i in F.gens:
-    #         globals()[i] = F.get_generator(i)
+    res_modules = []
+    for i in range(degree-1):
+        F = cFreeModule.fromC(res.contents.modules[i+1], A, "x" + str(i) + "_")
+        res_modules.append(F)
+        globals()["F" + str(i)] = F
+        for i in F.gens:
+            globals()[i] = F.get_generator(i)
 
-    # for i in range(1, degree-1):
-    #     globals()["d" + str(i)] = cFreeModuleHomomorphism.fromC(res.contents.differentials[i+1], res_modules[i], res_modules[i-1])
+    for i in range(1, degree-1):
+        globals()["d" + str(i)] = cFreeModuleHomomorphism.fromC(res.contents.differentials[i+1], res_modules[i], res_modules[i-1])
 
     #printDimensionsToFile(res, "output_data/%s.json" % filename)
 

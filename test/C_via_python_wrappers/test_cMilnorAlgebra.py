@@ -65,8 +65,8 @@ def get_random_C_products(num_tests):
         x_dim = 0; y_dim = 0
         max_degree = algebra.max_degree
         while (x_deg + y_deg >= max_degree) or (x_dim == 0) or (y_dim == 0):
-            x_deg = random.randint(0,max_degree)
-            y_deg = random.randint(0,max_degree)
+            x_deg = random.randint(0,max_degree - 1)
+            y_deg = random.randint(0,max_degree - 1)
             x_dim = algebra.getDimension(x_deg)
             y_dim = algebra.getDimension(y_deg)
 

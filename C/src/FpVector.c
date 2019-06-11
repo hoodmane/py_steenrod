@@ -36,6 +36,9 @@
 #include <string.h>
 
 int array_toString(char *buffer, uint *A, uint length){
+    if(length == 0){
+        return sprintf(buffer, "[]"); 
+    }
     buffer[0] = '[';
     buffer[1] = '\0';
     int len = 1;
