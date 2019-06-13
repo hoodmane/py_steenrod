@@ -24,7 +24,7 @@ def toC(module, algebra_type):
     c_number_of_basis_elements_in_degree = c_list_of_uints_type(*number_of_basis_elements_in_degree)
 
     module.c_algebra.generateBasis(max_degree)
-    c_module = CSteenrod.FiniteDimensionalModule_construct(module.c_algebra.c_alg_ptr, max_degree, c_number_of_basis_elements_in_degree)
+    c_module = CSteenrod.FiniteDimensionalModule_construct(module.c_algebra.c_alg_ptr, 0, max_degree, c_number_of_basis_elements_in_degree)
     module.c_module = c_module
     module.basis_element_indices = basis_element_indices
     module.index_to_basis_element = index_to_basis_element

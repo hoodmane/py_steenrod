@@ -250,7 +250,7 @@ MilnorBasisElement MilnorAlgebra_basisElement_fromString(MilnorAlgebra * algebra
     return result;
 }
 
-uint MilnorAlgebra_element_toString(char *buffer, MilnorAlgebra * algebra, uint degree, Vector * m){
+uint MilnorAlgebra_element_toString(char *buffer, MilnorAlgebra * algebra, int degree, Vector * m){
     uint len = 0;
     for(
         VectorIterator it = Vector_getIterator(m); 

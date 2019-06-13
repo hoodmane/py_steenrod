@@ -10,7 +10,7 @@
 
 typedef struct {
     uint length;
-    uint *degrees;
+    int *degrees;
     uint *indices;
 } FiltrationOneProductList;
 
@@ -20,9 +20,9 @@ typedef struct Algebra {
     char *name;
     FiltrationOneProductList *product_list; // This determines which indecomposibles have lines drawn for them.
 // Methods:
-    void (*computeBasis)(struct Algebra* this, uint degree);
-    uint (*getDimension)(struct Algebra* this, int degree, uint excess);
-    void (*multiplyBasisElements)(struct Algebra* this, Vector *result, uint coeff, uint r_degree, uint r, uint s_degree, uint s, uint excess);
+    void (*computeBasis)(struct Algebra* this, int degree);
+    uint (*getDimension)(struct Algebra* this, int degree, int excess);
+    void (*multiplyBasisElements)(struct Algebra* this, Vector *result, uint coeff, int r_degree, uint r_idx, int s_degree, uint s_idx, int excess);
 } Algebra;
 
 // Careful with these macros: could cause multiple evaluation of algebra / module.

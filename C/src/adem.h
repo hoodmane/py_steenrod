@@ -17,8 +17,8 @@ typedef struct {
 } AdemAlgebra;
 
 typedef struct {
-    uint degree;
-    uint excess;
+    int degree;
+    int excess;
     uint bocksteins;
     uint P_length;
     uint *Ps;
@@ -29,8 +29,8 @@ typedef struct {
     AdemBasisElement **list;
 } AdemBasisElement_list;
 
-uint AdemAlgebra_element_toString(char *buffer, AdemAlgebra *algebra, uint degree, Vector *m);
-void AdemAlgebra_element_print(char *fmt_string, AdemAlgebra *algebra, uint degree, Vector *m);
+uint AdemAlgebra_element_toString(char *buffer, AdemAlgebra *algebra, int degree, Vector *m);
+void AdemAlgebra_element_print(char *fmt_string, AdemAlgebra *algebra, int degree, Vector *m);
 
 uint AdemAlgebra_basisElement_toKey(char *buffer, AdemBasisElement *b);
 uint AdemAlgebra_basisElement_toString(char *buffer, AdemAlgebra *algebra, AdemBasisElement *b);
@@ -40,15 +40,16 @@ AdemBasisElement *AdemAlgebra_basisElement_fromString(AdemAlgebra *algebra, char
 AdemAlgebra *AdemAlgebra_construct(uint p, bool generic, bool unstable);
 void AdemAlgebra_free(AdemAlgebra *algebra);
 
-void AdemAlgebra_generateBasis(Algebra *this, uint max_degree);
+void AdemAlgebra_generateBasis(Algebra *this, int max_degree);
 void AdemAlgebra_freeBasis(AdemAlgebra *algebra);
 
-uint AdemAlgebra_getDimension(Algebra *this, int degree, uint excess);
-AdemBasisElement_list AdemAlgebra_getBasis(AdemAlgebra *algebra, uint degree);
-AdemBasisElement *AdemAlgebra_basisElement_fromIndex(AdemAlgebra *algebra, uint degree, uint index);
+uint AdemAlgebra_getDimension(Algebra *this, int degree, int excess);
+uint AdemAlgebra_getDimension_unstable(Algebra *this, int degree, int excess);
+AdemBasisElement_list AdemAlgebra_getBasis(AdemAlgebra *algebra, int degree);
+AdemBasisElement *AdemAlgebra_basisElement_fromIndex(AdemAlgebra *algebra, int degree, uint index);
 uint AdemAlgebra_basisElement_toIndex(AdemAlgebra *algebra,  AdemBasisElement *b);
 
-void AdemAlgebra_multiply(Algebra *this, Vector *result, uint coeff, uint r_degree, uint r_index, uint s_degree, uint s_index, uint excess);
+void AdemAlgebra_multiply(Algebra *this, Vector *result, uint coeff, int r_degree, uint r_index, int s_degree, uint s_index, int excess);
 
 
 #endif //CSTEENROD_ADEM_H

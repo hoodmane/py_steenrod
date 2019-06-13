@@ -28,9 +28,9 @@ class c_Profile(Structure):
 #} MilnorBasisElement;
 class c_MilnorBasisElement(Structure):
     _fields_ = [
-        ("q_degree", c_uint),
+        ("q_degree", c_int),
         ("q_part", c_uint),
-        ("p_degree", c_uint),
+        ("p_degree", c_int),
         ("p_length", c_uint),
         ("p_part", POINTER(c_uint))
     ]
@@ -81,25 +81,25 @@ def wrap_milnor(CSteenrod):
     CSteenrod.MilnorAlgebra_free.argtypes = [c_MilnorAlgebra]
 
     
-    #void MilnorAlgebra_generateBasis(Algebra * algebra, uint max_degree);
-    CSteenrod.MilnorAlgebra_generateBasis.argtypes = [POINTER(c_Algebra), c_uint]
+    #void MilnorAlgebra_generateBasis(Algebra * algebra, int max_degree);
+    CSteenrod.MilnorAlgebra_generateBasis.argtypes = [POINTER(c_Algebra), c_int]
     #void freeMilnorBasis(MilnorAlgebra * algebra);
     
-    #uint MilnorAlgebra_getDimension(Algebra * algebra, uint degree, uint excess);
-    CSteenrod.MilnorAlgebra_getDimension.argtypes = [POINTER(c_Algebra), c_uint, c_uint]
+    #uint MilnorAlgebra_getDimension(Algebra * algebra, int degree, int excess);
+    CSteenrod.MilnorAlgebra_getDimension.argtypes = [POINTER(c_Algebra), c_int, c_int]
     CSteenrod.MilnorAlgebra_getDimension.restype = c_uint
     
-    #MilnorBasisElement_list MilnorAlgebra_getBasis(MilnorAlgebra * algebra, uint degree, uint excess);
-    CSteenrod.MilnorAlgebra_getBasis.argtypes = [POINTER(c_Algebra), c_uint, c_uint]
+    #MilnorBasisElement_list MilnorAlgebra_getBasis(MilnorAlgebra * algebra, int degree, int excess);
+    CSteenrod.MilnorAlgebra_getBasis.argtypes = [POINTER(c_Algebra), c_int, c_int]
     CSteenrod.MilnorAlgebra_getBasis.restype = c_MilnorBasisElement_list    
     
-    #MilnorBasisElement MilnorAlgebra_basisElement_fromIndex(MilnorAlgebra *algebra, uint degree, uint idx);
-    CSteenrod.MilnorAlgebra_basisElement_fromIndex.argtypes = [POINTER(c_MilnorAlgebra), c_uint, c_uint]
+    #MilnorBasisElement MilnorAlgebra_basisElement_fromIndex(MilnorAlgebra *algebra, int degree, uint idx);
+    CSteenrod.MilnorAlgebra_basisElement_fromIndex.argtypes = [POINTER(c_MilnorAlgebra), c_int, c_uint]
     CSteenrod.MilnorAlgebra_basisElement_fromIndex.restype = c_MilnorBasisElement
     #uint MilnorAlgebra_basisElement_toIndex(MilnorAlgebra *algebra,  MilnorBasisElement b);
     CSteenrod.MilnorAlgebra_basisElement_toIndex.argtypes = [POINTER(c_MilnorAlgebra), c_MilnorBasisElement]
     CSteenrod.MilnorAlgebra_basisElement_toIndex.restype = c_uint   
     
-    #void MilnorAlgebra_multiply(Algebra * algebra, Vector * result, uint coeff, uint r_degree, uint r_index, uint s_degree, uint s_index, uint excess);
-    CSteenrod.MilnorAlgebra_multiply.argtypes = [POINTER(c_Algebra), POINTER(c_Vector), c_uint, c_uint, c_uint, c_uint, c_uint, c_uint]
+    #void MilnorAlgebra_multiply(Algebra * algebra, Vector * result, uint coeff, int r_degree, uint r_index, int s_degree, uint s_index, int excess);
+    CSteenrod.MilnorAlgebra_multiply.argtypes = [POINTER(c_Algebra), POINTER(c_Vector), c_uint, c_int, c_uint, c_int, c_uint, c_int]
 

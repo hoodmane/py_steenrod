@@ -47,13 +47,13 @@ void MilnorAlgebra__generateName(MilnorAlgebra *A);
 uint Profile__getExponent(Profile P, uint p, uint index);
 
 // Private functions
-void MilnorAlgebra__generatePpartTable(MilnorAlgebraInternal * algebra, uint n);
+void MilnorAlgebra__generatePpartTable(MilnorAlgebraInternal * algebra, int n);
 void MilnorAlgebra__freePpartTable(MilnorAlgebraInternal * algebra);
-void MilnorAlgebra__generateQpartTable(MilnorAlgebraInternal * algebra, uint n );
+void MilnorAlgebra__generateQpartTable(MilnorAlgebraInternal * algebra, int n );
 void MilnorAlgebra__freeQPartTable(MilnorAlgebraInternal * algebra);
 
-void MilnorAlgebra__generateBasis2(MilnorAlgebraInternal * algebra, uint old_n, uint n);
-void MilnorAlgebra__generateBasisGeneric(MilnorAlgebraInternal * algebra, uint old_n, uint n);
+void MilnorAlgebra__generateBasis2(MilnorAlgebraInternal * algebra, int old_n, int n);
+void MilnorAlgebra__generateBasisGeneric(MilnorAlgebraInternal * algebra, int old_n, int n);
 
 void MilnorAlgebra__multiplyFull(MilnorAlgebraInternal *algebra, uint *result, MilnorBasisElement m1, MilnorBasisElement m2);
 void MilnorAlgebra__multiplyEven(MilnorAlgebraInternal * algebra, uint * result, MilnorBasisElement r_elt, MilnorBasisElement s_elt);

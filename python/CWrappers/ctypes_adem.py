@@ -10,8 +10,8 @@ from ctypes_algebra import *
 # } AdemBasisElement;
 class c_AdemBasisElement(Structure):
     _fields_ = [
-        ("degree", c_uint),
-        ("excess", c_uint),
+        ("degree", c_int),
+        ("excess", c_int),
         ("bocksteins", c_uint),
         ("P_length", c_uint),
         ("Ps", POINTER(c_uint))
@@ -55,25 +55,25 @@ def wrap_adem(CSteenrod):
     CSteenrod.AdemAlgebra_free.argtypes = [c_AdemAlgebra]
 
     
-    # void AdemAlgebra_generateBasis(Algebra *algebra, uint max_degree);
-    CSteenrod.AdemAlgebra_generateBasis.argtypes = [POINTER(c_Algebra), c_uint]
+    # void AdemAlgebra_generateBasis(Algebra *algebra, int max_degree);
+    CSteenrod.AdemAlgebra_generateBasis.argtypes = [POINTER(c_Algebra), c_int]
     # void AdemAlgebra_freeBasis(AdemAlgebra *algebra);
     
-    # uint AdemAlgebra_getDimension(Algebra *algebra, uint degree, uint excess);
-    CSteenrod.AdemAlgebra_getDimension.argtypes = [POINTER(c_Algebra), c_uint, c_uint]
+    # uint AdemAlgebra_getDimension(Algebra *algebra, int degree, int excess);
+    CSteenrod.AdemAlgebra_getDimension.argtypes = [POINTER(c_Algebra), c_int, c_int]
     CSteenrod.AdemAlgebra_getDimension.restype = c_uint
     
-    # AdemBasisElement_list AdemAlgebra_getBasis(AdemAlgebra *algebra, uint degree, uint excess);
-    CSteenrod.AdemAlgebra_getBasis.argtypes = [POINTER(c_Algebra), c_uint, c_uint]
+    # AdemBasisElement_list AdemAlgebra_getBasis(AdemAlgebra *algebra, int degree, int excess);
+    CSteenrod.AdemAlgebra_getBasis.argtypes = [POINTER(c_Algebra), c_int, c_int]
     CSteenrod.AdemAlgebra_getBasis.restype = c_AdemBasisElement_list    
     
-    # AdemBasisElement AdemAlgebra_basisElement_fromIndex(AdemAlgebra *algebra, uint degree, uint idx);
-    CSteenrod.AdemAlgebra_basisElement_fromIndex.argtypes = [POINTER(c_AdemAlgebra), c_uint, c_uint]
+    # AdemBasisElement AdemAlgebra_basisElement_fromIndex(AdemAlgebra *algebra, int degree, uint idx);
+    CSteenrod.AdemAlgebra_basisElement_fromIndex.argtypes = [POINTER(c_AdemAlgebra), c_int, c_uint]
     CSteenrod.AdemAlgebra_basisElement_fromIndex.restype = c_AdemBasisElement
     # uint AdemAlgebra_basisElement_toIndex(AdemAlgebra *public_algebra,  AdemBasisElement *b);
     CSteenrod.AdemAlgebra_basisElement_toIndex.argtypes = [POINTER(c_AdemAlgebra), POINTER(c_AdemBasisElement)]
     CSteenrod.AdemAlgebra_basisElement_toIndex.restype = c_uint   
     
-    #void AdemAlgebra_multiply(Algebra * algebra, Vector * result, uint coeff, uint r_degree, uint r_index, uint s_degree, uint s_index, uint excess);
-    CSteenrod.AdemAlgebra_multiply.argtypes = [POINTER(c_Algebra), POINTER(c_Vector), c_uint, c_uint, c_uint, c_uint, c_uint, c_uint]
+    #void AdemAlgebra_multiply(Algebra * algebra, Vector * result, uint coeff, int r_degree, uint r_index, int s_degree, uint s_index, int excess);
+    CSteenrod.AdemAlgebra_multiply.argtypes = [POINTER(c_Algebra), POINTER(c_Vector), c_uint, c_int, c_uint, c_int, c_uint, c_int]
 

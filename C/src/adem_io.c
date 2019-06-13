@@ -119,7 +119,7 @@ AdemBasisElement *AdemAlgebra_basisElement_fromString(AdemAlgebra *algebra, char
 }
 
 
-uint AdemAlgebra_element_toString(char *buffer, AdemAlgebra *algebra, uint degree, Vector *m){
+uint AdemAlgebra_element_toString(char *buffer, AdemAlgebra *algebra, int degree, Vector *m){
     uint len = 0;
     for(
         VectorIterator it = Vector_getIterator(m); 
@@ -146,7 +146,7 @@ uint AdemAlgebra_element_toString(char *buffer, AdemAlgebra *algebra, uint degre
     return len;
 }
 
-void AdemAlgebra_element_print(char *fmt_string, AdemAlgebra *algebra, uint degree, Vector *m){
+void AdemAlgebra_element_print(char *fmt_string, AdemAlgebra *algebra, int degree, Vector *m){
     char buffer[1000];
     AdemAlgebra_element_toString(buffer, algebra, degree, m);
     printf(fmt_string, buffer);

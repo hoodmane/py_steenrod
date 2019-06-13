@@ -12,29 +12,31 @@
 typedef struct Resolution_s {
     Algebra *algebra;
     Module *module;
-    void (*addClass)(uint hom_deg, uint int_deg, char *cocycle_name);
+    void (*addClass)(uint hom_deg, int int_deg, char *cocycle_name);
     void (*addStructline)(
-        uint source_hom_deg, uint source_int_deg, uint source_idx, 
-        uint target_hom_deg, uint target_int_deg, uint target_idx
+        uint source_hom_deg, int source_int_deg, uint source_idx, 
+        uint target_hom_deg, int target_int_deg, uint target_idx
     );
-    uint max_degree;
+    uint max_homological_degree;
+    int min_degree;
+    int max_degree;
     FreeModule **modules; // The index into resolution_modules is homological_degree + 1.
     FreeModuleHomomorphism **differentials;// Each differential has source the module with the same index in resolution_modules
     int *internal_degree_to_resolution_stage;       // Records how far we've resolved in each degree (homological_degree + 1)
 } Resolution;
 
 Resolution *Resolution_construct(
-    FiniteDimensionalModule *module, 
-    uint max_degree,
-    void (*addClass)(uint hom_deg, uint int_deg, char *cocycle_name),
+    FiniteDimensionalModule *module,
+    int max_degree,
+    void (*addClass)(uint hom_deg, int int_deg, char *cocycle_name),
     void (*addStructline)(
-        uint source_hom_deg, uint source_int_deg, uint source_idx, 
-        uint target_hom_deg, uint target_int_deg, uint target_idx
+        uint source_hom_deg, int source_int_deg, uint source_idx, 
+        uint target_hom_deg, int target_int_deg, uint target_idx
     )    
 );
 void Resolution_free(Resolution *resolution);
 
-void Resolution_step(Resolution *resolution, uint homological_degree, uint degree);
-void Resolution_resolveThroughDegree(Resolution *res, uint degree);
+void Resolution_step(Resolution *resolution, uint homological_degree, int degree);
+void Resolution_resolveThroughDegree(Resolution *res, int degree);
 
 #endif // CSTEENROD_RESOLUTION_H

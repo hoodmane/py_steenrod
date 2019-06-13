@@ -19,9 +19,9 @@ class c_FiltrationOneProductList(Structure):
 #     char *name;
 #     FiltrationOneProductList *product_list; // This determines which indecomposibles have lines drawn for them.
 # // Methods:
-#     void (*computeBasis)(struct Algebra* this, uint degree);
-#     uint (*getDimension)(struct Algebra* this, uint degree, uint excess);
-#     void (*multiplyBasisElements)(struct Algebra* this, Vector *result, uint coeff, uint r_degree, uint r, uint s_degree, uint s, uint excess);
+#     void (*computeBasis)(struct Algebra* this, int degree);
+#     uint (*getDimension)(struct Algebra* this, int degree, int excess);
+#     void (*multiplyBasisElements)(struct Algebra* this, Vector *result, uint coeff, int r_degree, uint r_idx, int s_degree, uint s_idx, int excess);
 # } Algebra;
 
 class c_Algebra(Structure):
@@ -32,9 +32,9 @@ c_Algebra._fields_ = [
         ("max_degree", c_uint),
         ("name", c_char_p),
         ("product_list", POINTER(c_FiltrationOneProductList)),
-        ("compute_basis",CFUNCTYPE(c_bool, POINTER(c_Algebra), c_ulong)),
-        ("get_basis_dimension", CFUNCTYPE(c_ulong, POINTER(c_Algebra), c_ulong)),
-        ("multiply_basis_elements", CFUNCTYPE(c_int, POINTER(c_Algebra), POINTER(c_Vector), c_ulong, c_ulong, c_ulong, c_ulong))
+        ("compute_basis",CFUNCTYPE(c_bool, POINTER(c_Algebra), c_int)),
+        ("get_basis_dimension", CFUNCTYPE(c_uint, POINTER(c_Algebra), c_int, c_int)),
+        ("multiply_basis_elements", CFUNCTYPE(None, POINTER(c_Algebra), POINTER(c_Vector), c_uint, c_int, c_uint, c_int, c_uint, c_int))
     ]
 
 def wrap_algebra(CSteenrod):

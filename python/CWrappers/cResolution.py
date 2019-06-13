@@ -52,7 +52,7 @@ def checkDifferential(d, x):
             return prod1  + prod2
 
 if __name__ == "__main__":
-    degree = 50
+    degree = 20
     p = 2
     algebra_type = "AdemAlgebra"
     filename = "%s%s_%s" % (algebra_type, p, degree)
@@ -64,9 +64,10 @@ if __name__ == "__main__":
     x0 = M.add_basis_element("x0", 0)
     M.validate()
     cM = cFiniteDimensionalModule.toC(M, algebra_type)
+    print("resolving")
     res = resolve(M, degree)
-    # print("done resolving")
-    # # print(res.contents.modules[2].contents.max_generator_degree)
+    print("done resolving")
+    # print(res.contents.modules[2].contents.max_generator_degree)
     res_modules = []
     for i in range(degree-1):
         F = cFreeModule.fromC(res.contents.modules[i+1], A, "x" + str(i) + "_")

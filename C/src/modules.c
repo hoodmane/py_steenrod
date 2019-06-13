@@ -14,16 +14,17 @@
 // The allocator is horrendous so we're going to separate it out.
 FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint max_basis_degree, uint *graded_dimension);
 
-FiniteDimensionalModule *FiniteDimensionalModule_construct(Algebra *algebra, uint max_basis_degree, uint *graded_dimension){
-    FiniteDimensionalModule *result = FiniteDimensionalModule_allocate(algebra, max_basis_degree, graded_dimension);
+FiniteDimensionalModule *FiniteDimensionalModule_construct(Algebra *algebra, int min_degree, int max_basis_degree, uint *graded_dimension){
+    FiniteDimensionalModule *result = FiniteDimensionalModule_allocate(algebra, max_basis_degree - min_degree, graded_dimension);
     result->module.p = algebra->p;
     result->module.algebra = algebra;
     result->module.computeBasis = FiniteDimensionalModule_computeBasis;
     result->module.getDimension = FiniteDimensionalModule_getDimension;
     result->module.actOnBasis = FiniteDimensionalModule_actOnBasis;
+    result->module.min_degree = min_degree;
     result->module.max_degree = -1; // There is no "max degree" for a finite module -- we've computed it through an infinite range.
     result->max_basis_degree = max_basis_degree;
-    memcpy(result->graded_dimension, graded_dimension, max_basis_degree * sizeof(uint));
+    memcpy(result->graded_dimension, graded_dimension, (max_basis_degree - min_degree) * sizeof(uint));
     return result;
 }
 
@@ -49,7 +50,7 @@ FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint
             action_matrix_size_3 = 0, action_matrix_size_4 = 0,
             action_matrix_size_5 = 0;
     uint number_of_nonempty_degrees = 0;
-    for(uint degree = 0; degree < max_basis_degree; degree++) {
+    for(int degree = 0; degree < max_basis_degree; degree++) {
         if(graded_dimension[degree] != 0){
             number_of_nonempty_degrees ++;
         }
@@ -81,7 +82,7 @@ FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint
 
     FiniteDimensionalModule *result = malloc(
             sizeof(FiniteDimensionalModule)
-            + max_basis_degree * sizeof(uint)
+            + max_basis_degree * sizeof(uint) // graded_dimension
             + action_matrix_size_5
     );
     result->graded_dimension = (uint *) (result + 1);
@@ -132,51 +133,71 @@ FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint
 
 void FiniteDimensionalModule_setActionVector(
     FiniteDimensionalModule *module,
-    uint operation_degree, uint operation_idx,
-    uint input_degree, uint input_idx,
+    int operation_degree, uint operation_idx,
+    int input_degree, uint input_idx,
     Vector *output
 ){
+    input_degree -= module->module.min_degree;
     uint output_degree = input_degree + operation_degree;
     // (in_deg) -> (out_deg) -> (op_index) -> (in_index) -> Vector
     Vector *output_vector = &module->actions[input_degree][output_degree][operation_idx][input_idx];
     Vector_assign(output_vector, output);
 }
 
+Vector *FiniteDimensionalModule_getAction(
+    FiniteDimensionalModule *module,
+    int operation_degree, uint operation_idx,
+    int input_degree, uint input_idx
+){
+    input_degree -= module->module.min_degree;
+    int output_degree = input_degree + operation_degree;
+    // (in_deg) -> (out_deg) -> (op_index) -> (in_index) -> Vector
+    Vector *output_vector = &module->actions[input_degree][output_degree][operation_idx][input_idx];
+    return output_vector;
+}
+
 void FiniteDimensionalModule_setAction(
     FiniteDimensionalModule *module,
-    uint operation_degree, uint operation_idx,
-    uint input_degree, uint input_idx,
+    int operation_degree, uint operation_idx,
+    int input_degree, uint input_idx,
     uint *output
 ){
+    input_degree -= module->module.min_degree;
+    assert(input_degree >= 0);
     uint output_degree = input_degree + operation_degree;
     // (in_deg) -> (out_deg) -> (op_index) -> (in_index) -> Vector
     Vector *output_vector = &module->actions[input_degree][output_degree][operation_idx][input_idx];
     Vector_pack(output_vector, output);
 }
 
-bool FiniteDimensionalModule_computeBasis(Module *this __attribute__((unused)), uint dimension __attribute__((unused))){
+bool FiniteDimensionalModule_computeBasis(Module *this __attribute__((unused)), int degree __attribute__((unused))){
     return true;
 }
 
-uint FiniteDimensionalModule_getDimension(Module *this, uint degree){
+uint FiniteDimensionalModule_getDimension(Module *this, int degree){
+    assert(degree >= this->min_degree);
     FiniteDimensionalModule *module = (FiniteDimensionalModule *) this;
-    if(degree < module->max_basis_degree ){
-        return module->graded_dimension[degree];
+    if(degree >= module->max_basis_degree ){
+        return 0;
     }
+    return module->graded_dimension[degree - this->min_degree];
     return 0;
 }
 
-void FiniteDimensionalModule_actOnBasis(Module *this, Vector *result, uint coeff, uint op_degree, uint op_index, uint mod_degree, uint mod_index){
+void FiniteDimensionalModule_actOnBasis(Module *this, Vector *result, uint coeff, int op_degree, uint op_index, int mod_degree, uint mod_index){
     FiniteDimensionalModule *module = ((FiniteDimensionalModule*)this);
     assert(op_index < algebra_getDimension(this->algebra, op_degree, mod_degree));
-    assert(mod_index < module->graded_dimension[mod_degree]);    
-    if(mod_degree + op_degree >= module->max_basis_degree || module->graded_dimension[mod_degree + op_degree] == 0){
+    assert(mod_index < module_getDimension(this, mod_degree));
+    uint output_dimension = module_getDimension(this, mod_degree + op_degree);    
+    if(mod_degree + op_degree >= module->max_basis_degree || output_dimension == 0){
         return;
-    }
+    }  
+    // Why do we take this slice?
     char output_block_memory[Vector_getContainerSize(this->p)];    
     Vector *output_block = Vector_initialize(this->p, output_block_memory, NULL, 0, 0);     
-    Vector_slice(output_block, result, 0, module->graded_dimension[mod_degree + op_degree]); 
-    Vector_add(output_block, &module->actions[mod_degree][mod_degree + op_degree][op_index][mod_index], coeff);
+    Vector_slice(output_block, result, 0, output_dimension); 
+    Vector *output = FiniteDimensionalModule_getAction(module, mod_degree, mod_index, op_degree, op_index);
+    Vector_add(output_block, output, coeff);
 }
 
 typedef struct {
@@ -188,7 +209,7 @@ typedef struct {
     uint ***generator_to_index_table;
 } FreeModuleInternal;
 
-FreeModule *FreeModule_construct(Algebra *algebra, uint max_degree){
+FreeModule *FreeModule_construct(Algebra *algebra, int min_degree, int max_degree){
     size_t module_size =  sizeof(FreeModuleInternal) 
         + max_degree * sizeof(uint) // number_of_generators_in_degree
         + max_degree * sizeof(FreeModuleOperationGeneratorPair*) //basis_element_to_opgen_table
@@ -202,6 +223,7 @@ FreeModule *FreeModule_construct(Algebra *algebra, uint max_degree){
     module->module.getDimension = FreeModule_getDimension;
     module->module.actOnBasis = FreeModule_actOnBasis;
     module->module.max_degree = max_degree;
+    module->module.min_degree = min_degree;
     module->computed_degree = 0;
     module->number_of_generators_in_degree = (uint *)(module + 1);
     module->basis_element_to_opgen_table = (FreeModuleOperationGeneratorPair**)(
@@ -223,33 +245,37 @@ void FreeModule_free(FreeModule *module){
     free(module);
 }
 
-bool FreeModule_computeBasis(Module *this __attribute__((unused)), uint degree __attribute__((unused))){
+bool FreeModule_computeBasis(Module *this __attribute__((unused)), int degree __attribute__((unused))){
     return true;
 }
 
-uint FreeModule_getDimension(Module *this, uint degree){
+uint FreeModule_getDimension(Module *this, int degree){
+    assert(degree >= 0);
     assert(degree < this->max_degree);
     FreeModule *module = (FreeModule*) this;
     uint result = 0;
-    for(uint i = 0; i<= degree; i++){
-        result += module->number_of_generators_in_degree[i] * algebra_getDimension(this->algebra, degree - i, i);
+    for(int i = this->min_degree; i <= degree; i++){
+        // for the excess make sure to use math degree
+        result += FreeModule_getNumberOfGensInDegree(module, i)
+            * algebra_getDimension(this->algebra, degree - i, i);
     }
     return result;
 }
 
 // Run FreeModule_ConstructBlockOffsetTable(module, degree) before using this on an input in that degree
-void FreeModule_actOnBasis(Module *this, Vector *result, uint coeff, uint op_deg, uint op_idx, uint module_degree, uint module_idx){
+void FreeModule_actOnBasis(Module *this, Vector *result, uint coeff, int op_deg, uint op_idx, int module_degree, uint module_idx){
     assert(op_idx < algebra_getDimension(this->algebra, op_deg, module_degree));
     assert(FreeModule_getDimension(this, op_deg + module_degree) <= result->dimension);
     FreeModuleInternal *module = (FreeModuleInternal *) this;
-    FreeModuleOperationGeneratorPair operation_generator = module->basis_element_to_opgen_table[module_degree][module_idx];
-    uint module_operation_degree = operation_generator.operation_degree;
+    FreeModuleOperationGeneratorPair operation_generator = FreeModule_indexToOpGen((FreeModule*)module, module_degree, module_idx);
+    int module_operation_degree = operation_generator.operation_degree;
     uint module_operation_index = operation_generator.operation_index;
-    uint generator_degree = operation_generator.generator_degree; 
+    int generator_degree = operation_generator.generator_degree; 
     uint generator_index  = operation_generator.generator_index;
     // Now all of the output elements are going to be of the form s * x. Find where such things go in the output vector.
     uint num_ops = algebra_getDimension(this->algebra, module_operation_degree + op_deg, generator_degree);
-    uint output_block_min = module->generator_to_index_table[module_degree + op_deg][generator_degree][generator_index];
+    uint output_block_min = FreeModule_operationGeneratorToIndex((FreeModule*)module, module_operation_degree + op_deg, 0, generator_degree, generator_index);
+
     uint output_block_max = output_block_min + num_ops;
     char output_block_memory[Vector_getContainerSize(this->p)];    
     Vector *output_block = Vector_initialize(this->p, output_block_memory, NULL, 0, 0);     
@@ -258,39 +284,47 @@ void FreeModule_actOnBasis(Module *this, Vector *result, uint coeff, uint op_deg
     algebra_multiplyBasisElements(module->module.algebra, output_block, coeff, op_deg, op_idx, module_operation_degree, module_operation_index, generator_degree);
 }
 
+
 // Compute tables:
 //    basis element index     --> operator, generator pair
 //    a generator  --> where does that generator's block start?
-void FreeModule_ConstructBlockOffsetTable(FreeModule *M, uint degree){
-    assert(degree < M->module.max_degree);
+void FreeModule_ConstructBlockOffsetTable(FreeModule *M, int degree){
+    int shifted_degree = degree - M->module.min_degree;
+    assert(shifted_degree>=0);
+    assert(shifted_degree < M->module.max_degree);
     FreeModuleInternal *module = (FreeModuleInternal *) M;
-    if(module->generator_to_index_table[degree] != NULL){
+    if(module->generator_to_index_table[shifted_degree] != NULL){
         return;
     }
-    size_t gen_to_idx_size = (degree + 1) * sizeof(uint*);
+    // gen_to_idx goes gen_degree => gen_idx => start of block.
+    // so gen_to_idx_size should be (number of possible degrees + 1) * sizeof(uint*) + number of gens * sizeof(uint).
+    // The other part of the table goes idx => opgen
+    // The size should be (number of basis elements in current degree) * sizeof(FreeModuleOperationGeneratorPair)
+    // A basis element in degree n comes from a generator in degree i paired with an operation in degree n - i.
+    size_t gen_to_idx_size = (degree - M->module.min_degree + 1) * sizeof(uint*);
     size_t total_size = 0;
-    for(uint gen_deg = 0; gen_deg <= degree; gen_deg++){
-        uint op_deg = degree - gen_deg;
+    for(int gen_deg = M->module.min_degree; gen_deg <= degree; gen_deg++){
+        int op_deg = degree - gen_deg;
         uint num_ops = algebra_getDimension(module->module.algebra, op_deg, gen_deg);
-        uint num_gens = module->number_of_generators_in_degree[gen_deg];
+        uint num_gens = FreeModule_getNumberOfGensInDegree(M, gen_deg);
         gen_to_idx_size += num_gens * sizeof(uint);
         total_size += num_gens * num_ops * sizeof(FreeModuleOperationGeneratorPair);
     }
     total_size += gen_to_idx_size;
-    char *memory = realloc(module->generator_to_index_table[degree], total_size);
+    char *memory = realloc(module->generator_to_index_table[shifted_degree], total_size);
     uint **generator_to_index_table = (uint**) memory;
     FreeModuleOperationGeneratorPair * basis_element_to_opgen_table = (FreeModuleOperationGeneratorPair *)(memory + gen_to_idx_size);
-    module->generator_to_index_table[degree] = generator_to_index_table;
-    module->basis_element_to_opgen_table[degree] = basis_element_to_opgen_table;
+    module->generator_to_index_table[shifted_degree] = generator_to_index_table;
+    module->basis_element_to_opgen_table[shifted_degree] = basis_element_to_opgen_table;
     uint **gentoidx_degree_ptr = generator_to_index_table;
-    uint *gentoidx_index_ptr = (uint*)(generator_to_index_table + (degree + 1));
+    uint *gentoidx_index_ptr = (uint*)(generator_to_index_table + (shifted_degree + 1));
     uint offset = 0;
     uint generator = 0;
-    for(uint gen_deg = 0; gen_deg <= degree; gen_deg++){
+    for(int gen_deg = M->module.min_degree; gen_deg <= degree; gen_deg++){
         *gentoidx_degree_ptr = gentoidx_index_ptr;
-        uint op_deg = degree - gen_deg;
+        int op_deg = degree - gen_deg;
         uint num_ops = algebra_getDimension(module->module.algebra, op_deg, gen_deg);
-        for(uint gen_idx = 0; gen_idx < module->number_of_generators_in_degree[gen_deg]; gen_idx++){
+        for(uint gen_idx = 0; gen_idx < FreeModule_getNumberOfGensInDegree(M, gen_deg); gen_idx++){
             *gentoidx_index_ptr = offset;
             for(uint op_idx = 0; op_idx < num_ops; op_idx++){
                 basis_element_to_opgen_table->generator_degree = gen_deg;
@@ -305,20 +339,29 @@ void FreeModule_ConstructBlockOffsetTable(FreeModule *M, uint degree){
         }
         gentoidx_degree_ptr++;
     }
-    assert(gentoidx_degree_ptr == generator_to_index_table + (degree + 1));
+    assert(gentoidx_degree_ptr == generator_to_index_table + (shifted_degree + 1));
     assert((char*)gentoidx_index_ptr == memory + gen_to_idx_size);
     assert((char*)basis_element_to_opgen_table == memory + total_size);
 }
 
-uint FreeModule_operationGeneratorToIndex(FreeModule *this, uint op_deg, uint op_idx, uint gen_deg, uint gen_idx){
+
+
+uint FreeModule_getNumberOfGensInDegree(FreeModule *this, int degree){
+    return this->number_of_generators_in_degree[degree - this->module.min_degree];
+}
+
+uint FreeModule_operationGeneratorToIndex(FreeModule *this, int op_deg, uint op_idx, int gen_deg, uint gen_idx){
     FreeModuleInternal *module = (FreeModuleInternal *)this;
-    uint deg = op_deg + gen_deg;
+    gen_deg -= this->module.min_degree;
+    assert(gen_deg >= 0);
+    int deg = op_deg + gen_deg;
     assert(module->generator_to_index_table[deg]!=NULL);
     uint block_idx = module->generator_to_index_table[deg][gen_deg][gen_idx];
     return block_idx + op_idx;
 }
 
-FreeModuleOperationGeneratorPair FreeModule_indexToOpGen(FreeModule *this, uint degree, uint index){
+FreeModuleOperationGeneratorPair FreeModule_indexToOpGen(FreeModule *this, int degree, uint index){
+    degree -= this->module.min_degree;
     FreeModuleInternal *module = (FreeModuleInternal*) this;
     return module->basis_element_to_opgen_table[degree][index];
 }
@@ -328,7 +371,7 @@ FreeModuleOperationGeneratorPair FreeModule_indexToOpGen(FreeModule *this, uint 
 // FreeModuleHomomorphisms
 
 // max_degree is one larger than the highest degree in which you are allowed to access this module.
-FreeModuleHomomorphism *FreeModuleHomomorphism_construct(FreeModule *source, Module *target, uint max_degree){
+FreeModuleHomomorphism *FreeModuleHomomorphism_construct(FreeModule *source, Module *target, int max_degree){
     FreeModuleHomomorphism *f = malloc(
         sizeof(FreeModuleHomomorphism) 
         + max_degree * sizeof(Vector**) // outputs
@@ -338,7 +381,7 @@ FreeModuleHomomorphism *FreeModuleHomomorphism_construct(FreeModule *source, Mod
     f->source = source;
     f->target = target;
     f->max_degree = max_degree;
-    f->max_computed_degree = 0;
+    f->max_computed_degree = source->module.min_degree;
     f->outputs = (Vector***)(f + 1);
     f->coimage_to_image_isomorphism = (Matrix**)(f->outputs + max_degree);
     f->kernel = (Kernel**)(f->coimage_to_image_isomorphism + max_degree);
@@ -352,7 +395,7 @@ void FreeModuleHomomorphism_free(FreeModuleHomomorphism *f){
     if(f == NULL){
         return;
     }
-    for(uint i = 0; i < f->max_degree; i++){
+    for(int i = 0; i < f->max_degree - f->source->module.min_degree; i++){
         Matrix_free(f->coimage_to_image_isomorphism[i]);
         Kernel_free(f->kernel[i]);
         free(f->outputs[i]);
@@ -360,53 +403,64 @@ void FreeModuleHomomorphism_free(FreeModuleHomomorphism *f){
     free(f);
 }
 
-void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism *f, uint degree, uint num_gens){
+void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism *f, int degree, uint num_gens){
     assert(degree < f->max_degree);
     assert(f->max_computed_degree <= degree);
+    int shifted_degree = degree - f->source->module.min_degree;
+    assert(shifted_degree >= 0);
     f->max_computed_degree = degree + 1;
     FreeModuleInternal *module = (FreeModuleInternal*) f->source;
     uint p = module->module.p;
     uint dimension = module_getDimension(f->target, degree);
     uint vector_size = Vector_getSize(p, dimension, 0);
-    f->outputs[degree] = (Vector**)malloc(
+    f->outputs[shifted_degree] = (Vector**)malloc(
         num_gens * sizeof(Vector*) 
         + num_gens * Vector_getContainerSize(p)
         + num_gens * vector_size
     );
-    Vector **vector_ptr_ptr = f->outputs[degree];
+    Vector **vector_ptr_ptr = f->outputs[shifted_degree];
     char *vector_container_ptr = (char*)(vector_ptr_ptr + num_gens);
     char *vector_memory_ptr = vector_container_ptr + num_gens * Vector_getContainerSize(p);
     for(uint i = 0; i < num_gens; i++){
-        f->outputs[degree][i] = Vector_initialize(p, vector_container_ptr, vector_memory_ptr, dimension, 0);
+        f->outputs[shifted_degree][i] = Vector_initialize(p, vector_container_ptr, vector_memory_ptr, dimension, 0);
         vector_ptr_ptr ++;
         vector_container_ptr += Vector_getContainerSize(p);
         vector_memory_ptr += vector_size;
     }
-    assert(vector_ptr_ptr == f->outputs[degree] + num_gens);
+    assert(vector_ptr_ptr == f->outputs[shifted_degree] + num_gens);
     assert(vector_container_ptr == (char*)(vector_ptr_ptr) + num_gens * Vector_getContainerSize(p));
     assert(vector_memory_ptr == vector_container_ptr + num_gens * vector_size);
 
 }
 
-void FreeModuleHomomorphism_setOutput(FreeModuleHomomorphism *f, uint input_degree, uint input_index, Vector *output){
+Vector *FreeModuleHomomorphism_getOutput(FreeModuleHomomorphism *f, int input_degree, uint input_index){
+    assert(input_degree - f->source->module.min_degree >= 0);
+    assert(input_degree < f->max_computed_degree);
+    assert(input_index < module_getDimension((Module*)f->source, input_degree));
+    return f->outputs[input_degree - f->source->module.min_degree][input_index];
+}
+
+void FreeModuleHomomorphism_setOutput(FreeModuleHomomorphism *f, int input_degree, uint input_index, Vector *output){
     assert(output->dimension == module_getDimension(f->target, input_degree));
     assert(output->offset == 0);
-    assert(input_index < f->source->number_of_generators_in_degree[input_degree]);
-    Vector_assign(f->outputs[input_degree][input_index], output);
+    assert(input_index < FreeModule_getNumberOfGensInDegree(f->source, input_degree));
+    Vector_assign(f->outputs[input_degree - f->source->module.min_degree][input_index], output);
 }
 
 // Run FreeModule_ConstructBlockOffsetTable(source, degree) before using this on an input in that degree
-void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism *f, Vector *result, uint coeff, uint input_degree, uint input_index){
+void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism *f, Vector *result, uint coeff, int input_degree, uint input_index){
+    int shifted_input_degree = input_degree - f->source->module.min_degree;
+    assert(shifted_input_degree > 0);
     assert(input_degree < f->max_degree);
-    assert(((FreeModuleInternal*)f->source)->basis_element_to_opgen_table[input_degree] != NULL);
+    assert(((FreeModuleInternal*)f->source)->basis_element_to_opgen_table[shifted_input_degree] != NULL);
     assert(input_index < FreeModule_getDimension((Module*)f->source, input_degree));
     FreeModuleOperationGeneratorPair operation_generator = 
-        ((FreeModuleInternal*)f->source)->basis_element_to_opgen_table[input_degree][input_index];
-    uint operation_degree = operation_generator.operation_degree;
+        FreeModule_indexToOpGen(f->source, input_degree, input_index);
+    int operation_degree = operation_generator.operation_degree;
     uint operation_index = operation_generator.operation_index;
-    uint generator_degree = operation_generator.generator_degree;
+    int generator_degree = operation_generator.generator_degree;
     uint generator_index = operation_generator.generator_index;
-    Vector *output_on_generator = f->outputs[generator_degree][generator_index];
+    Vector *output_on_generator = FreeModuleHomomorphism_getOutput(f, generator_degree, generator_index);
     for(
         VectorIterator it = Vector_getIterator(output_on_generator);
         it.has_more; 
@@ -423,7 +477,7 @@ void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism *f, Vecto
 // result should be big enough to hold output (how big is that?)
 // Well it should have dim(target) columns and dim(source) rows. I guess this is 
 // the transpose of the usual convention.
-void FreeModuleHomomorphism_getMatrix(FreeModuleHomomorphism *f, Matrix *result, uint degree){
+void FreeModuleHomomorphism_getMatrix(FreeModuleHomomorphism *f, Matrix *result, int degree){
     assert(degree < f->max_degree);
     assert(module_getDimension(&f->source->module, degree) <= result->rows);
     assert(module_getDimension(f->target, degree) <= result->columns);
@@ -436,12 +490,12 @@ void FreeModuleHomomorphism_getMatrix(FreeModuleHomomorphism *f, Matrix *result,
     Algebra *algebra = source->module.algebra;
     // 
     uint i = 0;
-    for(uint gen_deg = 0; gen_deg <= degree; gen_deg++){
-        uint op_deg = degree - gen_deg;
+    for(int gen_deg = f->source->module.min_degree; gen_deg <= degree; gen_deg++){
+        int op_deg = degree - gen_deg;
         uint num_ops = algebra_getDimension(algebra, op_deg, gen_deg);
-        for(uint gen_idx = 0; gen_idx < source->number_of_generators_in_degree[gen_deg]; gen_idx++){
+        for(uint gen_idx = 0; gen_idx < FreeModule_getNumberOfGensInDegree(f->source, gen_deg); gen_idx++){
             for(uint op_idx = 0; op_idx < num_ops; op_idx++){
-                Vector *output_on_generator = f->outputs[gen_deg][gen_idx];
+                Vector *output_on_generator = FreeModuleHomomorphism_getOutput(f, gen_deg, gen_idx);
                 for(
                     VectorIterator it = Vector_getIterator(output_on_generator);
                     it.has_more; 

@@ -43,8 +43,8 @@ void Profile_free(Profile *profile);
 
 // Implemented in milnor_datatypes.c
 // These methods write a string to a buffer and return the length of the string written.
-uint MilnorAlgebra_element_toString(char *buffer, MilnorAlgebra *algebra, uint degree, Vector *m);
-void MilnorAlgebra_element_print(char *fmt_string, MilnorAlgebra *algebra, uint degree, Vector *m);
+uint MilnorAlgebra_element_toString(char *buffer, MilnorAlgebra *algebra, int degree, Vector *m);
+void MilnorAlgebra_element_print(char *fmt_string, MilnorAlgebra *algebra, int degree, Vector *m);
 uint MilnorMatrix_toString(char *buffer, uint M[MAX_XI_TAU][MAX_XI_TAU], uint rows, uint cols);
 uint MilnorAlgebra_basisElement_toKey(char *buffer, MilnorBasisElement *b);
 uint MilnorAlgebra_basisElement_toString(char *buffer, MilnorAlgebra *algebra, MilnorBasisElement *b);
@@ -57,14 +57,14 @@ MilnorBasisElement MilnorAlgebra_basisElement_fromString(MilnorAlgebra *algebra,
 MilnorAlgebra *MilnorAlgebra_construct(uint p, bool generic, Profile *profile);
 void MilnorAlgebra_free(MilnorAlgebra *);
 
-void MilnorAlgebra_generateBasis(Algebra *this, uint max_degree);
+void MilnorAlgebra_generateBasis(Algebra *this, int max_degree);
 void MilnorAlgebra_freeBasis(MilnorAlgebra *algebra);
 
-uint MilnorAlgebra_getDimension(Algebra *this, int degree, uint excess);
-MilnorBasisElement_list MilnorAlgebra_getBasis(MilnorAlgebra *algebra, uint degree);
-MilnorBasisElement MilnorAlgebra_basisElement_fromIndex(MilnorAlgebra *algebra, uint degree, uint index);
+uint MilnorAlgebra_getDimension(Algebra *this, int degree, int excess);
+MilnorBasisElement_list MilnorAlgebra_getBasis(MilnorAlgebra *algebra, int degree);
+MilnorBasisElement MilnorAlgebra_basisElement_fromIndex(MilnorAlgebra *algebra, int degree, uint index);
 uint MilnorAlgebra_basisElement_toIndex(MilnorAlgebra *algebra,  MilnorBasisElement b);
 
-void MilnorAlgebra_multiply(Algebra *this, Vector *result, uint coeff, uint r_degree, uint r_index, uint s_degree, uint s_index, uint excess);
+void MilnorAlgebra_multiply(Algebra *this, Vector *result, uint coeff, int r_degree, uint r_index, int s_degree, uint s_index, int excess);
 
 #endif //CSTEENROD_MILNOR_H

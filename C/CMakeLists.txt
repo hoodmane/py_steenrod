@@ -3,9 +3,9 @@ project(CSteenrod VERSION 1.0.1 DESCRIPTION "C Steenrod Modules")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 SET(DEBUG_COMPILE_FLAGS "-g -Wno-unused-variable -Wall -Wextra -Wpedantic -Werror -O0")
-SET(OPTIMIZE_COMPILE_FLAGS -O3) #-pg)
+SET(OPTIMIZE_COMPILE_FLAGS -O3 -DNDEBUG) #-pg)
 SET(CMAKE_CXX_FLAGS "")
-#SET(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -pg") #-lprofiler 
+#SET(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -pg") #-lprofiler
 #SET(TARGET_COMPILE_OPTIONS  "${DEBUG_INFO_COMPILE_FLAGS}")
 SET(TARGET_COMPILE_OPTIONS "${OPTIMIZE_COMPILE_FLAGS}")
 
@@ -23,11 +23,11 @@ add_executable(csteen
         src/resolution.h
         src/resolution.c
         src/milnor.h
-        src/milnor_private.h        
+        src/milnor_private.h
         src/milnor.c
         src/milnor_datatypes.c
         src/adem.h
-        src/adem.c      
+        src/adem.c
         src/adem_io.c
     )
 add_library(CSteenrod SHARED
@@ -46,8 +46,8 @@ add_library(CSteenrod SHARED
         src/milnor_datatypes.c
         src/milnor_private.h
         src/adem.h
-        src/adem.c      
-        src/adem_io.c        
+        src/adem.c
+        src/adem_io.c
     )
 
 set_target_properties(CSteenrod PROPERTIES
