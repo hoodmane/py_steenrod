@@ -100,10 +100,10 @@ void Resolution_resolveThroughDegree(Resolution *res, int degree){
             Resolution_step(res, hom_deg, int_deg);
         }
     }
-    for(int i = degree - 1 - res->min_degree; i >= 0; i--){
-        printf("stage %*d: ", 2, i);
-        array_print("%s\n", &res->modules[i+1]->number_of_generators_in_degree[i], degree - i - res->min_degree);
-    }   
+    // for(int i = degree - 1 - res->min_degree; i >= 0; i--){
+    //     printf("stage %*d: ", 2, i);
+    //     array_print("%s\n", &res->modules[i+1]->number_of_generators_in_degree[i], degree - i - res->min_degree);
+    // }   
 }
 
 void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_degree, int degree, uint source_idx);
@@ -138,7 +138,7 @@ void Resolution_step(Resolution *res, uint homological_degree, int degree){
 
     // Report the answers.
     // Classes:
-    uint num_gens = res->modules[homological_degree + 1]->number_of_generators_in_degree[degree];
+    uint num_gens = res->modules[homological_degree + 1]->number_of_generators_in_degree[degree-res->min_degree];
     for(uint i=0; i < num_gens; i++){
         res->addClass(homological_degree, degree, "");
         if(homological_degree > 0){
@@ -152,16 +152,16 @@ void Resolution_step(Resolution *res, uint homological_degree, int degree){
 void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_degree, int degree, uint source_idx){
     FreeModuleHomomorphism *d = res->differentials[homological_degree + 1];
     FreeModule *T = (FreeModule*)d->target;        
-    Vector *dx = d->outputs[degree][source_idx];
+    Vector *dx = d->outputs[degree - res->min_degree][source_idx];
     FiltrationOneProductList *product_list = res->algebra->product_list; 
     for(uint j = 0; j < product_list->length; j++){
         uint op_degree = product_list->degrees[j];
         uint op_index = product_list->indices[j];
-        if(op_degree > degree){
+        if(op_degree + res->min_degree > degree){
             break;
         }
         uint gen_degree = degree - op_degree;
-        uint num_target_generators = T->number_of_generators_in_degree[gen_degree];
+        uint num_target_generators = T->number_of_generators_in_degree[gen_degree - res->min_degree];
         for(uint target = 0; target < num_target_generators; target++){
             uint vector_idx = FreeModule_operationGeneratorToIndex(
                 res->modules[homological_degree], op_degree, op_index, gen_degree, target);

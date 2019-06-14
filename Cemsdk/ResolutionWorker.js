@@ -18,6 +18,7 @@ let last_timestamp_stem = 0;
 let timestamp_interval = 10;
 function getCallbacks(degree_shift){
     function addClassCallback(hom_deg, int_deg, cocycle) { 
+        console.log("addclass");
         if(int_deg >= last_timestamp_stem + timestamp_interval){
             let total_time = getTotalTime().toFixed(2) + " seconds";
             let last_ten_stems_time = getTime().toFixed(2) + " seconds";
@@ -48,27 +49,34 @@ function getCallbacks(degree_shift){
 
 
 function constructAlgebra(algebraData){
+    Module.print(algebraData);
     let p = algebraData.p;
     let generic = algebraData.generic;
     cinitializePrime(p);
-    // let cProfile = 0;
-    // if(algebraData.profile){
-    //     let q_part = algebraData.profile.q_part || [];
-    //     let p_part = algebraData.profile.p_part;
-    //     let truncated = algebraData.profile.truncated;        
-    //     let c_qpart_offset = Module._malloc(4 * (q_part.length + p_part.length));
-    //     let c_ppart_offset = c_qpart_offset + 4*q_part.length;
-    //     Module.HEAPU32.set(new Uint32Array(q_part), c_qpart_offset/4);
-    //     Module.HEAPU32.set(new Uint32Array(p_part), c_ppart_offset/4);
-    //     cProfile = cProfile_construct(p != 2, q_part.length, c_qpart_offset, p_part.length, c_ppart_offset, truncated);
-    //     Module._free(c_qpart_offset);
-    // }
-    // let cAlgebra = cMilnorAlgebra_construct(p, generic, cProfile);
-    // cProfile_free(cProfile); 
-    // cMilnorAlgebra_generateBasis(cAlgebra, algebraData.max_degree);
-    let cAlgebra = cAdemAlgebra_construct(p, generic, false);
-    // cProfile_free(cProfile); 
-    cAdemAlgebra_generateBasis(cAlgebra, algebraData.max_degree);    
+    // Module.print(algebraData);
+    let cAlgebra;
+    if(!algebraData.algebra || algebraData.algebra.type.toLowerCase() == "milnor"){
+        let cProfile = 0;
+        if(algebraData.algebra && algebraData.algebra.profile){
+            let profile = algebraData.algebra.profile;
+            let q_part = profile.q_part || [];
+            let p_part = profile.p_part;
+            let truncated = profile.truncated;        
+            let c_qpart_offset = Module._malloc(4 * (q_part.length + p_part.length));
+            let c_ppart_offset = c_qpart_offset + 4*q_part.length;
+            Module.HEAPU32.set(new Uint32Array(q_part), c_qpart_offset/4);
+            Module.HEAPU32.set(new Uint32Array(p_part), c_ppart_offset/4);
+            cProfile = cProfile_construct(p != 2, q_part.length, c_qpart_offset, p_part.length, c_ppart_offset, truncated);
+            Module._free(c_qpart_offset);
+        }
+        cAlgebra = cMilnorAlgebra_construct(p, generic, cProfile);
+        cProfile_free(cProfile); 
+        cMilnorAlgebra_generateBasis(cAlgebra, algebraData.max_degree);
+    } else {
+        let unstable = algebraData.algebra.unstable || false;
+        cAlgebra = cAdemAlgebra_construct(p, generic, unstable);
+        cAdemAlgebra_generateBasis(cAlgebra, algebraData.max_degree);    
+    }
     return cAlgebra;
 }
 
@@ -89,7 +97,7 @@ function constructFiniteDimensionalModule(module, cAlgebra){
     }
     let c_array_offset = Module._malloc(4 * Math.max(max_basis_degree, ...graded_dimension));
     Module.HEAPU32.set(graded_dimension, c_array_offset/4);
-    let cModule = cFiniteDimensionalModule_construct(cAlgebra, max_basis_degree, c_array_offset);
+    let cModule = cFiniteDimensionalModule_construct(cAlgebra, min_basis_degree, min_basis_degree + max_basis_degree, c_array_offset);
     for(let {op, input, output} of module.milnor_actions){
         let op_degree;
         if(p==2){
@@ -156,6 +164,7 @@ self.onmessage = function(msg){
         algebraData.generic = moduleData.generic;
         algebraData.max_degree = max_degree;
         moduleData.max_degree = max_degree;
+        algebraData.algebra = moduleData.algebra;
         let cAlgebra = constructAlgebra(algebraData);
         let module = constructFiniteDimensionalModule(msg.data.module, cAlgebra);
         let callbacks = getCallbacks(module.degree_shift);

@@ -5,10 +5,10 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 SET(DEBUG_INFO_COMPILE_FLAGS "-g")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEBUG_INFO_COMPILE_FLAGS}")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s TOTAL_MEMORY=20777216")
+SET(COMPILE_FLAGS "${COMPILE_FLAGS} -s TOTAL_MEMORY=25165824") # 3 * 2^23
 
 #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g4 -O0 --source-map-base http://localhost:8080/Cemsdk")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+SET(COMPILE_FLAGS "${COMPILE_FLAGS} -O3")
 
 SET(EXTRA_EXPORTED_RUNTIME_METHODS 
     "['ccall', 'cwrap', 'addFunction', 'print', 'getValue', 'setValue']"
@@ -67,7 +67,7 @@ add_executable(CSteenrod
     )
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
-    set_target_properties(CSteenrod PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -g4 --source-map-base http://localhost:8080/Cemsdk")
+    set_target_properties(CSteenrod PROPERTIES COMPILE_FLAGS "${COMPILE_FLAGS} -s ASSERTIONS=1 -g4 --source-map-base http://localhost:8080/Cemsdk")
     set_target_properties(CSteenrod PROPERTIES LINK_FLAGS "${LINK_FLAGS} -g4 ${EMCC_EXPORT_FLAGS}")
 endif ()
 

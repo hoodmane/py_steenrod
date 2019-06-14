@@ -15,6 +15,7 @@
 FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint max_basis_degree, uint *graded_dimension);
 
 FiniteDimensionalModule *FiniteDimensionalModule_construct(Algebra *algebra, int min_degree, int max_basis_degree, uint *graded_dimension){
+    printf("min_deg: %d, max_deg: %d, ",min_degree, max_basis_degree);
     FiniteDimensionalModule *result = FiniteDimensionalModule_allocate(algebra, max_basis_degree - min_degree, graded_dimension);
     result->module.p = algebra->p;
     result->module.algebra = algebra;

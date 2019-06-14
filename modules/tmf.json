@@ -1,5 +1,0 @@
-{
-    "name": "$\\mathit{tmf}$", "file_name": "tmf", 
-    "p": 2, "generic": false, 
-    "profile" : {"truncated" : true, "p_part" : [3, 2, 1]},
-    "gens": {"x0": 0}, "sq_actions": [], "milnor_actions": []}

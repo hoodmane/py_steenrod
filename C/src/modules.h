@@ -37,7 +37,7 @@ typedef struct {
 } FiniteDimensionalModule;
 
 FiniteDimensionalModule *FiniteDimensionalModule_construct(
-    Algebra *algebra, int min_degree, int max_basis_degree, uint *graded_dimension);
+    Algebra *algebra, int min_degree, int max_degree, uint *graded_dimension);
 
 void FiniteDimensionalModule_free(FiniteDimensionalModule *module);
 void FiniteDimensionalModule_setAction(

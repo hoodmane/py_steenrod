@@ -985,6 +985,9 @@ static void AdemAlgebra__makeMonoAdmissibleGeneric(
     if(idx < 0 || idx == monomial->P_length || monomial->Ps[idx] >= p*monomial->Ps[idx + 1] + b2){
         // Admissible so write monomial to result.
         uint idx = AdemAlgebra_basisElement_toIndex(public_algebra, monomial);
+        if(public_algebra->unstable && idx >= algebra_getDimension((Algebra*)algebra, monomial->degree, excess)){
+            return;
+        }        
         Vector_addBasisElement(result, idx, coeff);
         return;
     }
@@ -999,9 +1002,10 @@ static void AdemAlgebra__makeMonoAdmissibleGeneric(
     uint adm_idx = AdemAlgebra_basisElement_toIndex(public_algebra, &tail_of_monomial);
     int tail_degree = tail_of_monomial.degree + q*x + b1;
     Vector *reduced_tail = algebra->multiplication_table[tail_degree][bx][adm_idx];
+    uint dim = algebra_getDimension((Algebra*)algebra, tail_degree, excess);    
     for(
         VectorIterator it = Vector_getIterator(reduced_tail);
-        it.has_more;
+        it.index < dim;
         it = Vector_stepIterator(it)
     ){
         if(it.value == 0){

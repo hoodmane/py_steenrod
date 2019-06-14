@@ -15,6 +15,7 @@
 html, body {
   height: 98.5%;
   min-height: 98.5%;
+  margin-left:0.4cm;
 }
 
 #main {
@@ -52,7 +53,38 @@ hr { height:2px; visibility:hidden; margin-bottom:-1px; }
 <script type="text/javascript" src='Cemsdk/CSteenrodWrappers.js'></script>
 <script type="text/javascript" src='Cemsdk/ResolutionWorker.js'></script> -->
 <!-- -->
+<form action="unstable_ext.html" id="ext-config">
+    Prime: <select name="prime" id="ext-config-prime">
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="5">5</option>
+        <option value="7">7</option>
+    </select>    
+    <br>
+    
+    Generic?: <input type="checkbox" name="generic" value="generic" id="ext-config-generic">
+    <br>
+
+    Module degree:<br>
+    <input type="number" name="n" value="3" min=0 step=1>
+    <br>
+
+    Max degree:<br>
+    <input type="number" name="degree" value="50" min=0 step=1>
+    <br>
+    
+    <br>
+    <input type="submit" value="Submit">
+  </form> 
+
 <script>
+let ext_config = document.getElementById("ext-config");
+let ext_config_prime = document.getElementById("ext-config-prime");
+let ext_config_generic = document.getElementById("ext-config-generic");
+
+ext_config_prime.addEventListener("change", (arg) => {
+        ext_config_generic.checked = ext_config_prime.value !== "2";
+})
 katex_macros = {};
 function katexMathInDelims(string){
     html_list = string.split(/(?:\\\[)|(?:\\\()|(?:\\\))|(?:\\\])|(?:\$)/);
@@ -101,48 +133,10 @@ document.body.prepend(main_div);
 let worker = {};
 worker.terminate = function(){};
 
-IO.loadFromServer("modules/module_registry.json").then((json) => {
-    module_groups = groupBy(json, "p");
-    let heading = document.createElement("h1");
-    heading.innerHTML = "Adams E2 Pages";
-    let table = document.createElement("table");
-    max_rows = Math.max(...Object.values(module_groups).map(x => x.length));
-    table_rows = [];
-    for(let i = 0; i < max_rows; i++){
-        let tr = document.createElement("tr");
-        tr.id = `row${i}`;
-        table.appendChild(tr);
-        table_rows.push(tr);
-    }
-    for(let [p, modules] of Object.entries(module_groups)){
-        let i = -1;
-        for(let module of modules){
-            i++;
-            let tdA = document.createElement("td");
-            tdA.style.width = "150px"
-            tdA.className = "module_${p}";
-            // let tdB = document.createElement("td");
-            // tdB.className = "description";
-            let a = document.createElement("a");
-            let dictionary = {"module" : module.file_name, "degree" : 50};
-            a.href = URLHashFromDictionary(dictionary);
-            // a.onclick = () => main();
-            a.innerHTML = katexMathInDelims(module["name"]);
-            tdA.appendChild(a);
-            // tdB.innerHTML = module['description'];
-            table_rows[i].appendChild(tdA);
-            // if(module['description']){
-            //     tr.appendChild(tdB);
-            // }       
-        }
-    }
-    document.body.appendChild(heading);    
-    document.body.appendChild(table);
-})
-
 function main(){
     let params = getURLDictionary();
-    if(params.module){
+    params.p = params.prime;
+    if(params.p){
         worker.terminate();
         main_div.style.display = '';
         // console.log(main_div.offsetHeight);
@@ -156,6 +150,24 @@ function main(){
         // console.log(main_div.offsetHeight);
     }
 }
+main();
+
+// function main(){
+//     let params = getURLDictionary();
+//     if(params.module){
+//         worker.terminate();
+//         main_div.style.display = '';
+//         // console.log(main_div.offsetHeight);
+//         startResolution(params);
+//     } else {
+//         worker.terminate();        
+//         let page_indicator = document.getElementById('page_indicator') || {};
+//         page_indicator.innerText = "";
+//         main_div.style.display = 'none';
+//         // main_div.style.minHeight = 0;
+//         // console.log(main_div.offsetHeight);
+//     }
+// }
 
 // window.addEventListener('hashchange',main);
 main();
@@ -166,6 +178,9 @@ function sleep(ms) {
 
 
 function startResolution(dict){
+    let p = Number.parseInt(dict.p);
+    let generic = (dict.generic && dict.generic === "true") || p != 2;
+    let n = Number.parseInt(dict.n);
     let degree = Number.parseInt(dict.degree);
     let module_file_name = dict.module;
     let sseq = new Sseq();
@@ -198,14 +213,17 @@ function startResolution(dict){
             sseq.addStructline(source, target);
             sleep(0).then(() => sseq.update());
         }
-    })    
-    IO.loadFromServer(`modules/${module_file_name}.json`).then((module) => {
-        // console.log(module);
-        document.getElementById('page_indicator').innerHTML = katexMathInDelims(module.name);
-        worker.postMessage({
-            "module" : module,
-            "max_degree" : degree
-        });
+    })
+    let module = {
+        "name": `$S^{${n}}_{${p}}$`, "p": p, "generic": generic, 
+        "algebra" : {"type" : "adem","unstable" : true},
+        "gens": {"x0": n}, "sq_actions": [], "milnor_actions": []
+    }
+
+    document.getElementById('page_indicator').innerHTML = katexMathInDelims(module.name);
+    worker.postMessage({
+        "module" : module,
+        "max_degree" : degree
     });
 }
 

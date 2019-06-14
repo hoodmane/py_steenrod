@@ -148,5 +148,7 @@ def standard_modules_to_json():
     json_str = json.dumps(module_registry)
     write_file("modules/module_registry.json", json_str)
 
-if __name__ == "__main__":
     standard_modules_to_json()
+
+if __name__ == "__main__":
+    pass
