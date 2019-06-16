@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css" integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.js" integrity="sha384-9Nhn55MVVN0/4OFx7EE5kpFBPsEMZxKTCnA+4fqDmg12eCTqGi6+BB2LjY8brQxJ" crossorigin="anonymous"></script>
+<link rel='stylesheet' href='stylesheet_2018-05-16.css' type='text/css'/>
+
+<!--
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="js_spectralsequences/w2ui-1.5.rc1.min.css" />
+    <script type="text/javascript" src="js_spectralsequences/w2ui-1.5.rc1.min.js"></script>
+-->
+<style>
+html, body {
+  height: 98.5%;
+  min-height: 98.5%;
+  margin-left:0.4cm;
+}
+
+#main {
+        height: 100%;
+        min-height: 100%;
+}
+
+#main-svg {
+        width: 100%;
+        height: 96%;
+}
+
+div.tooltip {	
+    position: absolute;
+    text-align: center;
+    padding: 5px;
+    font: 12px sans-serif;		
+    background: lightsteelblue;
+    border: 0px;
+    border-radius: 8px;
+    pointer-events: none;
+}
+.class {
+    pointer-events: fill;
+}
+
+hr { height:2px; visibility:hidden; margin-bottom:-1px; }
+</style>
+</head>
+<body>
+<!--<script src="example_dir.php"></script> -->
+<script src="js_spectralsequences/bundle.js" type="text/javascript"></script>
+<!-- --
+<script type="text/javascript" src='Cemsdk/CSteenrod.js'></script>
+<script type="text/javascript" src='Cemsdk/CSteenrodWrappers.js'></script>
+<script type="text/javascript" src='Cemsdk/ResolutionWorker.js'></script> -->
+<!-- -->
+<form id="adem-calculator">
+    Prime: <select name="prime" id="calculator-prime" onchange="ensureWorkersExist();return false;">
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="5">5</option>
+        <option value="7">7</option>
+    </select>    
+    <br>
+    Input Adem product:
+    <br>
+    <input type="text" id="adem-calculator-input" name="input" style="width:200px" onkeydown="if (event.keyCode == 13) {runAdem(); return false}">
+    <input type="button" value="Compute!" onClick="runAdem(); return false" style="margin-bottom: 10pt">
+    <div>Result: <span id="adem-result" onclick="copyAdemResultToClipboard()"></span> <p id="adem-result-simple"></p> </div>
+
+<!--    <br><br>
+    Input Milnor product:
+    <br>
+    <input type="text" id="milnor-calculator-input" name="input" style="width:200px" onkeydown="if (event.keyCode == 13) {runMilnor(); return false}">
+    <input type="button" value="Compute!" onClick="runMilnor(); return false"> 
+-->
+  </form> 
+
+<script>
+"use strict";
+
+let katex_macros = {};
+function katexMathInDelims(string){
+    let html_list = string.split(/(?:\\\[)|(?:\\\()|(?:\\\))|(?:\\\])|(?:\$)/);
+    for(let i = 1; i < html_list.length; i+=2){
+        html_list[i] = katex.renderToString(html_list[i], {macros : katex_macros});
+    }
+    return html_list.join("");
+}
+
+let adem_reln_element = document.createElement("p");
+let adem_reln_latex = 
+    "\\displaystyle\\def\\P{\\mathrm{P}}"
+    + "\\P^i \\beta^{\\epsilon} \\P^j" 
+    + " = \\sum_{\\epsilon_1+\\epsilon_2 = \\epsilon}\\sum_{k=0}^{i/p}" 
+    + "\\binom{(j-k)(p-1) + \\epsilon_1 - 1 }{i-pj-\\epsilon_2} \\beta^{\\epsilon_1}\\P^{i+j-k}\\beta^{\\epsilon_2}\\P^{k}";
+
+adem_reln_element.innerHTML = katexMathInDelims(`The Adem relation is $${adem_reln_latex}$`);
+adem_reln_element.style.marginTop = "30pt";
+document.body.appendChild(adem_reln_element);
+
+let prime_input = document.getElementById("calculator-prime");
+let generic_input = document.getElementById("calculator-generic");
+let adem_calculator_input = document.getElementById("adem-calculator-input");
+let milnor_calculator_input = document.getElementById("milnor-calculator-input");
+let workers = {};
+
+function ensureWorkersExist(){
+    let algebra = {};
+    algebra.p = Number.parseInt(prime_input.value);
+    algebra.generic = true;
+    for(let type of ["milnor", "adem"]){
+        algebra.type = type;
+        let key = JSON.stringify(algebra);
+        if(key in workers){
+            continue;
+        }
+        let worker = new Worker("Cemsdk/CalculatorWorker.js");
+        workers[key] = worker;
+        worker.addEventListener("message", handleMessageFromWorker);
+        worker.postMessage({
+            "cmd" : "construct",
+            "algebra" : algebra
+        });
+    }
+}
+ensureWorkersExist();
+
+
+function runAdem(){
+    let algebra = {};
+    algebra.p = Number.parseInt(prime_input.value);
+    algebra.generic = true;
+    algebra.type = "adem";
+    let result_element = document.getElementById("adem-result");
+    let result_simple_element = document.getElementById("adem-result-simple");    
+    result_simple_element.innerText = "";
+    result_element.innerHTML = "";
+    let key = JSON.stringify(algebra);
+    if(!key in workers){
+        ensureWorkersExist();
+    }
+    let worker = workers[key];
+    worker.postMessage({
+        "cmd" : "calculate_adem",
+        "input" : adem_calculator_input.value
+    });
+}
+
+function runMilnor(){
+    reduceMilnorString(milnor_calculator_input.value);
+}
+
+let handlers = {};
+function handleMessageFromWorker(message){
+    handlers[message.data.cmd](message.data);
+}
+
+handlers.adem_extending_basis = function(data){
+    let result_simple_element = document.getElementById("adem-result");
+    result_simple_element.innerHTML = `<br>Extending basis from degree ${data.old_max} to degree ${data.new_max}...`;
+}
+
+handlers.adem_extending_basis_done = function(data){
+    let result_simple_element = document.getElementById("adem-result");
+    if(!result_simple_element.innerText.endsWith("Done.")){
+        result_simple_element.innerText += " Done.";
+    }
+}
+
+handlers.adem_result = function(data){
+    let result_element = document.getElementById("adem-result");
+    let result_simple_element = document.getElementById("adem-result-simple");
+    result_element.innerHTML = katexMathInDelims(`$${data.latex_input}=${data.latex_result}$ (click to copy latex)`);
+    result_element.title = `$${data.latex_input}=${data.latex_result}$` // stow the raw latex in title for copying.
+    result_simple_element.innerText = data.simple_result;
+}
+
+handlers.adem_parse_error = function(data){
+    let result_element = document.getElementById("adem-result");
+    let result_simple_element = document.getElementById("adem-result-simple");
+    result_element.innerHTML = `Bad input ${data.error_str} at index ${data.position}.`;
+}
+
+handlers.adem_error = function(data){
+    let result_element = document.getElementById("adem-result");
+    let result_simple_element = document.getElementById("adem-result-simple");
+    result_element.innerHTML = data.error_str;
+}
+
+
+function copyToClipboard(text) {
+    if (window.clipboardData && window.clipboardData.setData) {
+        // IE specific code path to prevent textarea being shown while dialog is visible.
+        return clipboardData.setData("Text", text); 
+
+    } else if (document.queryCommandSupported && document.queryCommandSupported("copy")) {
+        var textarea = document.createElement("textarea");
+        textarea.textContent = text;
+        textarea.style.position = "fixed";  // Prevent scrolling to bottom of page in MS Edge.
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            return document.execCommand("copy");  // Security exception may be thrown by some browsers.
+        } catch (ex) {
+            console.warn("Copy to clipboard failed.", ex);
+            return false;
+        } finally {
+            document.body.removeChild(textarea);
+        }
+    }
+}
+
+function copyAdemResultToClipboard(){
+    let result_element = document.getElementById("adem-result");
+    copyToClipboard(result_element.title);
+}
+
+</script>
+
+
+</body>
+</html>

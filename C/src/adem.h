@@ -51,5 +51,12 @@ uint AdemAlgebra_basisElement_toIndex(AdemAlgebra *algebra,  AdemBasisElement *b
 
 void AdemAlgebra_multiply(Algebra *this, Vector *result, uint coeff, int r_degree, uint r_index, int s_degree, uint s_index, int excess);
 
+// Primarily for javascript:
+AdemBasisElement *AdemAlgebra_basisElement_construct(uint degree, uint P_length, uint *Ps, uint bocksteins);
+void AdemAlgebra_basisElement_free(AdemBasisElement * b);
+uint AdemAlgebra_basisElement_getPlength(AdemBasisElement *b);
+uint *AdemAlgebra_basisElement_getPs(AdemBasisElement *b);
+uint AdemAlgebra_basisElement_getBocksteins(AdemBasisElement *b);
+void AdemAlgebra_makeMonoAdmissible(AdemAlgebra *algebra, Vector *result, uint coeff, AdemBasisElement *monomial, int excess);
 
 #endif //CSTEENROD_ADEM_H

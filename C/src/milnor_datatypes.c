@@ -88,11 +88,6 @@ void MilnorAlgebra__generateName(MilnorAlgebra *A){
     char *result = malloc((len + 1)* sizeof(char));
     memcpy(result, buffer, len + 1);
     A->algebra.name = result;
-    printf("name: ");
-    for(uint i = 0; i<len; i++){
-        printf("%c",A->algebra.name[i]);
-    }
-    printf("\n");
 }
 
 

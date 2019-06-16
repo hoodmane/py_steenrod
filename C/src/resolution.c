@@ -340,7 +340,7 @@ uint Resolution_gradedDimensionString(char *buffer, Resolution *resolution){
     len += sprintf(buffer + len, "\n]\n");
     return len;
 }
-/**/
+/**
 int main(int argc, char *argv[]){
     // assert(false);
     uint p;
@@ -385,13 +385,14 @@ int main(int argc, char *argv[]){
     }
     algebra_computeBasis(algebra, degree);
 
-    uint min_degree = 3;
-    uint max_generator_degree = 0 + 1 + min_degree;
-    uint graded_dimension[5] = {1,0,1};
+    uint min_degree = 0;
+    uint degree_range = 2;
+    uint max_generator_degree = 0 + degree_range + min_degree;
+    uint graded_dimension[5] = {1, 1};
     FiniteDimensionalModule *module = 
         FiniteDimensionalModule_construct(algebra, min_degree, max_generator_degree, graded_dimension);
-    // uint output[1] = {1};
-    // FiniteDimensionalModule_setAction(module, 2, 0, 0, 0, output);
+    uint output[1] = {1};
+    FiniteDimensionalModule_setAction(module, 2, 0, 0, 0, output);
     // degree--;
     Resolution *res = Resolution_construct(module, degree, NULL, NULL);
     Resolution_resolveThroughDegree(res, degree);

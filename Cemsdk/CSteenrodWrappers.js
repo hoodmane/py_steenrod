@@ -4,11 +4,16 @@ let cinitializePrime = cwrap("initializePrime", 'void', ['number']);
 // Vector *Vector_construct(uint p, uint dimension, uint offset);
 let cVector_construct = cwrap("Vector_construct", 'pointer', ['number', 'number', 'number']);
 
+// void Vector_free(Vector *v); 
+let cVector_free = cwrap("Vector_free", 'void', ['pointer']);
+
 // void Vector_pack(Vector *target, uint *source);
 let cVector_pack = cwrap("Vector_pack", 'void', ['pointer', 'pointer']);
 
 // void Vector_unpack(uint * target, Vector * source);
 let cVector_unpack = cwrap("Vector_unpack", 'void', ['pointer', 'pointer']);
+
+
 
 
 // AdemAlgebra *AdemAlgebra_construct(uint p, bool generic, bool unstable);
@@ -22,6 +27,28 @@ let cAdemAlgebra_generateBasis = Module.cwrap("AdemAlgebra_generateBasis", 'bool
 
 // uint AdemAlgebra_getDimension(Algebra *this, int degree, int excess);
 let cAdemAlgebra_getDimension = Module.cwrap("AdemAlgebra_getDimension", 'number', ['pointer', 'number', 'number']);
+
+// uint AdemAlgebra_element_toString(char *buffer, AdemAlgebra *algebra, int degree, Vector *m);
+let cAdemAlgebra_element_toString = Module.cwrap("AdemAlgebra_element_toString", 'number', ['pointer', 'pointer', 'number', 'pointer']);
+
+// AdemBasisElement *AdemAlgebra_basisElement_fromIndex(AdemAlgebra *public_algebra, int degree, uint index);
+let cAdemAlgebra_basisElement_fromIndex = Module.cwrap("AdemAlgebra_basisElement_fromIndex", 'pointer', ['pointer', 'number', 'number']);
+
+// AdemBasisElement *AdemAlgebra_basisElement_construct(uint degree, uint P_length, uint *Ps, uint bocksteins);
+let cAdemAlgebra_basisElement_construct = Module.cwrap("AdemAlgebra_basisElement_construct", 'pointer', ['number','number', 'pointer', 'number']);
+
+// uint AdemAlgebra_basisElement_getPlength(AdemBasisElement *b);
+let cAdemAlgebra_basisElement_getPlength = Module.cwrap("AdemAlgebra_basisElement_getPlength", 'number', ['pointer']);
+
+// uint *AdemAlgebra_basisElement_getPs(AdemBasisElement *b);
+let cAdemAlgebra_basisElement_getPs = Module.cwrap("AdemAlgebra_basisElement_getPs", 'pointer', ['pointer']);
+
+// uint AdemAlgebra_basisElement_getBocksteins(AdemBasisElement *b);\
+let cAdemAlgebra_basisElement_getBocksteins = Module.cwrap("AdemAlgebra_basisElement_getBocksteins", 'number', ['pointer']);
+
+// void AdemAlgebra_makeMonoAdmissible(AdemAlgebra *algebra, Vector *result, uint coeff, AdemBasisElement *monomial, int excess);
+let cAdemAlgebra_makeMonoAdmissible = Module.cwrap("AdemAlgebra_makeMonoAdmissible", 'void', ['pointer', 'pointer', 'number', 'pointer', 'number']);
+
 
 
 // Profile *Profile_construct(bool generic, uint q_part_length, uint * q_part, uint p_part_length, uint *p_part, bool truncated);

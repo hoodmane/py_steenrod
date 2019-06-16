@@ -2,6 +2,8 @@
 importScripts("CSteenrod.js");
 importScripts("CSteenrodWrappers.js");
 
+const sizeof_uint = 4;
+
 let t0 = performance.now();
 let t_last = t0;
 function getTime(){
@@ -62,10 +64,10 @@ function constructAlgebra(algebraData){
             let q_part = profile.q_part || [];
             let p_part = profile.p_part;
             let truncated = profile.truncated;        
-            let c_qpart_offset = Module._malloc(4 * (q_part.length + p_part.length));
-            let c_ppart_offset = c_qpart_offset + 4*q_part.length;
-            Module.HEAPU32.set(new Uint32Array(q_part), c_qpart_offset/4);
-            Module.HEAPU32.set(new Uint32Array(p_part), c_ppart_offset/4);
+            let c_qpart_offset = Module._malloc(sizeof_uint * (q_part.length + p_part.length));
+            let c_ppart_offset = c_qpart_offset + sizeof_uint*q_part.length;
+            Module.HEAPU32.set(new Uint32Array(q_part), c_qpart_offset/sizeof_uint);
+            Module.HEAPU32.set(new Uint32Array(p_part), c_ppart_offset/sizeof_uint);
             cProfile = cProfile_construct(p != 2, q_part.length, c_qpart_offset, p_part.length, c_ppart_offset, truncated);
             Module._free(c_qpart_offset);
         }
@@ -95,8 +97,8 @@ function constructFiniteDimensionalModule(module, cAlgebra){
         index_to_basis_element[degree - min_basis_degree] = index_to_basis_element[degree - min_basis_degree] || {}
         index_to_basis_element[degree - min_basis_degree][index] = b;
     }
-    let c_array_offset = Module._malloc(4 * Math.max(max_basis_degree, ...graded_dimension));
-    Module.HEAPU32.set(graded_dimension, c_array_offset/4);
+    let c_array_offset = Module._malloc(sizeof_uint * Math.max(max_basis_degree, ...graded_dimension));
+    Module.HEAPU32.set(graded_dimension, c_array_offset/sizeof_uint);
     let cModule = cFiniteDimensionalModule_construct(cAlgebra, min_basis_degree, min_basis_degree + max_basis_degree, c_array_offset);
     for(let {op, input, output} of module.milnor_actions){
         let op_degree;
@@ -119,7 +121,7 @@ function constructFiniteDimensionalModule(module, cAlgebra){
         for( let {gen, coeff} of output) {
             output_vector[basis_element_indices[gen]] = coeff
         }
-        Module.HEAPU32.set(output_vector, c_array_offset/4);
+        Module.HEAPU32.set(output_vector, c_array_offset/sizeof_uint);
 
         cFiniteDimensionalModule_setAction(
             cModule, 

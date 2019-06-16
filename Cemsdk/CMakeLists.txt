@@ -5,7 +5,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 SET(DEBUG_INFO_COMPILE_FLAGS "-g")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEBUG_INFO_COMPILE_FLAGS}")
-SET(COMPILE_FLAGS "${COMPILE_FLAGS} -s TOTAL_MEMORY=25165824") # 3 * 2^23
+SET(COMPILE_FLAGS "${COMPILE_FLAGS} -s TOTAL_MEMORY=50331648") # 3 * 2^23
 
 #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g4 -O0 --source-map-base http://localhost:8080/Cemsdk")
 SET(COMPILE_FLAGS "${COMPILE_FLAGS} -O3")
@@ -15,7 +15,7 @@ SET(EXTRA_EXPORTED_RUNTIME_METHODS
 )
 SET(EXPORTED_FUNCTIONS "'_initializePrime'")
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
-    '_Vector_construct', '_Vector_pack', '_Vector_unpack', '_Vector_print'")
+    '_Vector_construct', '_Vector_pack', '_Vector_unpack', '_Vector_print', '_Vector_free'")
 
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
     '_MilnorAlgebra_construct', '_MilnorAlgebra_free', \
@@ -25,7 +25,13 @@ SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
 
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
     '_AdemAlgebra_construct', '_AdemAlgebra_free', \
-    '_AdemAlgebra_generateBasis', '_AdemAlgebra_getDimension'"
+    '_AdemAlgebra_generateBasis', '_AdemAlgebra_getDimension', \
+    '_AdemAlgebra_basisElement_fromIndex', '_AdemAlgebra_basisElement_toIndex', \
+    '_AdemAlgebra_multiply', '_AdemAlgebra_makeMonoAdmissible', \
+    '_AdemAlgebra_element_toString', \
+    '_AdemAlgebra_basisElement_construct', '_AdemAlgebra_basisElement_free', \
+    '_AdemAlgebra_basisElement_getPlength', '_AdemAlgebra_basisElement_getPs', \
+    '_AdemAlgebra_basisElement_getBocksteins', '_AdemAlgebra_basisElement_fromIndex'"
 )
 
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\

@@ -1096,11 +1096,11 @@ function updateGlobalBufferViews() {
 
 
 var STATIC_BASE = 1024,
-    STACK_BASE = 19552,
+    STACK_BASE = 19664,
     STACKTOP = STACK_BASE,
-    STACK_MAX = 5262432,
-    DYNAMIC_BASE = 5262432,
-    DYNAMICTOP_PTR = 19296;
+    STACK_MAX = 5262544,
+    DYNAMIC_BASE = 5262544,
+    DYNAMICTOP_PTR = 19408;
 
 
 
@@ -1486,7 +1486,7 @@ var ASM_CONSTS = [];
 
 
 
-// STATICTOP = STATIC_BASE + 18528;
+// STATICTOP = STATIC_BASE + 18640;
 /* global initializers */ /*__ATINIT__.push();*/
 
 
@@ -1497,7 +1497,7 @@ var ASM_CONSTS = [];
 
 
 /* no memory initializer */
-var tempDoublePtr = 19536
+var tempDoublePtr = 19648
 
 function copyTempFloat(ptr) { // functions, because inlining this code increases code size too much
   HEAP8[tempDoublePtr] = HEAP8[ptr];
@@ -1736,10 +1736,20 @@ var asm =Module["asm"]// EMSCRIPTEN_END_ASM
 (asmGlobalArg, asmLibraryArg, buffer);
 
 Module["asm"] = asm;
+var _AdemAlgebra_basisElement_construct = Module["_AdemAlgebra_basisElement_construct"] = function() {  return Module["asm"]["_AdemAlgebra_basisElement_construct"].apply(null, arguments) };
+var _AdemAlgebra_basisElement_free = Module["_AdemAlgebra_basisElement_free"] = function() {  return Module["asm"]["_AdemAlgebra_basisElement_free"].apply(null, arguments) };
+var _AdemAlgebra_basisElement_fromIndex = Module["_AdemAlgebra_basisElement_fromIndex"] = function() {  return Module["asm"]["_AdemAlgebra_basisElement_fromIndex"].apply(null, arguments) };
+var _AdemAlgebra_basisElement_getBocksteins = Module["_AdemAlgebra_basisElement_getBocksteins"] = function() {  return Module["asm"]["_AdemAlgebra_basisElement_getBocksteins"].apply(null, arguments) };
+var _AdemAlgebra_basisElement_getPlength = Module["_AdemAlgebra_basisElement_getPlength"] = function() {  return Module["asm"]["_AdemAlgebra_basisElement_getPlength"].apply(null, arguments) };
+var _AdemAlgebra_basisElement_getPs = Module["_AdemAlgebra_basisElement_getPs"] = function() {  return Module["asm"]["_AdemAlgebra_basisElement_getPs"].apply(null, arguments) };
+var _AdemAlgebra_basisElement_toIndex = Module["_AdemAlgebra_basisElement_toIndex"] = function() {  return Module["asm"]["_AdemAlgebra_basisElement_toIndex"].apply(null, arguments) };
 var _AdemAlgebra_construct = Module["_AdemAlgebra_construct"] = function() {  return Module["asm"]["_AdemAlgebra_construct"].apply(null, arguments) };
+var _AdemAlgebra_element_toString = Module["_AdemAlgebra_element_toString"] = function() {  return Module["asm"]["_AdemAlgebra_element_toString"].apply(null, arguments) };
 var _AdemAlgebra_free = Module["_AdemAlgebra_free"] = function() {  return Module["asm"]["_AdemAlgebra_free"].apply(null, arguments) };
 var _AdemAlgebra_generateBasis = Module["_AdemAlgebra_generateBasis"] = function() {  return Module["asm"]["_AdemAlgebra_generateBasis"].apply(null, arguments) };
 var _AdemAlgebra_getDimension = Module["_AdemAlgebra_getDimension"] = function() {  return Module["asm"]["_AdemAlgebra_getDimension"].apply(null, arguments) };
+var _AdemAlgebra_makeMonoAdmissible = Module["_AdemAlgebra_makeMonoAdmissible"] = function() {  return Module["asm"]["_AdemAlgebra_makeMonoAdmissible"].apply(null, arguments) };
+var _AdemAlgebra_multiply = Module["_AdemAlgebra_multiply"] = function() {  return Module["asm"]["_AdemAlgebra_multiply"].apply(null, arguments) };
 var _FiniteDimensionalModule_construct = Module["_FiniteDimensionalModule_construct"] = function() {  return Module["asm"]["_FiniteDimensionalModule_construct"].apply(null, arguments) };
 var _FiniteDimensionalModule_free = Module["_FiniteDimensionalModule_free"] = function() {  return Module["asm"]["_FiniteDimensionalModule_free"].apply(null, arguments) };
 var _FiniteDimensionalModule_setAction = Module["_FiniteDimensionalModule_setAction"] = function() {  return Module["asm"]["_FiniteDimensionalModule_setAction"].apply(null, arguments) };
@@ -1752,6 +1762,7 @@ var _Profile_free = Module["_Profile_free"] = function() {  return Module["asm"]
 var _Resolution_construct = Module["_Resolution_construct"] = function() {  return Module["asm"]["_Resolution_construct"].apply(null, arguments) };
 var _Resolution_resolveThroughDegree = Module["_Resolution_resolveThroughDegree"] = function() {  return Module["asm"]["_Resolution_resolveThroughDegree"].apply(null, arguments) };
 var _Vector_construct = Module["_Vector_construct"] = function() {  return Module["asm"]["_Vector_construct"].apply(null, arguments) };
+var _Vector_free = Module["_Vector_free"] = function() {  return Module["asm"]["_Vector_free"].apply(null, arguments) };
 var _Vector_pack = Module["_Vector_pack"] = function() {  return Module["asm"]["_Vector_pack"].apply(null, arguments) };
 var _Vector_print = Module["_Vector_print"] = function() {  return Module["asm"]["_Vector_print"].apply(null, arguments) };
 var _Vector_unpack = Module["_Vector_unpack"] = function() {  return Module["asm"]["_Vector_unpack"].apply(null, arguments) };

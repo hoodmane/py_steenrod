@@ -51,7 +51,6 @@ int AdemAlgebra_lengthSortOrder(const void *a, const void *b){
     return -x->P_length + y->P_length; 
 }
 
-
 KHASH_MAP_INIT_STR(monomial_index_map, uint)
 
 typedef struct {
@@ -176,7 +175,6 @@ void AdemAlgebra_generateBasis(Algebra *this, int max_degree){
     for(uint k = old_max_degree; k < max_degree; k++){
         name_table[k] = kh_init(monomial_index_map);
     }
-    
     if(algebra->public_algebra.generic){
         AdemAlgebra__generateBasisGeneric(algebra, old_max_degree, max_degree);
     } else {
@@ -191,6 +189,9 @@ void AdemAlgebra_generateBasis(Algebra *this, int max_degree){
         }
     }
     AdemAlgebra__generateMultiplicationTable(algebra, old_max_degree, max_degree);
+    if(algebra->public_algebra.generic){
+        this->max_degree--;
+    }
     if(algebra->public_algebra.unstable){
         AdemAlgebra__generateExcessTable(algebra, old_max_degree, max_degree);
     }
@@ -514,7 +515,7 @@ static void AdemAlgebra__generateMultiplicationTable2(AdemAlgebraInternal *algeb
         assert((char*)current_ptr_3 == (char*)top_of_table + table_size); 
         algebra->multiplication_table[n] = top_of_table;
     }
-    for(int n=old_max_degree; n < max_degree; n++){       
+    for(int n=old_max_degree; n < max_degree; n++){     
         for(uint x = n; x > 0; x--){
             for(uint idx = 0; idx < AdemAlgebra_getDimension((Algebra*)algebra, n-x, -1); idx++){
                 AdemAlgebra__generateMultiplicationTable2_step(algebra, n, x, idx);
@@ -532,7 +533,9 @@ static void AdemAlgebra__generateMultiplicationTableGeneric(AdemAlgebraInternal 
     uint p = algebra->public_algebra.algebra.p;
     uint q = 2*p-2;
     size_t vector_container_size = Vector_getContainerSize(p);
-    old_max_degree++;
+    if(old_max_degree==0){
+        old_max_degree++;
+    }
     for(int n=old_max_degree; n < max_degree + 1; n++){
         uint output_dimension = algebra->basis_table[n].length;
         size_t vector_size = Vector_getSize(p, output_dimension, 0);
@@ -649,7 +652,7 @@ static void AdemAlgebra__generateMultiplicationTableGeneric_step(AdemAlgebraInte
     uint working_elt_Ps[MAX_XI_TAU + 1];
     working_elt.Ps = working_elt_Ps;
     working_elt.degree = n;
-    AdemBasisElement *cur_basis_elt = AdemAlgebra_basisElement_fromIndex((AdemAlgebra*)algebra, n-q*x, idx);
+    AdemBasisElement *cur_basis_elt = AdemAlgebra_basisElement_fromIndex((AdemAlgebra*)algebra, n-q*x, idx);  
     // Enough space to fit Sq^x * (rest of Sqs)
     uint x_len = x>0 ? 1 : 0;
     working_elt.P_length = cur_basis_elt->P_length + x_len;
@@ -735,6 +738,9 @@ static void AdemAlgebra__generateMultiplicationTableGeneric_step(AdemAlgebraInte
             int bPj_rest_degree =  rest_of_term.degree + bj_degree;
             // total degree ==> b^eP^j ==> rest of term idx ==> Vector
             Vector *rest_of_term_reduced = algebra->multiplication_table[bPj_rest_degree][bj_idx][rest_of_term_idx];
+            if(n==40 && x==2 && b==0 && idx == 62){
+                Vector_print("    rest_of_term_reduced: %s\n", rest_of_term_reduced);
+            }
             for(
                 VectorIterator it = Vector_getIterator(rest_of_term_reduced);
                 it.has_more;
@@ -850,8 +856,8 @@ uint AdemAlgebra_basisElement_toIndex(AdemAlgebra *public_algebra,  AdemBasisEle
 }
 
 
-static void AdemAlgebra__makeMonoAdmissible2(AdemAlgebra *algebra, Vector *result, AdemBasisElement *monomial, int idx, int leading_degree, int excess);
-static void AdemAlgebra__makeMonoAdmissibleGeneric(AdemAlgebra *algebra, Vector *result, uint coeff, AdemBasisElement *monomial, int idx, int leading_degree, int excess);
+static void AdemAlgebra__makeMonoAdmissible2(AdemAlgebra *algebra, Vector *result, AdemBasisElement *monomial, int idx, int leading_degree, int excess, bool stop_early);
+static void AdemAlgebra__makeMonoAdmissibleGeneric(AdemAlgebra *algebra, Vector *result, uint coeff, AdemBasisElement *monomial, int idx, int leading_degree, int excess, bool stop_early);
 
 void AdemAlgebra_multiply(Algebra *this, Vector *result, uint coeff, 
                         int r_degree, uint r_index, 
@@ -905,9 +911,22 @@ void AdemAlgebra_multiply(Algebra *this, Vector *result, uint coeff,
         // the monomial from right to left in chunks like bP^i. The b from the end of r gets donated
         // to the P from the beginning of s.
         int leading_degree = r->degree - ((r->bocksteins >> r->P_length) & 1);
-        AdemAlgebra__makeMonoAdmissibleGeneric(algebra, result, coeff, &monomial, r->P_length - 1, leading_degree, excess);
+        AdemAlgebra__makeMonoAdmissibleGeneric(algebra, result, coeff, &monomial, r->P_length - 1, leading_degree, excess, true);
     } else {
-        AdemAlgebra__makeMonoAdmissible2(algebra, result, &monomial, r->P_length - 1, r->degree, excess);
+        AdemAlgebra__makeMonoAdmissible2(algebra, result, &monomial, r->P_length - 1, r->degree, excess, true);
+    }
+}
+
+void AdemAlgebra_makeMonoAdmissible(AdemAlgebra *algebra, Vector *result, uint coeff, AdemBasisElement *monomial, int excess){
+    assert(monomial->degree < algebra->algebra.max_degree);
+    uint q = algebra->generic ? 2*algebra->algebra.p-2 : 1;
+    int leading_degree = monomial->degree - q * monomial->Ps[monomial->P_length - 1];
+    int idx = monomial->P_length - 2;    
+    if(algebra->generic){
+        leading_degree -= (monomial->bocksteins >> (monomial->P_length - 1)) & 1;
+        AdemAlgebra__makeMonoAdmissibleGeneric(algebra, result, coeff, monomial, idx, leading_degree, excess, false);
+    } else {
+        AdemAlgebra__makeMonoAdmissible2(algebra, result, monomial, idx, leading_degree, excess, false);
     }
 }
 
@@ -926,20 +945,24 @@ void AdemAlgebra_multiply(Algebra *this, Vector *result, uint coeff,
  */
 static void AdemAlgebra__makeMonoAdmissible2(
     AdemAlgebra *public_algebra, Vector *result, AdemBasisElement *monomial,
-    int idx, int leading_degree, int excess
+    int idx, int leading_degree, int excess, bool stop_early
 ){
     AdemAlgebraInternal *algebra = (AdemAlgebraInternal*)public_algebra;
     // Check for admissibility;
-    if(idx < 0 || idx == monomial->P_length || monomial->Ps[idx] >= 2*monomial->Ps[idx + 1]){
-        // Admissible so write monomial to result.
-        uint idx = AdemAlgebra_basisElement_toIndex(public_algebra, monomial);
-        // If excess is too large, quit. It's faster to check this by comparing idx to dimension
-        // than to use fromIndex because fromIndex  dereferences a hash map.
-        if(public_algebra->unstable && idx >= algebra_getDimension((Algebra*)algebra, monomial->degree, excess)){
+    while(idx < 0 || idx == monomial->P_length - 1 || monomial->Ps[idx] >= 2*monomial->Ps[idx + 1]){
+        if(idx < 0 || stop_early){
+            // Admissible so write monomial to result.
+            uint idx = AdemAlgebra_basisElement_toIndex(public_algebra, monomial);
+            // If excess is too large, quit. It's faster to check this by comparing idx to dimension
+            // than to use fromIndex because fromIndex  dereferences a hash map.
+            if(public_algebra->unstable && idx >= algebra_getDimension((Algebra*)algebra, monomial->degree, excess)){
+                return;
+            }
+            Vector_addBasisElement(result, idx, 1);
             return;
         }
-        Vector_addBasisElement(result, idx, 1);
-        return;
+        leading_degree -= monomial->Ps[idx];
+        idx --;
     }
     AdemBasisElement tail_of_monomial = *monomial;
     tail_of_monomial.P_length -= idx + 1;
@@ -965,16 +988,16 @@ static void AdemAlgebra__makeMonoAdmissible2(
         tail_of_monomial.Ps = temp_Ps;
         memcpy(tail_of_monomial.Ps, monomial->Ps, idx * sizeof(*tail_of_monomial.Ps));
         memcpy(tail_of_monomial.Ps + idx, cur_tail_basis_elt->Ps, cur_tail_basis_elt->P_length * sizeof(*cur_tail_basis_elt->Ps));        
-        AdemAlgebra__makeMonoAdmissible2(public_algebra, result, &tail_of_monomial, idx - 1, leading_degree - x, excess);
+        AdemAlgebra__makeMonoAdmissible2(public_algebra, result, &tail_of_monomial, idx - 1, leading_degree - x, excess, stop_early);
     }
 }
 
 
 static void AdemAlgebra__makeMonoAdmissibleGeneric(
     AdemAlgebra *public_algebra, Vector *result, uint coeff, AdemBasisElement *monomial,
-    int idx, int leading_degree, int excess
+    int idx, int leading_degree, int excess, bool stop_early
     ){
-    AdemAlgebraInternal *algebra = (AdemAlgebraInternal*)public_algebra;
+    AdemAlgebraInternal *algebra = (AdemAlgebraInternal*)public_algebra;    
     // array_print("mono: (%s,", monomial->Ps, monomial->P_length);
     // printf("%x) coeff: %d\n", monomial->bocksteins, coeff);
     uint p = public_algebra->algebra.p;
@@ -982,15 +1005,22 @@ static void AdemAlgebra__makeMonoAdmissibleGeneric(
     // Check for admissibility    
     uint b1 = (monomial->bocksteins >> idx) & 1;
     uint b2 = (monomial->bocksteins >> (idx+1)) & 1;
-    if(idx < 0 || idx == monomial->P_length || monomial->Ps[idx] >= p*monomial->Ps[idx + 1] + b2){
-        // Admissible so write monomial to result.
-        uint idx = AdemAlgebra_basisElement_toIndex(public_algebra, monomial);
-        if(public_algebra->unstable && idx >= algebra_getDimension((Algebra*)algebra, monomial->degree, excess)){
+    while(idx < 0 || idx == monomial->P_length - 1 || monomial->Ps[idx] >= p*monomial->Ps[idx + 1] + b2){
+        if(idx < 0 || stop_early){
+            // Admissible so write monomial to result.
+            uint idx = AdemAlgebra_basisElement_toIndex(public_algebra, monomial);
+            if(public_algebra->unstable && idx >= algebra_getDimension((Algebra*)algebra, monomial->degree, excess)){
+                return;
+            }        
+            Vector_addBasisElement(result, idx, coeff);
             return;
-        }        
-        Vector_addBasisElement(result, idx, coeff);
-        return;
-    }
+        }
+        leading_degree -= q * monomial->Ps[idx];
+        leading_degree -= (monomial->bocksteins >> idx) & 1;
+        // monomial->degree += monomial->Ps[idx];
+        // monomial->degree += (monomial->bocksteins >> idx) & 1;
+        idx --;
+    }    
     AdemBasisElement tail_of_monomial = *monomial;
     tail_of_monomial.P_length -= idx + 1;
     tail_of_monomial.Ps += idx + 1;
@@ -1021,9 +1051,38 @@ static void AdemAlgebra__makeMonoAdmissibleGeneric(
         tail_of_monomial.bocksteins = monomial->bocksteins & ((1<<idx)-1);
         tail_of_monomial.bocksteins |= cur_tail_basis_elt->bocksteins << idx;
         int new_leading_degree = leading_degree - q*x - b1;
-        AdemAlgebra__makeMonoAdmissibleGeneric(public_algebra, result, (coeff * it.value)%p, &tail_of_monomial, idx - 1, new_leading_degree, excess);
+        AdemAlgebra__makeMonoAdmissibleGeneric(public_algebra, result, (coeff * it.value)%p, &tail_of_monomial, idx - 1, new_leading_degree, excess, stop_early);
     }
 }
+
+// This is for the javascript bindings to save us the trouble of computing offsets into
+// AdemBasisElements.
+AdemBasisElement *AdemAlgebra_basisElement_construct(uint degree, uint P_length, uint *Ps, uint bocksteins){
+    AdemBasisElement *result = malloc(sizeof(AdemBasisElement));
+    result->degree = degree;
+    result->P_length = P_length;
+    result->Ps = Ps;
+    result->bocksteins = bocksteins;
+    return result;
+}
+
+void AdemAlgebra_basisElement_free(AdemBasisElement *b){
+    free(b);
+}
+
+
+uint AdemAlgebra_basisElement_getPlength(AdemBasisElement *b){
+    return b->P_length;
+}
+
+uint *AdemAlgebra_basisElement_getPs(AdemBasisElement *b){
+    return b->Ps;
+}
+
+uint AdemAlgebra_basisElement_getBocksteins(AdemBasisElement *b){
+    return b->bocksteins;
+}
+
 
 // for e1 in range(1 + bockstein):
 //     e2 = bockstein - e1
@@ -1036,32 +1095,34 @@ static void AdemAlgebra__makeMonoAdmissibleGeneric(
 //         elif coeff != 0 and j != 0:
 //             result[(e1, A+B-j, e2, j, 0)] = coeff 
 
-/**
+/**/
 int main(){
     char buffer[5000];
     uint p = 2;
     bool generic = p != 2;
-    uint max_degree = 5;    
-    AdemAlgebra *algebra = AdemAlgebra_construct(p, generic, true);
+    generic = true;
+    uint max_degree = 40;    
+    AdemAlgebra *algebra = AdemAlgebra_construct(p, generic, false);
     algebra->sort_order = AdemAlgebra_excessSortOrder;
     AdemAlgebra_generateBasis((Algebra*)algebra, max_degree);
-    for(uint i=0; i < max_degree; i++){
-        AdemBasisElement_list basis = AdemAlgebra_getBasis(algebra, i);
-        printf("degree %d:\n", i);
-        for(uint j=0; j<basis.length; j++){
-            AdemAlgebra_basisElement_print("   %s", algebra, basis.list[j]);
-            printf(" excess: %d\n", basis.list[j]->excess);
-        }
-        printf("\n\n");
-    }
-    return 0;
+    AdemAlgebra_generateBasis((Algebra*)algebra, 45);
+    // for(uint i=0; i < max_degree; i++){
+    //     AdemBasisElement_list basis = AdemAlgebra_getBasis(algebra, i);
+    //     printf("degree %d:\n", i);
+    //     for(uint j=0; j<basis.length; j++){
+    //         AdemAlgebra_basisElement_print("   %s", algebra, basis.list[j]);
+    //         printf(" excess: %d\n", basis.list[j]->excess);
+    //     }
+    //     printf("\n\n");
+    // }
+    // return 0;
     
     AdemBasisElement *A, *B;
-    A = AdemAlgebra_basisElement_fromString(algebra, "P10");
+    A = AdemAlgebra_basisElement_fromString(algebra, "P2");
     // A = AdemAlgebra_basisElement_fromString(algebra, "P13");
     // AdemBasisElement unit = (AdemBasisElement){0};
     // A = &unit;
-    B = AdemAlgebra_basisElement_fromString(algebra, "P7 b P2");
+    B = AdemAlgebra_basisElement_fromString(algebra, "P18");
     // B = AdemAlgebra_basisElement_fromString(algebra, "P6 b P1");
     uint A_idx = AdemAlgebra_basisElement_toIndex(algebra, A);
     uint B_idx = AdemAlgebra_basisElement_toIndex(algebra, B);
