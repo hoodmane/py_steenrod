@@ -164,9 +164,7 @@ void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_d
         if((int)op_degree + res->min_degree > degree){
             break;
         }
-        printf("hi\n");
         if(op_degree > degree - op_degree){
-            printf("hi\n");
             break;
         }
 

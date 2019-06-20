@@ -98,7 +98,6 @@ function constructFiniteDimensionalModule(module, cAlgebra){
     Module.HEAPU32.set(graded_dimension, c_array_offset/sizeof_uint);
     let cModule = cFiniteDimensionalModule_construct(cAlgebra, min_basis_degree, min_basis_degree + max_basis_degree, c_array_offset);
     for(let {op, input, output} of module.milnor_actions){
-        console.log(op, input, output);
         let op_degree;
         if(p==2){
             op = op.concat([0,0,0]);
@@ -119,7 +118,6 @@ function constructFiniteDimensionalModule(module, cAlgebra){
         for( let {gen, coeff} of output) {
             output_vector[basis_element_indices[gen]] = coeff
         }
-        Module.print("    ", output_vector);
         Module.HEAPU32.set(output_vector, c_array_offset/sizeof_uint);
 
         cFiniteDimensionalModule_setAction(

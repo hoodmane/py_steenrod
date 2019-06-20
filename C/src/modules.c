@@ -151,13 +151,13 @@ void FiniteDimensionalModule_setAction(
     int input_degree, uint input_idx,
     uint *output
 ){
-    printf("    operation_degree: %d, operation_idx: %d, input_degree: %d, input_idx: %d\n", operation_degree, operation_idx, input_degree, input_idx);
+    // printf("    operation_degree: %d, operation_idx: %d, input_degree: %d, input_idx: %d\n", operation_degree, operation_idx, input_degree, input_idx);
     input_degree -= module->module.min_degree;
     assert(input_degree >= 0);
     uint output_degree = input_degree + operation_degree;
     // (in_deg) -> (out_deg) -> (op_index) -> (in_index) -> Vector
     Vector *output_vector = module->actions[input_degree][output_degree][operation_idx][input_idx];  
-    array_print("    output: %s\n", output, output_vector->dimension);
+    // array_print("    output: %s\n", output, output_vector->dimension);
     Vector_pack(output_vector, output);
 }
 

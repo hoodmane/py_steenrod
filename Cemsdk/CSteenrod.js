@@ -1096,11 +1096,11 @@ function updateGlobalBufferViews() {
 
 
 var STATIC_BASE = 1024,
-    STACK_BASE = 19808,
+    STACK_BASE = 19712,
     STACKTOP = STACK_BASE,
-    STACK_MAX = 5262688,
-    DYNAMIC_BASE = 5262688,
-    DYNAMICTOP_PTR = 19552;
+    STACK_MAX = 5262592,
+    DYNAMIC_BASE = 5262592,
+    DYNAMICTOP_PTR = 19456;
 
 
 
@@ -1486,7 +1486,7 @@ var ASM_CONSTS = [];
 
 
 
-// STATICTOP = STATIC_BASE + 18784;
+// STATICTOP = STATIC_BASE + 18688;
 /* global initializers */ /*__ATINIT__.push();*/
 
 
@@ -1497,7 +1497,7 @@ var ASM_CONSTS = [];
 
 
 /* no memory initializer */
-var tempDoublePtr = 19792
+var tempDoublePtr = 19696
 
 function copyTempFloat(ptr) { // functions, because inlining this code increases code size too much
   HEAP8[tempDoublePtr] = HEAP8[ptr];
