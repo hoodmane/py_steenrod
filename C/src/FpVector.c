@@ -638,29 +638,41 @@ void Vector5_scale(Vector *target, uint coeff){
 }
 
 uint64 Vector5_reduceLimb(uint64 limb){
-    uint64 bottom_bit_set_in_each_field = 0x84210842108421LL;
-    uint64 input_limb = limb;
-    // unset top two bits.
-    limb &= ~((bottom_bit_set_in_each_field << 4) | (bottom_bit_set_in_each_field << 3));
-    // 16 --> 1
-    limb += (input_limb >> 4) & bottom_bit_set_in_each_field;
-    // 8 --> 3
-    uint64 w = (input_limb >> 3) & bottom_bit_set_in_each_field;
-    limb += w | (w << 1); // temp | (temp << 1) is 3*temp.
-    // Now we've unset the two leading bits. Need to reduce the rest mod 5.
-    // Maximum possible value at this point is 00111 = 7, so we have to subtract 5 zero or one time.
-    // To figure it out, we implement "<5" with bitops. We xor with 100 and find the leading bit of the result.
-    // If the leading bit is in the 1's or 2's place, the number was 5/6/7 and we need to subtract five.
-    // So with only leading bit set, or with self shifted by 1. Now the 1's bit is set if the leading bit was the 1's or 2's place.
-    // Now the 1's  bit is set if and only if the field contained a 5/6/7. We or with ourself shifted by 2 to get 5 or 0.
-    w = limb ^ (bottom_bit_set_in_each_field << 2); // xor with 100
-    w |= w>>1;
-    w &= ~(w>>1); // Only leading bit set
-    w |= w>>1; // If 2's bit is set, make sure 1's bit is set too
-    w &= bottom_bit_set_in_each_field; // is 1's bit set?
-    w |= w << 2; // Now w contains a 5 or a 0 depending on whether the field is >= 5.
-    limb -= w;
-    return limb;
+    uint64 bottom_bit = 0x84210842108421LL;
+    uint64 bottom_two_bits = bottom_bit | (bottom_bit << 1);
+    uint64 bottom_three_bits = bottom_bit | (bottom_two_bits << 1);
+    uint64 a = (limb >> 2) & bottom_three_bits;
+    uint64 b = limb & bottom_two_bits;
+    uint64 m = (bottom_bit << 3) - a + b;
+    uint64 c = (m >> 3) & bottom_bit;
+    c |= c << 1;
+    uint64 d = m & bottom_three_bits;
+    return d + c - bottom_two_bits;
+
+
+
+    // uint64 input_limb = limb;
+    // // unset top two bits.
+    // limb &= ~((bottom_bit_set_in_each_field << 4) | (bottom_bit_set_in_each_field << 3));
+    // // 16 --> 1
+    // limb += (input_limb >> 4) & bottom_bit_set_in_each_field;
+    // // 8 --> 3
+    // uint64 w = (input_limb >> 3) & bottom_bit_set_in_each_field;
+    // limb += w | (w << 1); // temp | (temp << 1) is 3*temp.
+    // // Now we've unset the two leading bits. Need to reduce the rest mod 5.
+    // // Maximum possible value at this point is 00111 = 7, so we have to subtract 5 zero or one time.
+    // // To figure it out, we implement "<5" with bitops. We xor with 100 and find the leading bit of the result.
+    // // If the leading bit is in the 1's or 2's place, the number was 5/6/7 and we need to subtract five.
+    // // So with only leading bit set, or with self shifted by 1. Now the 1's bit is set if the leading bit was the 1's or 2's place.
+    // // Now the 1's  bit is set if and only if the field contained a 5/6/7. We or with ourself shifted by 2 to get 5 or 0.
+    // w = limb ^ (bottom_bit_set_in_each_field << 2); // xor with 100
+    // w |= w>>1;
+    // w &= ~(w>>1); // Only leading bit set
+    // w |= w>>1; // If 2's bit is set, make sure 1's bit is set too
+    // w &= bottom_bit_set_in_each_field; // is 1's bit set?
+    // w |= w << 2; // Now w contains a 5 or a 0 depending on whether the field is >= 5.
+    // limb -= w;
+    // return limb;
 }
 
 
