@@ -17,7 +17,7 @@
 #include "resolution.h"
 
 #define max(a,b) ((a) > (b) ? (a) : (b))
-void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uint homological_degree, uint degree);
+void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uint homological_degree, int degree);
 
 void printCallback(Resolution * res, uint homological_degree, int degree, uint num_gens);
 
@@ -41,20 +41,22 @@ Resolution * Resolution_construct(
         uint target_hom_deg, int target_int_deg, uint target_idx
     )    
 ){
+    int min_degree = module->module.min_degree;
+    uint num_degrees = max_degree - min_degree;
     // The 0th index in "modules" and "differentials" is the module we're resolving.
     // We're constructing an augmented resolution. In math this first module would be placed in index -1.
     // Anyways, we are working with the range -1 to max_degree which has max degree - (-1) + 1 = max_degree + 2 entries.
     Resolution *res = malloc(
         sizeof(Resolution)
-        + (max_degree + 1) * sizeof(FreeModule*)
-        + (max_degree + 1) * sizeof(FreeModuleHomomorphism*) // 
-        + (max_degree + 1) * sizeof(int) // internal_degree_to_resolution_stage
+        + (num_degrees + 1) * sizeof(FreeModule*)
+        + (num_degrees + 1) * sizeof(FreeModuleHomomorphism*) // 
+        + (num_degrees + 1) * sizeof(int) // internal_degree_to_resolution_stage
     );
     res->modules = (FreeModule**)(res + 1);
     res->differentials = 
-        (FreeModuleHomomorphism**)(res->modules + (max_degree + 1));
-    res->internal_degree_to_resolution_stage = (int*)(res->differentials + max_degree + 1);
-    memset(res->internal_degree_to_resolution_stage, 0, (max_degree + 1)*sizeof(int));
+        (FreeModuleHomomorphism**)(res->modules + (num_degrees + 1));
+    res->internal_degree_to_resolution_stage = (int*)(res->differentials + num_degrees + 1);
+    memset(res->internal_degree_to_resolution_stage, 0, (num_degrees + 1)*sizeof(int));
     
     res->module = (Module*)module;
     res->algebra= module->module.algebra;
@@ -108,6 +110,7 @@ void Resolution_resolveThroughDegree(Resolution *res, int degree){
 
 void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_degree, int degree, uint source_idx);
 void Resolution_step(Resolution *res, uint homological_degree, int degree){
+    // printf("degree: %d, homological_degree: %d\n", degree, homological_degree);
     // Construct kernel -- say that it's everything.
     // We put the module itself in degree zero and we'll want to hit the whole thing.
     uint shifted_degree = degree - res->min_degree;
@@ -140,6 +143,7 @@ void Resolution_step(Resolution *res, uint homological_degree, int degree){
     // Classes:
     uint num_gens = res->modules[homological_degree + 1]->number_of_generators_in_degree[degree-res->min_degree];
     for(uint i=0; i < num_gens; i++){
+        // printf("addClass(%d, %d)\n", homological_degree, degree);
         res->addClass(homological_degree, degree, "");
         if(homological_degree > 0){
             Resolution_computeFiltrationOneProducts(res, homological_degree, degree, i);
@@ -157,14 +161,19 @@ void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_d
     for(uint j = 0; j < product_list->length; j++){
         uint op_degree = product_list->degrees[j];
         uint op_index = product_list->indices[j];
-        if(op_degree + res->min_degree > degree){
+        if((int)op_degree + res->min_degree > degree){
             break;
         }
+        printf("hi\n");
+        if(op_degree > degree - op_degree){
+            printf("hi\n");
+            break;
+        }
+
         uint gen_degree = degree - op_degree;
         uint num_target_generators = T->number_of_generators_in_degree[gen_degree - res->min_degree];
         for(uint target = 0; target < num_target_generators; target++){
-            uint vector_idx = FreeModule_operationGeneratorToIndex(
-                res->modules[homological_degree], op_degree, op_index, gen_degree, target);
+            uint vector_idx = FreeModule_operationGeneratorToIndex(res->modules[homological_degree], op_degree, op_index, gen_degree, target);
             if(vector_idx >= dx->dimension){
                 printf("Out of bounds index when computing product:\n");
                 printf("  ==  degree: %d, hom_deg: %d, dim: %d, idx: %d\n", degree, homological_degree, dx->dimension, vector_idx);
@@ -185,8 +194,10 @@ void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_d
 //   Preconditions:
 //      resolution->differentials[homological_degree]->kernel should contain the kernel of the previous differential
 //      if homological_degree == 0, the kernel should be everything in the module.
-void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uint homological_degree, uint degree){
-    assert(degree >= homological_degree);
+void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uint homological_degree, int degree){
+    // printf("degree: %d, homological_degree: %d, resolution->min_degree: %d\n",degree, homological_degree, resolution->min_degree);
+    assert(degree >= (int)homological_degree + resolution->min_degree);
+    // printf("degree: %d, resolution->max_degree: %d\n", degree, resolution->max_degree);
     assert(degree < resolution->max_degree);
     uint shifted_degree = degree - resolution->module->min_degree;
     uint p = resolution->algebra->p;
@@ -340,7 +351,7 @@ uint Resolution_gradedDimensionString(char *buffer, Resolution *resolution){
     len += sprintf(buffer + len, "\n]\n");
     return len;
 }
-/**
+/**/
 int main(int argc, char *argv[]){
     // assert(false);
     uint p;
@@ -356,7 +367,7 @@ int main(int argc, char *argv[]){
         char *end;
         degree = strtoul(argv[3], &end, 10);
     } else {
-        degree = 50;
+        degree = 20;
     }
 
     // uint degree = 70;
@@ -383,24 +394,29 @@ int main(int argc, char *argv[]){
     } else {
         algebra = (Algebra*) AdemAlgebra_construct(p, generic, false);
     }
-    algebra_computeBasis(algebra, degree);
 
-    uint min_degree = 0;
-    uint degree_range = 2;
-    uint max_generator_degree = 0 + degree_range + min_degree;
-    uint graded_dimension[5] = {1, 1};
+    uint min_degree = -3;
+    uint degree_range = 1;
+    uint max_generator_degree = degree_range + min_degree + 1;
+    uint graded_dimension[5] = {2, 1};
+    algebra_computeBasis(algebra, degree - min_degree);
     FiniteDimensionalModule *module = 
         FiniteDimensionalModule_construct(algebra, min_degree, max_generator_degree, graded_dimension);
     uint output[1] = {1};
-    FiniteDimensionalModule_setAction(module, 2, 0, 0, 0, output);
+    FiniteDimensionalModule_setAction(module, 1, 0, min_degree, 1, output);
+    // FiniteDimensionalModule_setAction(module, 1, 0, min_degree, 1, output);
     // degree--;
     Resolution *res = Resolution_construct(module, degree, NULL, NULL);
     Resolution_resolveThroughDegree(res, degree);
-    FiniteDimensionalModule_free((FiniteDimensionalModule*)res->module);
+    for(int i = degree - 1 - res->min_degree; i >= 0; i--){
+        printf("stage %*d: ", 2, i);
+        array_print("%s\n", &res->modules[i+1]->number_of_generators_in_degree[i], degree - i - res->min_degree);
+    }       
     res->module = NULL;
     // MilnorAlgebra_free((MilnorAlgebra*)res->algebra);
     res->algebra = NULL;
     Resolution_free(res);
+    FiniteDimensionalModule_free(module);
     return 0;
 }
 //*/

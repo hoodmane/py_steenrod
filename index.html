@@ -168,17 +168,8 @@ function sleep(ms) {
 function startResolution(dict){
     let degree = Number.parseInt(dict.degree);
     let module_file_name = dict.module;
-    let sseq = new Sseq();
-    sseq.xRange = [0, degree];
-    sseq.yRange = [0, degree/3];
-    sseq.initialxRange = [0, degree-3];
-    sseq.initialyRange = [0, degree/3-1];
-    sseq.class_scale = 0.4;
-    sseq.display();
-    let classTable = Array(degree+1).fill(0).map(x => Array(degree+1).fill(0).map(x => []));
-    Mousetrap.unbind("left");
-    Mousetrap.unbind("right");
-    document.getElementById('page_indicator').innerText = "";    
+    let classTable = {};
+    let sseq = new Sseq();     
     worker = new Worker("Cemsdk/ResolutionWorker.js");
     worker.addEventListener("message", (message)=>{
         let m = message.data;
@@ -188,20 +179,38 @@ function startResolution(dict){
             }
             let c = sseq.addClass(m.x, m.y);
             sleep(0).then(()=>sseq.update());
-            classTable[m.x][m.y].push(c);
+            let o = {x : m.x, y:m.y};
+            let key = JSON.stringify(o);
+            if(!(key in classTable)){
+                classTable[key] = [];
+            }
+            classTable[key].push(c);
         } else {
-            if(m.x > 0 && m.target.y > m.target.x/2 + 5){
+            if(m.target.x > 0 && m.target.y > m.target.x/2 + 5){
                 return;
-            }            
-            let source = classTable[m.source.x][m.source.y][m.source.idx]
-            let target = classTable[m.target.x][m.target.y][m.target.idx]
+            }   
+            let source_key = JSON.stringify({x : m.source.x, y : m.source.y});
+            let target_key = JSON.stringify({x : m.target.x, y : m.target.y});
+            let source = classTable[source_key][m.source.idx];
+            let target = classTable[target_key][m.target.idx];
+
             sseq.addStructline(source, target);
             sleep(0).then(() => sseq.update());
         }
     })    
     IO.loadFromServer(`modules/${module_file_name}.json`).then((module) => {
-        // console.log(module);
-        document.getElementById('page_indicator').innerHTML = katexMathInDelims(module.name);
+        let min_degree = Math.min(...Object.values(module.gens));
+        sseq.xRange = [min_degree, degree];
+        sseq.yRange = [0, degree/3];
+        sseq.initialxRange = [min_degree, degree];
+        sseq.initialyRange = [0, degree/3-1];
+        sseq.class_scale = 0.4;
+        let dss = sseq.getDisplaySseq();
+        window.sseq = sseq;
+        window.dss = dss;        
+        sseq.offset_size = 0.1
+        dss.getPageDescriptor = (page) => katexMathInDelims(module.name);        
+        sseq.display();
         worker.postMessage({
             "module" : module,
             "max_degree" : degree

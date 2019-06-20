@@ -6,7 +6,7 @@ import random
 
 from cFpVector import *
 
-primes = [2,3,5,7]
+primes = [2, 3, 5, 7, 11]
 dimensions = [5, 10, 33, 65, 1000]
 repeats = 100
 

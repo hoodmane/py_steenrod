@@ -146,7 +146,7 @@ class FiniteSteenrodModule:
         min_degree = min(self.gens.values())
         max_degree_op = max_degree - min_degree
         milnor = self.milnor_algebra
-        for degree in range(1, max_degree + 1):
+        for degree in range(min_degree, max_degree - min_degree + 1):
             for b in milnor.basis(degree):
                 monomial = list(b.keys())[0]
                 adem_rep = b.to_adem()

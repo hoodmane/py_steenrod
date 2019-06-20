@@ -136,6 +136,7 @@ C/CTestTestfile.cmake
 C/_deps
 C/cmake-build-debug
 C/.idea
+C/cachegrind
 
 C/csteen
 C/.vscode

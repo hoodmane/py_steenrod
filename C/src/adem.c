@@ -1095,7 +1095,7 @@ uint AdemAlgebra_basisElement_getBocksteins(AdemBasisElement *b){
 //         elif coeff != 0 and j != 0:
 //             result[(e1, A+B-j, e2, j, 0)] = coeff 
 
-/**/
+/**
 int main(){
     char buffer[5000];
     uint p = 2;

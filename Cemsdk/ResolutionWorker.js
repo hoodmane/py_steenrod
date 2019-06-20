@@ -18,9 +18,8 @@ function getTotalTime(){
 }
 let last_timestamp_stem = 0;
 let timestamp_interval = 10;
-function getCallbacks(degree_shift){
+function getCallbacks(){
     function addClassCallback(hom_deg, int_deg, cocycle) { 
-        console.log("addclass");
         if(int_deg >= last_timestamp_stem + timestamp_interval){
             let total_time = getTotalTime().toFixed(2) + " seconds";
             let last_ten_stems_time = getTime().toFixed(2) + " seconds";
@@ -28,8 +27,7 @@ function getCallbacks(degree_shift){
             console.log(`Total time to compute first ${int_deg} stems: ${total_time}`);
             last_timestamp_stem += timestamp_interval;
         }
-        self.postMessage({"cmd" : "addClass", "x" : int_deg - hom_deg + degree_shift, "y": hom_deg});
-        // display.updateBatch();
+        self.postMessage({"cmd" : "addClass", "x" : int_deg - hom_deg, "y": hom_deg});
     }
     
     function addStructlineCallback(
@@ -37,8 +35,8 @@ function getCallbacks(degree_shift){
         target_hom_deg, target_int_deg, target_idx
     ){
         self.postMessage({"cmd" : "addStructline", 
-            "source" : {"x" : source_int_deg - source_hom_deg + degree_shift, "y": source_hom_deg, "idx": source_idx},
-            "target" : {"x" : target_int_deg - target_hom_deg + degree_shift, "y": target_hom_deg, "idx": target_idx}
+            "source" : {"x" : source_int_deg - source_hom_deg, "y": source_hom_deg, "idx": source_idx},
+            "target" : {"x" : target_int_deg - target_hom_deg, "y": target_hom_deg, "idx": target_idx}
         })
     }
     
@@ -51,7 +49,6 @@ function getCallbacks(degree_shift){
 
 
 function constructAlgebra(algebraData){
-    Module.print(algebraData);
     let p = algebraData.p;
     let generic = algebraData.generic;
     cinitializePrime(p);
@@ -101,6 +98,7 @@ function constructFiniteDimensionalModule(module, cAlgebra){
     Module.HEAPU32.set(graded_dimension, c_array_offset/sizeof_uint);
     let cModule = cFiniteDimensionalModule_construct(cAlgebra, min_basis_degree, min_basis_degree + max_basis_degree, c_array_offset);
     for(let {op, input, output} of module.milnor_actions){
+        console.log(op, input, output);
         let op_degree;
         if(p==2){
             op = op.concat([0,0,0]);
@@ -113,14 +111,15 @@ function constructFiniteDimensionalModule(module, cAlgebra){
         if(op_degree == 0){
             continue;
         }
-        let input_degree = module.gens[input] - min_basis_degree;
+        let input_degree = module.gens[input];
         let input_index = basis_element_indices[input];
         let output_degree = input_degree + op_degree;        
         let op_index = 0; //cMilnorBasisElement.toIndex(algebra, op);        
-        let output_vector = new Uint32Array(graded_dimension[output_degree]);
+        let output_vector = new Uint32Array(graded_dimension[output_degree - min_basis_degree]);
         for( let {gen, coeff} of output) {
             output_vector[basis_element_indices[gen]] = coeff
         }
+        Module.print("    ", output_vector);
         Module.HEAPU32.set(output_vector, c_array_offset/sizeof_uint);
 
         cFiniteDimensionalModule_setAction(
@@ -131,7 +130,7 @@ function constructFiniteDimensionalModule(module, cAlgebra){
         )
     }
     Module._free(c_array_offset);
-    let result = {cModule : cModule, degree_shift : -min_basis_degree};
+    let result = {cModule : cModule};
     return result;
 }
 
@@ -164,12 +163,12 @@ self.onmessage = function(msg){
         let moduleData = msg.data.module;
         algebraData.p = moduleData.p;
         algebraData.generic = moduleData.generic;
-        algebraData.max_degree = max_degree;
+        algebraData.max_degree = max_degree - Math.min(...Object.values(moduleData.gens));
         moduleData.max_degree = max_degree;
         algebraData.algebra = moduleData.algebra;
         let cAlgebra = constructAlgebra(algebraData);
         let module = constructFiniteDimensionalModule(msg.data.module, cAlgebra);
-        let callbacks = getCallbacks(module.degree_shift);
+        let callbacks = getCallbacks();
         t0 = performance.now();
         let cResolution = cResolution_construct(module.cModule, max_degree, callbacks.addClassPtr, callbacks.addStructlinePtr);
         cResolution_resolveThroughDegree(cResolution, max_degree);

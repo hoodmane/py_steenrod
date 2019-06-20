@@ -33,7 +33,7 @@ typedef struct {
     int max_basis_degree;
     uint *graded_dimension;
     // This goes input_degree --> output_degree --> operation --> input_index --> Vector
-    Vector ****actions;
+    Vector *****actions;
 } FiniteDimensionalModule;
 
 FiniteDimensionalModule *FiniteDimensionalModule_construct(
