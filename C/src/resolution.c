@@ -382,7 +382,7 @@ int main(int argc, char *argv[]){
     Algebra *algebra;
     if(argc > 1){
         if(strcmp(argv[1], "Adem") == 0){
-            algebra = (Algebra*) AdemAlgebra_construct(p, generic, true);
+            algebra = (Algebra*) AdemAlgebra_construct(p, generic, false);
         } else if(strcmp(argv[1], "Milnor") == 0){
             algebra = (Algebra*)MilnorAlgebra_construct(p, generic, NULL);
         } else {
@@ -393,15 +393,15 @@ int main(int argc, char *argv[]){
         algebra = (Algebra*) AdemAlgebra_construct(p, generic, false);
     }
 
-    uint min_degree = -3;
-    uint degree_range = 1;
+    uint min_degree = 0;
+    uint degree_range = 0;
     uint max_generator_degree = degree_range + min_degree + 1;
-    uint graded_dimension[5] = {2, 1};
+    uint graded_dimension[5] = {1};
     algebra_computeBasis(algebra, degree - min_degree);
     FiniteDimensionalModule *module = 
         FiniteDimensionalModule_construct(algebra, min_degree, max_generator_degree, graded_dimension);
-    uint output[1] = {1};
-    FiniteDimensionalModule_setAction(module, 1, 0, min_degree, 1, output);
+    // uint output[1] = {1};
+    // FiniteDimensionalModule_setAction(module, 1, 0, min_degree, 1, output);
     // FiniteDimensionalModule_setAction(module, 1, 0, min_degree, 1, output);
     // degree--;
     Resolution *res = Resolution_construct(module, degree, NULL, NULL);
