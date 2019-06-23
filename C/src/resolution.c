@@ -161,14 +161,12 @@ void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_d
     for(uint j = 0; j < product_list->length; j++){
         uint op_degree = product_list->degrees[j];
         uint op_index = product_list->indices[j];
-        if((int)op_degree + res->min_degree > degree){
-            break;
-        }
-        if(op_degree > degree - op_degree){
+        int gen_degree = degree - op_degree;
+
+        if(gen_degree < res->min_degree){
             break;
         }
 
-        uint gen_degree = degree - op_degree;
         uint num_target_generators = T->number_of_generators_in_degree[gen_degree - res->min_degree];
         for(uint target = 0; target < num_target_generators; target++){
             uint vector_idx = FreeModule_operationGeneratorToIndex(res->modules[homological_degree], op_degree, op_index, gen_degree, target);
@@ -176,6 +174,7 @@ void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_d
                 printf("Out of bounds index when computing product:\n");
                 printf("  ==  degree: %d, hom_deg: %d, dim: %d, idx: %d\n", degree, homological_degree, dx->dimension, vector_idx);
             } else {
+                // printf("hom_deg: %d, deg: %d, source_idx: %d, op_deg: %d, entry: %d\n", homological_degree, degree, source_idx, op_degree, Vector_getEntry(dx, vector_idx));
                 if(Vector_getEntry(dx, vector_idx) != 0){
                     // There was a product!
                     res->addStructline(homological_degree - 1, gen_degree, target, homological_degree, degree, source_idx);
@@ -194,8 +193,8 @@ void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_d
 //      if homological_degree == 0, the kernel should be everything in the module.
 void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uint homological_degree, int degree){
     // printf("degree: %d, homological_degree: %d, resolution->min_degree: %d\n",degree, homological_degree, resolution->min_degree);
+    printf("(%d, %d)\n", homological_degree, degree);
     assert(degree >= (int)homological_degree + resolution->min_degree);
-    // printf("degree: %d, resolution->max_degree: %d\n", degree, resolution->max_degree);
     assert(degree < resolution->max_degree);
     uint shifted_degree = degree - resolution->module->min_degree;
     uint p = resolution->algebra->p;
@@ -234,14 +233,10 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
 
     // Row reduce
     int column_to_pivot_row[matrix->columns];
-    // if(homological_degree <= 2 && degree == 17){
-        // printf("\n%d\n",homological_degree);
-        // Matrix_printSlice(matrix, target_dimension, padded_target_dimension);
-    // }    
+    // printf("\n%d\n",homological_degree);
+    // Matrix_printSlice(matrix, target_dimension, padded_target_dimension);
     rowReduce(matrix, column_to_pivot_row, 0, 0);//target_dimension, padded_target_dimension);
-    // if(homological_degree <= 2 && degree == 17){
-        // Matrix_printSlice(matrix, target_dimension, padded_target_dimension);
-    // }    
+    // Matrix_printSlice(matrix, target_dimension, padded_target_dimension);
 
 
     // Stage 1: Find kernel of current differential

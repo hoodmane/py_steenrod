@@ -147,17 +147,16 @@ void FiniteDimensionalModule_setActionVector(
 
 void FiniteDimensionalModule_setAction(
     FiniteDimensionalModule *module,
-    int operation_degree, uint operation_idx,
-    int input_degree, uint input_idx,
+    int operation_degree, uint operation_index,
+    int input_degree, uint input_index,
     uint *output
 ){
-    // printf("    operation_degree: %d, operation_idx: %d, input_degree: %d, input_idx: %d\n", operation_degree, operation_idx, input_degree, input_idx);
     input_degree -= module->module.min_degree;
     assert(input_degree >= 0);
     uint output_degree = input_degree + operation_degree;
     // (in_deg) -> (out_deg) -> (op_index) -> (in_index) -> Vector
-    Vector *output_vector = module->actions[input_degree][output_degree][operation_idx][input_idx];  
-    // array_print("    output: %s\n", output, output_vector->dimension);
+    // printf("operation_degree: %d, module_degree: %d, output_degree: %d, operation_index: %d, module_index: %d\n", operation_degree, input_degree, output_degree, operation_index, input_index);    
+    Vector *output_vector = module->actions[input_degree][output_degree][operation_index][input_index];  
     Vector_pack(output_vector, output);
 }
 
@@ -169,6 +168,9 @@ Vector *FiniteDimensionalModule_getAction(
 ){
     module_degree -= module->module.min_degree;
     int output_degree = module_degree + operation_degree;
+    // if(operation_degree == 4 && operation_index == 0){
+        // printf(">>operation_degree: %d, module_degree: %d, output_degree: %d, operation_index: %d, module_index: %d\n", operation_degree, module_degree, output_degree, operation_index, module_index);    
+    // }    
     // (in_deg) -> (out_deg) -> (op_index) -> (in_index) -> Vector
     Vector *output_vector = module->actions[module_degree][output_degree][operation_index][module_index];
     return output_vector;
@@ -189,7 +191,7 @@ uint FiniteDimensionalModule_getDimension(Module *this, int degree){
 }
 
 void FiniteDimensionalModule_actOnBasis(Module *this, Vector *result, uint coeff, int op_degree, uint op_index, int mod_degree, uint mod_index){
-    FiniteDimensionalModule *module = ((FiniteDimensionalModule*)this);
+    FiniteDimensionalModule *module = (FiniteDimensionalModule*)this;
     assert(op_index < algebra_getDimension(this->algebra, op_degree, mod_degree));
     assert(mod_index < module_getDimension(this, mod_degree));
     uint output_dimension = module_getDimension(this, mod_degree + op_degree);    
@@ -201,6 +203,10 @@ void FiniteDimensionalModule_actOnBasis(Module *this, Vector *result, uint coeff
     Vector *output_block = Vector_initialize(this->p, output_block_memory, NULL, 0, 0);     
     Vector_slice(output_block, result, 0, output_dimension); 
     Vector *output = FiniteDimensionalModule_getAction(module, op_degree, op_index, mod_degree, mod_index);
+    // if(op_degree == 4 && op_index == 0 && mod_degree - this->min_degree == 0 && mod_index == 0){
+        // printf("    fdm_aob -- op_degree: %d, op_index: %d, mod_degree: %d, mod_index: %d\n", op_degree, op_index, mod_degree, mod_index);        
+        // Vector_print("    ---- %s\n", output);
+    // }
     Vector_add(output_block, output, coeff);
 }
 

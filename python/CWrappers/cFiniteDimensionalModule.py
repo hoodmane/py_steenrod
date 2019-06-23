@@ -6,6 +6,7 @@ import cAlgebra
 import steenrod
 import steenrod_module
 from FreeModule import *
+import cMilnorBasisElement
 
 
 def toC(module, algebra_type):
@@ -35,7 +36,7 @@ def toC(module, algebra_type):
         output_degree = output.degree()
         output_vector = [None] * number_of_basis_elements_in_degree[output_degree]
         op_degree = output_degree - input_degree
-        op_index = cMilnorBasisElement.toIndex(algebra, op)        
+        op_index = cMilnorBasisElement.toIndex(module.c_algebra, op)        
         for (b, coeff) in output.items():
             output_vector[basis_element_indices[b]] = coeff
         c_vector = cFpVector.cVector(module.p, vector=output_vector)

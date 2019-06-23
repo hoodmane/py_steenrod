@@ -201,9 +201,9 @@ function startResolution(dict){
     IO.loadFromServer(`modules/${module_file_name}.json`).then((module) => {
         let min_degree = Math.min(...Object.values(module.gens));
         sseq.xRange = [min_degree, degree];
-        sseq.yRange = [0, degree/3];
+        sseq.yRange = [0, (degree - min_degree)/3];
         sseq.initialxRange = [min_degree, degree];
-        sseq.initialyRange = [0, degree/3-1];
+        sseq.initialyRange = [0, (degree - min_degree)/3-1];
         sseq.class_scale = 0.4;
         let dss = sseq.getDisplaySseq();
         window.sseq = sseq;
