@@ -78,6 +78,7 @@ hr { height:2px; visibility:hidden; margin-bottom:-1px; }
   </form> 
 
 <script>
+"use strict";
 let ext_config = document.getElementById("ext-config");
 let ext_config_prime = document.getElementById("ext-config-prime");
 let ext_config_generic = document.getElementById("ext-config-generic");
@@ -85,9 +86,9 @@ let ext_config_generic = document.getElementById("ext-config-generic");
 ext_config_prime.addEventListener("change", (arg) => {
         ext_config_generic.checked = ext_config_prime.value !== "2";
 })
-katex_macros = {};
+let katex_macros = {};
 function katexMathInDelims(string){
-    html_list = string.split(/(?:\\\[)|(?:\\\()|(?:\\\))|(?:\\\])|(?:\$)/);
+    let html_list = string.split(/(?:\\\[)|(?:\\\()|(?:\\\))|(?:\\\])|(?:\$)/);
     for(let i = 1; i < html_list.length; i+=2){
         html_list[i] = katex.renderToString(html_list[i], {macros : katex_macros});
     }
@@ -176,11 +177,11 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-
 function startResolution(dict){
     let p = Number.parseInt(dict.p);
     let generic = (dict.generic && dict.generic === "true") || p != 2;
     let n = Number.parseInt(dict.n);
+    window.sphere_dimension = n;
     let degree = Number.parseInt(dict.degree);
     let module_file_name = dict.module;
     let sseq = new Sseq();
@@ -190,32 +191,17 @@ function startResolution(dict){
     sseq.initialyRange = [0, degree/3-1];
     sseq.class_scale = 0.4;
     sseq.display();
-    let classTable = Array(degree+1).fill(0).map(x => Array(degree+1).fill(0).map(x => []));
+    let dss = sseq.getDisplaySseq();
+    dss.addEventHandler("onclick", sseqClickHandler)
+    window.sseq = sseq;
+    window.dss = dss;
     Mousetrap.unbind("left");
     Mousetrap.unbind("right");
     document.getElementById('page_indicator').innerText = "";    
     worker = new Worker("Cemsdk/ResolutionWorker.js");
     worker.addEventListener("message", (message)=>{
         let m = message.data;
-        if(m.cmd == "addClass"){
-            m.x -= n; // Translate to start at (0,0)
-            if(m.x > 0 && m.y > m.x/2 + 5){
-                return;
-            }
-            let c = sseq.addClass(m.x, m.y);
-            sleep(0).then(()=>sseq.update());
-            classTable[m.x][m.y].push(c);
-        } else {
-            m.source.x -= n; // Translate to start at (0,0)
-            m.target.x -= n;
-            if(m.target.x > 0 && m.target.y > m.target.x/2 + 5){
-                return;
-            }            
-            let source = classTable[m.source.x][m.source.y][m.source.idx]
-            let target = classTable[m.target.x][m.target.y][m.target.idx]
-            sseq.addStructline(source, target);
-            sleep(0).then(() => sseq.update());
-        }
+        message_handlers[m.cmd](m);
     })
     let module = {
         "name": `$S^{${n}}_{${p}}$`, "p": p, "generic": generic, 
@@ -225,10 +211,62 @@ function startResolution(dict){
 
     document.getElementById('page_indicator').innerHTML = katexMathInDelims(module.name);
     worker.postMessage({
+        "cmd" : "resolve",
         "module" : module,
         "max_degree" : degree
     });
 }
+
+function sseqClickHandler(){
+    let c = event.mouseover_class;
+    if (!c) {
+        return;
+    }
+    c = sseq.display_class_to_real_class.get(c);
+    worker.postMessage({
+        "cmd" : "get_cocyle",
+        "x" : c.x + sphere_dimension,
+        "y" : c.y,
+        "idx" : c.idx
+    });
+}
+
+let classTable = {};
+let message_handlers = {};
+message_handlers["addClass"] = function addClass(m){
+    m.x -= sphere_dimension;
+    if(m.x > 0 && m.y > m.x/2 + 5){
+        return;
+    }
+    let c = sseq.addClass(m.x, m.y);
+    sleep(0).then(()=>sseq.update());
+    let o = {x : m.x, y:m.y};
+    let key = JSON.stringify(o);
+    if(!(key in classTable)){
+        classTable[key] = [];
+    }
+    classTable[key].push(c);
+} 
+
+message_handlers["addStructline"] = function addStructline(m){
+    m.source.x -= sphere_dimension;
+    m.target.x -= sphere_dimension;
+    if(m.target.x > 0 && m.target.y > m.target.x/2 + 5){
+        return;
+    }   
+    let source_key = JSON.stringify({x : m.source.x, y : m.source.y});
+    let target_key = JSON.stringify({x : m.target.x, y : m.target.y});
+    let source = classTable[source_key][m.source.idx];
+    let target = classTable[target_key][m.target.idx];
+
+    sseq.addStructline(source, target);
+    sleep(0).then(() => sseq.update());
+}
+
+message_handlers["cocycle_result"] = function cocycle_result(data){
+    console.log(data.value);
+}
+
 
 // {
     // "profile" : {

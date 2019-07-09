@@ -113,6 +113,12 @@ uint MilnorAlgebra_basisElement_toKey(char *buffer, MilnorBasisElement *b){
     return len;
 }
 
+uint MilnorAlgebra_basisElementIndex_toString(Algebra *this, char *buffer, int degree, uint idx){
+    MilnorAlgebra *A = (MilnorAlgebra *)this;
+    MilnorBasisElement b = MilnorAlgebra_basisElement_fromIndex(A, degree, idx);
+    return MilnorAlgebra_basisElement_toString(buffer, A, &b);
+}
+
 uint MilnorAlgebra_basisElement_toString(char *buffer, MilnorAlgebra *A, MilnorBasisElement *b){
     if(b->p_length == 0 && b->q_part == 0){
         buffer[0] = '0';
@@ -245,7 +251,8 @@ MilnorBasisElement MilnorAlgebra_basisElement_fromString(MilnorAlgebra * algebra
     return result;
 }
 
-uint MilnorAlgebra_element_toString(char *buffer, MilnorAlgebra * algebra, int degree, Vector * m){
+uint MilnorAlgebra_element_toString(Algebra *this, char *buffer, int degree, Vector * m){
+    MilnorAlgebra *algebra = (MilnorAlgebra*)this;
     uint len = 0;
     for(
         VectorIterator it = Vector_getIterator(m); 
@@ -272,9 +279,9 @@ uint MilnorAlgebra_element_toString(char *buffer, MilnorAlgebra * algebra, int d
     return len;
 }
 
-void MilnorElement_print(char *fmt_string, MilnorAlgebra * algebra, uint degree, Vector * m){
+void MilnorElement_print(char *fmt_string, MilnorAlgebra *algebra, uint degree, Vector *m){
     char buffer[2000];
-    uint len = MilnorAlgebra_element_toString(buffer, algebra, degree, m);
+    uint len = MilnorAlgebra_element_toString((Algebra *)algebra, buffer, degree, m);
     assert(len < 2000);
     printf(fmt_string, buffer);
 }

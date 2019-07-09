@@ -26,7 +26,8 @@ typedef struct Module {
 #define module_getDimension(module, degree) ((module)->getDimension)(module, degree)
 #define module_actOnBasis(module, result, coeff, op_deg, op, r_deg, r) ((module)->actOnBasis)(module, result, coeff, op_deg, op, r_deg, r)
 
-
+// For javascript
+uint Module_getDimension_function(Module *module, int degree);
 
 typedef struct {
     Module module;
@@ -92,6 +93,8 @@ void FreeModule_ConstructBlockOffsetTable(FreeModule *M, int degree);
 uint FreeModule_operationGeneratorToIndex(FreeModule *this, int op_deg, uint op_idx, int gen_deg, uint gen_idx);
 FreeModuleOperationGeneratorPair FreeModule_indexToOpGen(FreeModule *this, int degree, uint index);
 
+uint FreeModule_element_toJSONString(char *result, FreeModule *this, int degree, Vector *element);
+
 typedef struct {
     int *column_to_pivot_row;
     Matrix *kernel;
@@ -111,11 +114,17 @@ typedef struct {
 FreeModuleHomomorphism *FreeModuleHomomorphism_construct(FreeModule *source, Module *target, int max_degree);
 void FreeModuleHomomorphism_free(FreeModuleHomomorphism *f);
 void FreeModuleHomomorphism_setOutput(FreeModuleHomomorphism *f, int gen_degree, uint gen_index, Vector *output);
+void FreeModuleHomomorphism_applyToGenerator(FreeModuleHomomorphism *f, Vector *result, uint coeff, int generator_degree, uint generator_index);
 void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism *f, Vector *result, uint coeff, int input_degree, uint input_index);
 
 void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism *f, int degree, uint num_gens);
 
 void FreeModuleHomomorphism_getMatrix(FreeModuleHomomorphism *f, Matrix *result, int degree);
+
+
+// For Javascript:
+FreeModule *FreeModuleHomomorphism_getSource(FreeModuleHomomorphism *f);
+Module *FreeModuleHomomorphism_getTarget(FreeModuleHomomorphism *f);
 
 Kernel *Kernel_construct(uint p, uint rows, uint columns);
 void Kernel_free(Kernel *k);

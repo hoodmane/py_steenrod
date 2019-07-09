@@ -53,9 +53,10 @@ hr { height:2px; visibility:hidden; margin-bottom:-1px; }
 <script type="text/javascript" src='Cemsdk/ResolutionWorker.js'></script> -->
 <!-- -->
 <script>
-katex_macros = {};
+"use strict";
+let katex_macros = {};
 function katexMathInDelims(string){
-    html_list = string.split(/(?:\\\[)|(?:\\\()|(?:\\\))|(?:\\\])|(?:\$)/);
+    let html_list = string.split(/(?:\\\[)|(?:\\\()|(?:\\\))|(?:\\\])|(?:\$)/);
     for(let i = 1; i < html_list.length; i+=2){
         html_list[i] = katex.renderToString(html_list[i], {macros : katex_macros});
     }
@@ -102,12 +103,12 @@ let worker = {};
 worker.terminate = function(){};
 
 IO.loadFromServer("modules/module_registry.json").then((json) => {
-    module_groups = groupBy(json, "p");
+    let module_groups = groupBy(json, "p");
     let heading = document.createElement("h1");
     heading.innerHTML = "Adams E2 Pages";
     let table = document.createElement("table");
-    max_rows = Math.max(...Object.values(module_groups).map(x => x.length));
-    table_rows = [];
+    let max_rows = Math.max(...Object.values(module_groups).map(x => x.length));
+    let table_rows = [];
     for(let i = 0; i < max_rows; i++){
         let tr = document.createElement("tr");
         tr.id = `row${i}`;
@@ -164,39 +165,16 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-
 function startResolution(dict){
     let degree = Number.parseInt(dict.degree);
     let module_file_name = dict.module;
-    let classTable = {};
-    let sseq = new Sseq();     
+    let sseq = new Sseq();
+    let dss = sseq.getDisplaySseq();
+    dss.addEventHandler("onclick", sseqClickHandler)
     worker = new Worker("Cemsdk/ResolutionWorker.js");
     worker.addEventListener("message", (message)=>{
         let m = message.data;
-        if(m.cmd == "addClass"){
-            if(m.x > 0 && m.y > m.x/2 + 5){
-                return;
-            }
-            let c = sseq.addClass(m.x, m.y);
-            sleep(0).then(()=>sseq.update());
-            let o = {x : m.x, y:m.y};
-            let key = JSON.stringify(o);
-            if(!(key in classTable)){
-                classTable[key] = [];
-            }
-            classTable[key].push(c);
-        } else {
-            if(m.target.x > 0 && m.target.y > m.target.x/2 + 5){
-                return;
-            }   
-            let source_key = JSON.stringify({x : m.source.x, y : m.source.y});
-            let target_key = JSON.stringify({x : m.target.x, y : m.target.y});
-            let source = classTable[source_key][m.source.idx];
-            let target = classTable[target_key][m.target.idx];
-
-            sseq.addStructline(source, target);
-            sleep(0).then(() => sseq.update());
-        }
+        message_handlers[m.cmd](m);
     })    
     IO.loadFromServer(`modules/${module_file_name}.json`).then((module) => {
         let min_degree = Math.min(...Object.values(module.gens));
@@ -212,10 +190,58 @@ function startResolution(dict){
         dss.getPageDescriptor = (page) => katexMathInDelims(module.name);        
         sseq.display();
         worker.postMessage({
+            "cmd" : "resolve",
             "module" : module,
             "max_degree" : degree
         });
     });
+}
+
+function sseqClickHandler(){
+    let c = event.mouseover_class;
+    if (!c) {
+        return;
+    }
+    c = sseq.display_class_to_real_class.get(c);
+    worker.postMessage({
+        "cmd" : "get_cocyle",
+        "x" : c.x,
+        "y" : c.y,
+        "idx" : c.idx
+    });
+}
+
+let classTable = {};
+let message_handlers = {};
+message_handlers["addClass"] = function addClass(m){
+    if(m.x > 0 && m.y > m.x/2 + 5){
+        return;
+    }
+    let c = sseq.addClass(m.x, m.y);
+    sleep(0).then(()=>sseq.update());
+    let o = {x : m.x, y:m.y};
+    let key = JSON.stringify(o);
+    if(!(key in classTable)){
+        classTable[key] = [];
+    }
+    classTable[key].push(c);
+} 
+
+message_handlers["addStructline"] = function addStructline(m){
+    if(m.target.x > 0 && m.target.y > m.target.x/2 + 5){
+        return;
+    }   
+    let source_key = JSON.stringify({x : m.source.x, y : m.source.y});
+    let target_key = JSON.stringify({x : m.target.x, y : m.target.y});
+    let source = classTable[source_key][m.source.idx];
+    let target = classTable[target_key][m.target.idx];
+
+    sseq.addStructline(source, target);
+    sleep(0).then(() => sseq.update());
+}
+
+message_handlers["cocycle_result"] = function cocycle_result(data){
+    console.log(data.value);
 }
 
 // {

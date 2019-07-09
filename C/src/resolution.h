@@ -25,6 +25,10 @@ typedef struct Resolution_s {
     int *internal_degree_to_resolution_stage;       // Records how far we've resolved in each degree (homological_degree + 1)
 } Resolution;
 
+// Getters for javascript
+FreeModuleHomomorphism *Resolution_getDifferential(Resolution *resolution, uint homological_degree);
+
+
 Resolution *Resolution_construct(
     FiniteDimensionalModule *module,
     int max_degree,

@@ -18,6 +18,10 @@ SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
     '_Vector_construct', '_Vector_pack', '_Vector_unpack', '_Vector_print', '_Vector_free'")
 
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
+    '_algebra_computeBasis_function', '_algebra_getDimension_function', \
+    '_algebra_multiplyBasisElements_function', '_algebra_basisElementToString_function'")
+
+SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
     '_MilnorAlgebra_construct', '_MilnorAlgebra_free', \
     '_MilnorAlgebra_generateBasis', '_MilnorAlgebra_getDimension', \
     '_Profile_construct', '_Profile_free'"
@@ -35,13 +39,23 @@ SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
 )
 
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
+    '_Module_getDimension_function'"
+)
+
+SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
     '_FiniteDimensionalModule_construct', '_FiniteDimensionalModule_free', \
     '_FiniteDimensionalModule_setAction'"
 )
 
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
+    '_FreeModule_getDimension', '_FreeModuleHomomorphism_applyToGenerator', \
+    '_FreeModuleHomomorphism_getSource', '_FreeModuleHomomorphism_getTarget', \
+    '_FreeModule_element_toJSONString'"
+)
+
+SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
     '_Resolution_construct', '_Resolution_resolveThroughDegree', \
-    '_FiniteDimensionalModule_setAction'"
+    '_Resolution_getDifferential'"
 )
 
 SET(EMCC_EXPORT_FLAGS "-s EXTRA_EXPORTED_RUNTIME_METHODS=\"${EXTRA_EXPORTED_RUNTIME_METHODS}\"")
@@ -58,6 +72,7 @@ add_executable(CSteenrod
         ../C/src/FpVector.c
         ../C/src/FpVector.h
         ../C/src/algebra.h
+        ../C/src/algebra.c
         ../C/src/modules.h
         ../C/src/modules.c
         ../C/src/resolution.h

@@ -377,6 +377,32 @@ FreeModuleOperationGeneratorPair FreeModule_indexToOpGen(FreeModule *this, int d
     return module->basis_element_to_opgen_table[degree][index];
 }
 
+uint FreeModule_element_toJSONString(char *result, FreeModule *this, int degree, Vector *element){
+    uint len = 0;
+    len += sprintf(result + len, "[");
+    for(
+        VectorIterator it = Vector_getIterator(element);
+        it.has_more;
+        it = Vector_stepIterator(it)
+    ){
+        if(it.value == 0){
+            continue;
+        }
+        len += sprintf(result + len, "{");
+        FreeModuleOperationGeneratorPair opgen = FreeModule_indexToOpGen(this, degree, it.index);
+        len += sprintf(result + len, "\"op_deg\" : %d,", opgen.operation_degree);
+        len += sprintf(result + len, "\"op_idx\" : %d,", opgen.operation_index);
+        len += sprintf(result + len, "\"gen_deg\": %d,", opgen.generator_degree);
+        len += sprintf(result + len, "\"gen_idx\": %d,", opgen.generator_index);
+        len += sprintf(result + len, "\"coeff\" : %d,", it.value);
+        len += sprintf(result + len, "\"op_str\" : \"");
+        len += algebra_basisElementToString(this->module.algebra, result + len, opgen.operation_degree, opgen.operation_index);
+        len += sprintf(result + len, "\"},");
+    }
+    len --;
+    len += sprintf(result + len, "]");
+    return len;
+}
 
 
 // FreeModuleHomomorphisms
@@ -445,18 +471,24 @@ void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism
 
 }
 
-Vector *FreeModuleHomomorphism_getOutput(FreeModuleHomomorphism *f, int input_degree, uint input_index){
-    assert(input_degree - f->source->module.min_degree >= 0);
-    assert(input_degree < f->max_computed_degree);
-    assert(input_index < module_getDimension((Module*)f->source, input_degree));
-    return f->outputs[input_degree - f->source->module.min_degree][input_index];
+Vector *FreeModuleHomomorphism_getOutput(FreeModuleHomomorphism *f, int generator_degree, uint generator_index){
+    assert(generator_degree - f->source->module.min_degree >= 0);
+    assert(generator_degree < f->max_computed_degree);
+    assert(generator_index < module_getDimension((Module*)f->source, generator_degree));
+    return f->outputs[generator_degree - f->source->module.min_degree][generator_index];
 }
 
-void FreeModuleHomomorphism_setOutput(FreeModuleHomomorphism *f, int input_degree, uint input_index, Vector *output){
-    assert(output->dimension == module_getDimension(f->target, input_degree));
+void FreeModuleHomomorphism_setOutput(FreeModuleHomomorphism *f, int generator_degree, uint generator_index, Vector *output){
+    assert(output->dimension == module_getDimension(f->target, generator_degree));
     assert(output->offset == 0);
-    assert(input_index < FreeModule_getNumberOfGensInDegree(f->source, input_degree));
-    Vector_assign(f->outputs[input_degree - f->source->module.min_degree][input_index], output);
+    assert(generator_index < FreeModule_getNumberOfGensInDegree(f->source, generator_degree));
+    Vector_assign(f->outputs[generator_degree - f->source->module.min_degree][generator_index], output);
+}
+
+// Primarily for Javascript (so we can avoid actually indexing struct fields).
+void FreeModuleHomomorphism_applyToGenerator(FreeModuleHomomorphism *f, Vector *result, uint coeff, int generator_degree, uint generator_index){
+    Vector *output_on_generator = FreeModuleHomomorphism_getOutput(f, generator_degree, generator_index);
+    Vector_add(result, output_on_generator, coeff);
 }
 
 // Run FreeModule_ConstructBlockOffsetTable(source, degree) before using this on an input in that degree
@@ -538,6 +570,20 @@ Kernel *Kernel_construct(uint p, uint rows, uint columns){
 
 void Kernel_free(Kernel *k){
     free(k);
+}
+
+// For javascript
+uint Module_getDimension_function(Module *module, int degree){
+    uint result = module->getDimension(module, degree);
+    return result;
+}
+
+FreeModule *FreeModuleHomomorphism_getSource(FreeModuleHomomorphism *f){
+    return f->source;
+}
+
+Module *FreeModuleHomomorphism_getTarget(FreeModuleHomomorphism *f){
+    return f->target;
 }
 
 /*

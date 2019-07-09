@@ -22,6 +22,7 @@ class c_FiltrationOneProductList(Structure):
 #     void (*computeBasis)(struct Algebra* this, int degree);
 #     uint (*getDimension)(struct Algebra* this, int degree, int excess);
 #     void (*multiplyBasisElements)(struct Algebra* this, Vector *result, uint coeff, int r_degree, uint r_idx, int s_degree, uint s_idx, int excess);
+#     uint (*basisElementToString)(struct Algebra *this, char *result, int degree, uint idx);
 # } Algebra;
 
 class c_Algebra(Structure):
@@ -35,6 +36,7 @@ c_Algebra._fields_ = [
         ("compute_basis",CFUNCTYPE(c_bool, POINTER(c_Algebra), c_int)),
         ("get_basis_dimension", CFUNCTYPE(c_uint, POINTER(c_Algebra), c_int, c_int)),
         ("multiply_basis_elements", CFUNCTYPE(None, POINTER(c_Algebra), POINTER(c_Vector), c_uint, c_int, c_uint, c_int, c_uint, c_int))
+        ("basisElementToString", c_void_p)
     ]
 
 def wrap_algebra(CSteenrod):

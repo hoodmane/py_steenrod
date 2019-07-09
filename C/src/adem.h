@@ -29,10 +29,11 @@ typedef struct {
     AdemBasisElement **list;
 } AdemBasisElement_list;
 
-uint AdemAlgebra_element_toString(char *buffer, AdemAlgebra *algebra, int degree, Vector *m);
+uint AdemAlgebra_element_toString(Algebra *algebra, char *buffer, int degree, Vector *m);
 void AdemAlgebra_element_print(char *fmt_string, AdemAlgebra *algebra, int degree, Vector *m);
 
 uint AdemAlgebra_basisElement_toKey(char *buffer, AdemBasisElement *b);
+uint AdemAlgebra_basisElementIndex_toString(Algebra *this, char *buffer, int degree, uint idx);
 uint AdemAlgebra_basisElement_toString(char *buffer, AdemAlgebra *algebra, AdemBasisElement *b);
 void AdemAlgebra_basisElement_print(char *fmt_string, AdemAlgebra *algebra, AdemBasisElement *b);
 AdemBasisElement *AdemAlgebra_basisElement_fromString(AdemAlgebra *algebra, char *elt_string);

@@ -75,6 +75,7 @@ MilnorAlgebra *MilnorAlgebra__initializeFields(MilnorAlgebraInternal *algebra, u
     algebra->public_algebra.algebra.computeBasis = MilnorAlgebra_generateBasis;
     algebra->public_algebra.algebra.getDimension = MilnorAlgebra_getDimension;
     algebra->public_algebra.algebra.multiplyBasisElements = MilnorAlgebra_multiply;
+    algebra->public_algebra.algebra.basisElementToString = MilnorAlgebra_basisElementIndex_toString;
     algebra->public_algebra.sort_order = NULL;
 
     // Basis tables
@@ -992,7 +993,7 @@ int main() {
     Vector *result = Vector_construct(algebra->algebra.p, output_dimension, 0);
     MilnorAlgebra_multiply((Algebra*)algebra, result, 1, A_deg, A_idx, B_deg, B_idx, 0);
     char *str1 = buffer;
-    int len1 = MilnorAlgebra_element_toString(str1, algebra, output_degree, result);
+    int len1 = MilnorAlgebra_element_toString(algebra, str1, output_degree, result);
     char *str2 = str1 + len1 + 1;
     int len2 = MilnorAlgebra_basisElement_toString(str2, algebra, &A);
     char *str3 = str2 + len2 + 1;

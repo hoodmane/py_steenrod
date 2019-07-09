@@ -98,6 +98,7 @@ static void AdemAlgebra__initializeFields(AdemAlgebraInternal *algebra, uint p, 
     // Fill in the Algebra function pointers.
     algebra->public_algebra.algebra.computeBasis = AdemAlgebra_generateBasis;
     algebra->public_algebra.algebra.multiplyBasisElements = AdemAlgebra_multiply;
+    algebra->public_algebra.algebra.basisElementToString = AdemAlgebra_basisElementIndex_toString;
     if(unstable){
         algebra->public_algebra.sort_order = AdemAlgebra_excessSortOrder;
         algebra->public_algebra.algebra.getDimension = AdemAlgebra_getDimension_unstable;

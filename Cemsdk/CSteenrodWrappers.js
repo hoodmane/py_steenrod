@@ -1,3 +1,7 @@
+/**
+ * FpVector.h
+ */
+
 // void initializePrime(uint p);
 let cinitializePrime = cwrap("initializePrime", 'void', ['number']);
 
@@ -13,7 +17,25 @@ let cVector_pack = cwrap("Vector_pack", 'void', ['pointer', 'pointer']);
 // void Vector_unpack(uint * target, Vector * source);
 let cVector_unpack = cwrap("Vector_unpack", 'void', ['pointer', 'pointer']);
 
+/**
+ * algebra.h
+ */
+// void algebra_computeBasis_function(Algebra *algebra, int degree);
+let cAlgebra_computeBasis = cwrap('algebra_computeBasis_function', 'void', ['pointer', 'number']);
 
+// uint algebra_getDimension_function(Algebra *algebra, int degree, int excess);
+let cAlgebra_getDimension = cwrap('algebra_getDimension_function', 'number', ['pointer', 'number', 'number']);
+
+// void algebra_multiplyBasisElements_function(Algebra *algebra, Vector *result, uint coeff, int r_deg, uint r_idx, int s_deg, uint s_idx, int excess);
+let cAlgebra_multiplyBasisElements = cwrap('algebra_multiplyBasisElements_function', 'void', ['pointer', 'pointer', 'number', 'number', 'number', 'number', 'number', 'number']);
+
+// uint algebra_basisElementToString_function(Algebra *algebra, char *result, int degree, uint idx);
+let cAlgebra_basisElementToString_function = cwrap('algebra_basisElementToString_function', 'number', ['pointer', 'pointer', 'number', 'number']);
+
+
+/**
+ * adem.h
+ */
 
 
 // AdemAlgebra *AdemAlgebra_construct(uint p, bool generic, bool unstable);
@@ -51,6 +73,10 @@ let cAdemAlgebra_makeMonoAdmissible = Module.cwrap("AdemAlgebra_makeMonoAdmissib
 
 
 
+/**
+ * milnor.h
+ */
+
 // Profile *Profile_construct(bool generic, uint q_part_length, uint * q_part, uint p_part_length, uint *p_part, bool truncated);
 let cProfile_construct = cwrap("Profile_construct", 'pointer', ['bool', 'number', 'pointer', 'number', 'pointer', 'bool']);
 let cProfile_free = cwrap("Profile_free", 'void', ['pointer']);
@@ -68,6 +94,11 @@ let cMilnorAlgebra_generateBasis = Module.cwrap("MilnorAlgebra_generateBasis", '
 let cMilnorAlgebra_getDimension = Module.cwrap("MilnorAlgebra_getDimension", 'number', ['pointer', 'number', 'number']);
 
 
+/**
+ * modules.h
+ */
+// uint Module_getDimension_function(Module *module, int degree);
+let cModule_getDimension = Module.cwrap("Module_getDimension_function", 'number', ['pointer', 'number'])
 
 // FiniteDimensionalModule *FiniteDimensionalModule_construct(Algebra *algebra, int min_degree, int max_degree, uint *graded_dimension);
 let cFiniteDimensionalModule_construct = Module.cwrap("FiniteDimensionalModule_construct", 'pointer', ['bool', 'pointer', 'number', 'number', 'pointer']);
@@ -85,8 +116,31 @@ let cFiniteDimensionalModule_setAction = cwrap("FiniteDimensionalModule_setActio
     ['pointer', 'number' , 'number', 'number' , 'number', 'pointer']
 );
 
-//Resolution *Resolution_construct(Module, max_degree, addClass, addStructline)
+
+// FreeModule *FreeModuleHomomorphism_getSource(FreeModuleHomomorphism *f);
+let cFreeModuleHomomorphism_getSource = cwrap("FreeModuleHomomorphism_getSource", 'pointer', ['pointer']);
+
+// Module *FreeModuleHomomorphism_getTarget(FreeModuleHomomorphism *f);
+let cFreeModuleHomomorphism_getTarget = cwrap("FreeModuleHomomorphism_getTarget", 'pointer', ['pointer']);
+
+// void FreeModuleHomomorphism_applyToGenerator(FreeModuleHomomorphism *f, Vector *result, uint coeff, int generator_degree, uint generator_index);
+let cFreeModuleHomomorphism_applyToGenerator = cwrap("FreeModuleHomomorphism_applyToGenerator", 'void', ['pointer', 'pointer', 'number', 'number', 'number']);
+
+// uint FreeModule_element_toJSONString(char *result, FreeModule *this, int degree, Vector *element)
+let cFreeModule_element_toJSONString = cwrap("FreeModule_element_toJSONString", 'number', ['pointer', 'pointer', 'number', 'pointer']);
+
+/**
+ * resolution.h
+ */
+
+// Resolution *Resolution_construct(Module, max_degree, addClass, addStructline);
 let cResolution_construct = Module.cwrap("Resolution_construct", 'pointer', ['pointer', 'number', 'pointer', 'pointer']);
+
+// void Resolution_free(Resolution *res);
+let cResolution_free = Module.cwrap("Resolution_free", 'void', ['pointer']);
+
+// FreeModuleHomomorphism *Resolution_getDifferential(Resolution *resolution, uint homological_degree);
+let cResolution_getDifferential = Module.cwrap("Resolution_getDifferential", 'pointer', ['pointer', 'number']);
 
 // void Resolution_resolveThroughDegree(Resolution *res, uint degree);
 let cResolution_resolveThroughDegree = Module.cwrap("Resolution_resolveThroughDegree", 'void', ['pointer', 'number']);

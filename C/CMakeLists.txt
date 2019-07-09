@@ -18,6 +18,7 @@ add_executable(csteen
         src/FpVector.c
         src/FpVector.h
         src/algebra.h
+        src/algebra.c
         src/modules.h
         src/modules.c
         src/resolution.h

@@ -32,6 +32,11 @@ void addStructline_doNothing(
     // printf("\n\nhom_deg: %d, mod_deg: %d, num_gens: %d\n", homological_degree, degree, num_gens);
 }
 
+// Getter for javascript
+FreeModuleHomomorphism *Resolution_getDifferential(Resolution *resolution, uint homological_degree){
+    return resolution->differentials[homological_degree + 1];   
+}
+
 Resolution * Resolution_construct(
     FiniteDimensionalModule *module, 
     int max_degree,
@@ -193,7 +198,7 @@ void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_d
 //      if homological_degree == 0, the kernel should be everything in the module.
 void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uint homological_degree, int degree){
     // printf("degree: %d, homological_degree: %d, resolution->min_degree: %d\n",degree, homological_degree, resolution->min_degree);
-    printf("(%d, %d)\n", homological_degree, degree);
+    // printf("(%d, %d)\n", homological_degree, degree);
     assert(degree >= (int)homological_degree + resolution->min_degree);
     assert(degree < resolution->max_degree);
     uint shifted_degree = degree - resolution->module->min_degree;

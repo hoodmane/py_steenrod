@@ -35,7 +35,14 @@ uint AdemAlgebra_basisElement_toKey(char *buffer, AdemBasisElement *b){
     return len;
 }
 
+uint AdemAlgebra_basisElementIndex_toString(Algebra *this, char *buffer, int degree, uint idx){
+    AdemAlgebra *algebra = (AdemAlgebra*)this;
+    AdemBasisElement *b = AdemAlgebra_basisElement_fromIndex(algebra, degree, idx);
+    return AdemAlgebra_basisElement_toString(buffer, algebra, b);
+}
+
 uint AdemAlgebra_basisElement_toString(char *buffer, AdemAlgebra *algebra, AdemBasisElement *b){
+    printf("AdemAlgebra_basisElement_toString\n");
     uint len = 0;
     bool generic = algebra->generic;
     char P_or_Sq[4];
@@ -119,7 +126,8 @@ AdemBasisElement *AdemAlgebra_basisElement_fromString(AdemAlgebra *algebra, char
 }
 
 
-uint AdemAlgebra_element_toString(char *buffer, AdemAlgebra *algebra, int degree, Vector *m){
+uint AdemAlgebra_element_toString(Algebra *this, char *buffer, int degree, Vector *m){
+    AdemAlgebra *algebra = (AdemAlgebra *)this;
     uint len = 0;
     for(
         VectorIterator it = Vector_getIterator(m); 
@@ -148,6 +156,6 @@ uint AdemAlgebra_element_toString(char *buffer, AdemAlgebra *algebra, int degree
 
 void AdemAlgebra_element_print(char *fmt_string, AdemAlgebra *algebra, int degree, Vector *m){
     char buffer[1000];
-    AdemAlgebra_element_toString(buffer, algebra, degree, m);
+    AdemAlgebra_element_toString((Algebra *)algebra, buffer, degree, m);
     printf(fmt_string, buffer);
 }

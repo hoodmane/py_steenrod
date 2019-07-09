@@ -2,7 +2,7 @@
 importScripts("CSteenrod.js");
 importScripts("CSteenrodWrappers.js");
 
-const sizeof_uint = 4;
+const sizeof_uint = Uint32Array.BYTES_PER_ELEMENT;
 
 let t0 = performance.now();
 let t_last = t0;
@@ -145,35 +145,75 @@ let runtimePromise = new Promise(function(resolve, reject){
 
 self.onmessage = function(msg){
     runtimePromise.then(() => {
-        let p = msg.data.module.p;
-        let max_degree = msg.data.max_degree;
-        max_degree++;
-        if(typeof(p) != 'number'){
-            console.log("p not a number, quitting.");
-            return;
-        }        
-        if(typeof(max_degree) != 'number'){
-            console.log("max_degree not a number, quitting.");
-            return;
-        }
-        
-        let algebraData = msg.data.algebra || {};
-        let moduleData = msg.data.module;
-        algebraData.p = moduleData.p;
-        algebraData.generic = moduleData.generic;
-        algebraData.max_degree = max_degree - Math.min(...Object.values(moduleData.gens));
-        moduleData.max_degree = max_degree;
-        algebraData.algebra = moduleData.algebra;
-        let cAlgebra = constructAlgebra(algebraData);
-        let module = constructFiniteDimensionalModule(msg.data.module, cAlgebra);
-        let callbacks = getCallbacks();
-        t0 = performance.now();
-        let cResolution = cResolution_construct(module.cModule, max_degree, callbacks.addClassPtr, callbacks.addStructlinePtr);
-        cResolution_resolveThroughDegree(cResolution, max_degree);
+        message_handlers[msg.data.cmd](msg.data);
     });
 };
 
+let message_handlers = {};
 
+message_handlers["resolve"] = function resolve(data){
+    let p = data.module.p;
+    let max_degree = data.max_degree;
+    max_degree++;
+    if(typeof(p) != 'number'){
+        console.log("p not a number, quitting.");
+        return;
+    }        
+    if(typeof(max_degree) != 'number'){
+        console.log("max_degree not a number, quitting.");
+        return;
+    }
+    
+    let algebraData = data.algebra || {};
+    let moduleData = data.module;
+    algebraData.p = moduleData.p;
+    algebraData.generic = moduleData.generic;
+    algebraData.max_degree = max_degree - Math.min(...Object.values(moduleData.gens));
+    moduleData.max_degree = max_degree;
+    algebraData.algebra = moduleData.algebra;
+    let cAlgebra = constructAlgebra(algebraData);
+    let module = constructFiniteDimensionalModule(data.module, cAlgebra);
+    let callbacks = getCallbacks();
+    t0 = performance.now();
+    self.p = p;
+    self.cResolution = cResolution_construct(module.cModule, max_degree, callbacks.addClassPtr, callbacks.addStructlinePtr);
+    cResolution_resolveThroughDegree(self.cResolution, max_degree);
+};
+
+message_handlers["get_cocyle"] = function getCocycle(data){
+    let homological_degree = data.y;
+    let degree = data.x + data.y;
+    let index = data.idx;
+    let cf = cResolution_getDifferential(self.cResolution, homological_degree);
+    let cTarget = cFreeModuleHomomorphism_getTarget(cf);
+    let dimension = cModule_getDimension(cTarget, degree);
+    let cResult_vector = cVector_construct(self.p, dimension, 0);    
+    cFreeModuleHomomorphism_applyToGenerator(cf, cResult_vector,  1, degree, index);
+    let cResult_json_offset = Module._malloc(2000);
+    let length = cFreeModule_element_toJSONString(cResult_json_offset, cTarget, degree, cResult_vector);
+    let s = "";
+    for (let i = 0; i < length; ++i){
+        s += String.fromCharCode(Module.HEAPU8[cResult_json_offset+i]);
+    } 
+    let result = JSON.parse(s);
+    result = result.map((entry) => {
+        let output = "";
+        if(entry.coeff != 1){
+            output = `${entry.coeff}*`;
+        }
+        output = `${output}${entry.op_str}*x_{${entry.gen_deg},${entry.gen_idx}}`
+        return output;
+    })
+    if(result.length == 0){
+        result = "0";
+    } else {
+        result = result.join(" + ");
+    }
+    self.postMessage({
+        "cmd" : "cocycle_result",
+        "value" : result
+    });
+};
 
 
 

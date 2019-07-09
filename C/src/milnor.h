@@ -43,10 +43,11 @@ void Profile_free(Profile *profile);
 
 // Implemented in milnor_datatypes.c
 // These methods write a string to a buffer and return the length of the string written.
-uint MilnorAlgebra_element_toString(char *buffer, MilnorAlgebra *algebra, int degree, Vector *m);
+uint MilnorAlgebra_element_toString(Algebra *algebra, char *buffer, int degree, Vector *m);
 void MilnorAlgebra_element_print(char *fmt_string, MilnorAlgebra *algebra, int degree, Vector *m);
 uint MilnorMatrix_toString(char *buffer, uint M[MAX_XI_TAU][MAX_XI_TAU], uint rows, uint cols);
 uint MilnorAlgebra_basisElement_toKey(char *buffer, MilnorBasisElement *b);
+uint MilnorAlgebra_basisElementIndex_toString(Algebra *this, char *buffer, int degree, uint index);
 uint MilnorAlgebra_basisElement_toString(char *buffer, MilnorAlgebra *algebra, MilnorBasisElement *b);
 char *MilnorAlgebra_basisElement_constructString(MilnorAlgebra *algebra, MilnorBasisElement *b);
 void MilnorAlgebra_basisElement_print(char *fmt_string, MilnorAlgebra *algebra, MilnorBasisElement *b);
