@@ -2,7 +2,10 @@
 #define CSTEENROD_RESOLUTION_H
 
 #include "algebra.h"
-#include "modules.h"
+#include "Module.h"
+#include "FiniteDimensionalModule.h"
+#include "FreeModule.h"
+#include "FreeModuleHomomorphism.h"
 
 // Resolution datatype
 // We're storing the augmented resolution, the module we're resolving goes resolution_modules index 0

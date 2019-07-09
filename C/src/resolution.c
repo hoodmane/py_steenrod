@@ -13,7 +13,7 @@
 #include "algebra.h"
 #include "milnor.h"
 #include "adem.h"
-#include "modules.h"
+#include "Module.h"
 #include "resolution.h"
 
 #define max(a,b) ((a) > (b) ? (a) : (b))

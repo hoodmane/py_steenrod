@@ -17,6 +17,8 @@ let cVector_pack = cwrap("Vector_pack", 'void', ['pointer', 'pointer']);
 // void Vector_unpack(uint * target, Vector * source);
 let cVector_unpack = cwrap("Vector_unpack", 'void', ['pointer', 'pointer']);
 
+let cVector_print = cwrap("Vector_print", 'void', ['pointer', 'pointer']);
+
 /**
  * algebra.h
  */

@@ -590,7 +590,7 @@ void Vector3_add(Vector *target, Vector *source, uint coeff){
     VectorPrivate *t = (VectorPrivate*) target;
     VectorPrivate *s = (VectorPrivate*) source;       
     for(uint i = 0; i < s->number_of_limbs; i++){
-        t->limbs[i] = t->limbs[i] + coeff * s->limbs[i];
+        t->limbs[i] += coeff * s->limbs[i];
         t->limbs[i] = Vector3_reduceLimb(t->limbs[i]);
     }
 }
@@ -600,7 +600,7 @@ void Vector3_scale(Vector *target, uint coeff){
     // assert(coeff != 0);
     VectorPrivate *t = (VectorPrivate*) target;   
     for(uint i = 0; i < t->number_of_limbs; i++){
-        t->limbs[i] = coeff * t->limbs[i];
+        t->limbs[i] *= coeff;
         t->limbs[i] = Vector3_reduceLimb(t->limbs[i]);
     }
 }
@@ -622,7 +622,7 @@ void Vector5_add(Vector *target, Vector *source, uint coeff){
     VectorPrivate *t = (VectorPrivate*) target;
     VectorPrivate *s = (VectorPrivate*) source;       
     for(uint i = 0; i < s->number_of_limbs; i++){
-        t->limbs[i] = t->limbs[i] + coeff * s->limbs[i];
+        t->limbs[i] += coeff * s->limbs[i];
         t->limbs[i] = Vector5_reduceLimb(t->limbs[i]);
     }
 }
@@ -632,7 +632,7 @@ void Vector5_scale(Vector *target, uint coeff){
     // assert(coeff != 0);
     VectorPrivate *t = (VectorPrivate*) target;   
     for(uint i = 0; i < t->number_of_limbs; i++){
-        t->limbs[i] = coeff * t->limbs[i];
+        t->limbs[i] *= coeff;
         t->limbs[i] = Vector5_reduceLimb(t->limbs[i]);
     }
 }
@@ -944,6 +944,23 @@ void rowReduce(Matrix *M, int *column_to_pivot_row, uint col_end, uint col_start
     return;
 }
 
+
+
+Kernel *Kernel_construct(uint p, uint rows, uint columns){
+    assert(columns < MAX_DIMENSION);
+    Kernel *k = malloc(
+        sizeof(Kernel) 
+        + columns * sizeof(uint)
+        + Matrix_getSize(p, rows, columns) * sizeof(uint64)
+    );
+    k->column_to_pivot_row = (int*)(k + 1);
+    k->kernel = Matrix_initialize((char*)(k->column_to_pivot_row + columns), p, rows, columns);
+    return k;
+}
+
+void Kernel_free(Kernel *k){
+    free(k);
+}
 
 /**
 int main(int argc, char *argv[]){

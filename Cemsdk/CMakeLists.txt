@@ -67,24 +67,29 @@ SET(EMCC_EXPORT_FLAGS "${EMCC_EXPORT_FLAGS} -s TOTAL_MEMORY=167772160")
 include(GNUInstallDirs)
 add_executable(CSteenrod
         ../C/src/khash.h
-        ../C/src/combinatorics.c
         ../C/src/combinatorics.h
-        ../C/src/FpVector.c
+        ../C/src/combinatorics.c
         ../C/src/FpVector.h
+        ../C/src/FpVector.c
         ../C/src/algebra.h
         ../C/src/algebra.c
-        ../C/src/modules.h
-        ../C/src/modules.c
+        ../C/src/Module.h
+        ../C/src/Module.c  
+        ../C/src/FiniteDimensionalModule.h
+        ../C/src/FiniteDimensionalModule.c
+        ../C/src/FreeModule.h
+        ../C/src/FreeModule.c
+        ../C/src/FreeModuleHomomorphism.h
+        ../C/src/FreeModuleHomomorphism.c
         ../C/src/resolution.h
         ../C/src/resolution.c
-        ../C/src/milnor.c
         ../C/src/milnor.h
-        ../C/src/milnor_io.c
         ../C/src/milnor_private.h
+        ../C/src/milnor.c
+        ../C/src/milnor_io.c
         ../C/src/adem.h
         ../C/src/adem.c
         ../C/src/adem_io.c
-        ../C/src/modules.c
     )
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")

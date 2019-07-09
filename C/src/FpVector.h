@@ -156,4 +156,13 @@ void Matrix_printSlice(Matrix *M, uint col_end, uint col_start);
 // When you delete the -1's from column_to_pivot_row, it looks like [0,1,2,...,rank(M)].
 void rowReduce(Matrix *M, int *column_to_pivot_row, uint, uint);
 
+
+typedef struct {
+    int *column_to_pivot_row;
+    Matrix *kernel;
+} Kernel;
+
+Kernel *Kernel_construct(uint p, uint rows, uint columns);
+void Kernel_free(Kernel *k);
+
 #endif //C_FPVECTOR_H

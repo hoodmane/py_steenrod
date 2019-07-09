@@ -13,14 +13,20 @@ SET(TARGET_COMPILE_OPTIONS "${OPTIMIZE_COMPILE_FLAGS}")
 include(GNUInstallDirs)
 add_executable(csteen
         src/khash.h
-        src/combinatorics.c
         src/combinatorics.h
-        src/FpVector.c
+        src/combinatorics.c
         src/FpVector.h
+        src/FpVector.c
         src/algebra.h
         src/algebra.c
-        src/modules.h
-        src/modules.c
+        src/Module.h
+        src/Module.c  
+        src/FiniteDimensionalModule.h
+        src/FiniteDimensionalModule.c
+        src/FreeModule.h
+        src/FreeModule.c
+        src/FreeModuleHomomorphism.h
+        src/FreeModuleHomomorphism.c
         src/resolution.h
         src/resolution.c
         src/milnor.h
@@ -33,17 +39,23 @@ add_executable(csteen
     )
 add_library(CSteenrod SHARED
         src/khash.h
-        src/combinatorics.c
         src/combinatorics.h
-        src/FpVector.c
+        src/combinatorics.c
         src/FpVector.h
+        src/FpVector.c
         src/algebra.h
-        src/modules.h
-        src/modules.c
+        src/Module.h
+        src/Module.c
+        src/FiniteDimensionalModule.h
+        src/FiniteDimensionalModule.c
+        src/FreeModule.h
+        src/FreeModule.c
+        src/FreeModuleHomomorphism.h
+        src/FreeModuleHomomorphism.c
         src/resolution.h
         src/resolution.c
-        src/milnor.c
         src/milnor.h
+        src/milnor.c
         src/milnor_io.c
         src/milnor_private.h
         src/adem.h
