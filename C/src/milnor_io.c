@@ -115,8 +115,8 @@ uint MilnorAlgebra_basisElement_toKey(char *buffer, MilnorBasisElement *b){
 
 uint MilnorAlgebra_basisElementIndex_toString(Algebra *this, char *buffer, int degree, uint idx){
     MilnorAlgebra *A = (MilnorAlgebra *)this;
-    MilnorBasisElement b = MilnorAlgebra_basisElement_fromIndex(A, degree, idx);
-    return MilnorAlgebra_basisElement_toString(buffer, A, &b);
+    MilnorBasisElement *b = MilnorAlgebra_basisElement_fromIndex(A, degree, idx);
+    return MilnorAlgebra_basisElement_toString(buffer, A, b);
 }
 
 uint MilnorAlgebra_basisElement_toString(char *buffer, MilnorAlgebra *A, MilnorBasisElement *b){
@@ -187,7 +187,7 @@ char *trimwhitespace(char *str){
 }
 
 // Parses elements like P(0,1) or Q(0,1) * P(0,1)
-MilnorBasisElement MilnorAlgebra_basisElement_fromString(MilnorAlgebra * algebra, char* elt_string){
+MilnorBasisElement *MilnorAlgebra_basisElement_fromString(MilnorAlgebra * algebra, char* elt_string){
     char *idx_string, *string, *tofree;
     char * Q_or_P;
     uint p = algebra->algebra.p;
@@ -246,9 +246,8 @@ MilnorBasisElement MilnorAlgebra_basisElement_fromString(MilnorAlgebra * algebra
     result.q_part = Q_bit_string;
     result.q_degree = q_degree;
 
-    uint idx = MilnorAlgebra_basisElement_toIndex(algebra, result);
-    result = MilnorAlgebra_basisElement_fromIndex(algebra, result.p_degree + result.q_degree, idx);
-    return result;
+    uint idx = MilnorAlgebra_basisElement_toIndex(algebra, &result);
+    return MilnorAlgebra_basisElement_fromIndex(algebra, result.p_degree + result.q_degree, idx);
 }
 
 uint MilnorAlgebra_element_toString(Algebra *this, char *buffer, int degree, Vector * m){
@@ -265,8 +264,8 @@ uint MilnorAlgebra_element_toString(Algebra *this, char *buffer, int degree, Vec
         if(it.value != 1) {
             len += sprintf(buffer + len, "%d * ", it.value);
         }
-        MilnorBasisElement b = MilnorAlgebra_basisElement_fromIndex(algebra, degree, it.index);
-        len += MilnorAlgebra_basisElement_toString(buffer + len, algebra, &b);
+        MilnorBasisElement *b = MilnorAlgebra_basisElement_fromIndex(algebra, degree, it.index);
+        len += MilnorAlgebra_basisElement_toString(buffer + len, algebra, b);
         len += sprintf(buffer + len, " + ");
     }
     if(len == 0){

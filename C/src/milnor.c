@@ -528,32 +528,32 @@ void MilnorAlgebra__generateBasisElementToIndexMap(MilnorAlgebraInternal *algebr
     }
 }
 
-MilnorBasisElement MilnorAlgebra_basisElement_fromIndex(MilnorAlgebra *public_algebra, int degree, uint idx) {
+MilnorBasisElement *MilnorAlgebra_basisElement_fromIndex(MilnorAlgebra *public_algebra, int degree, uint idx) {
     MilnorAlgebraInternal *algebra = (MilnorAlgebraInternal*) public_algebra;
-    return algebra->basis_table[degree].list[idx];
+    return &algebra->basis_table[degree].list[idx];
 }
 
 // Precondition: b is a valid MBE for the algebra -- it actually appears as a key in 
-uint MilnorAlgebra_basisElement_toIndex(MilnorAlgebra *public_algebra, MilnorBasisElement b){
+uint MilnorAlgebra_basisElement_toIndex(MilnorAlgebra *public_algebra, MilnorBasisElement *b){
     MilnorAlgebraInternal *algebra = (MilnorAlgebraInternal*) public_algebra;
-    int degree = b.q_degree + b.p_degree;
+    int degree = b->q_degree + b->p_degree;
     assert(degree < public_algebra->algebra.max_degree);
     kh_monomial_index_map_t *map = algebra->basis_element_to_index_map[degree];
     char key[200];
-    MilnorAlgebra_basisElement_toKey(key, &b);
+    MilnorAlgebra_basisElement_toKey(key, b);
     khint_t bin = kh_get(monomial_index_map, map, key);
     if(bin == kh_end(map)){
-        MilnorAlgebra_basisElement_toString(key, public_algebra, &b);
+        MilnorAlgebra_basisElement_toString(key, public_algebra, b);
         printf("Uh-oh, not here. degree: %d, elt: '%s'\n", degree, key);
         assert(false);
         return 0;
     }
     uint result = kh_val(map, bin);
     assert(result < algebra->basis_table[degree].length);
-    assert(algebra->basis_table[degree].list[result].q_degree == b.q_degree);
-    assert(algebra->basis_table[degree].list[result].q_part == b.q_part);    
-    assert(algebra->basis_table[degree].list[result].p_degree == b.p_degree);
-    assert(algebra->basis_table[degree].list[result].p_length == b.p_length);
+    assert(algebra->basis_table[degree].list[result].q_degree == b->q_degree);
+    assert(algebra->basis_table[degree].list[result].q_part == b->q_part);    
+    assert(algebra->basis_table[degree].list[result].p_degree == b->p_degree);
+    assert(algebra->basis_table[degree].list[result].p_length == b->p_length);
     return result;
 }
 
@@ -649,16 +649,16 @@ int min(int a, int b){
 
 // Handles the multiplication in the even subalgebra of the Steenrod algebra P.
 // When p = 2, this is isomorphic to the whole Steenrod algebra so this method does everything.
-void MilnorAlgebra__multiplyEven(MilnorAlgebraInternal *algebra, uint *result, MilnorBasisElement r_elt, MilnorBasisElement s_elt){   
+void MilnorAlgebra__multiplyEven(MilnorAlgebraInternal *algebra, uint *result, MilnorBasisElement *r_elt, MilnorBasisElement *s_elt){   
     uint p = algebra->public_algebra.algebra.p;
     P_part r, s;
-    r.degree = r_elt.p_degree;
-    r.length = r_elt.p_length;
-    r.p_part = r_elt.p_part;
-    s.degree = s_elt.p_degree;
-    s.length = s_elt.p_length;
-    s.p_part = s_elt.p_part;
-    int output_degree = (r_elt.p_degree + s_elt.p_degree);
+    r.degree = r_elt->p_degree;
+    r.length = r_elt->p_length;
+    r.p_part = r_elt->p_part;
+    s.degree = s_elt->p_degree;
+    s.length = s_elt->p_length;
+    s.p_part = s_elt->p_part;
+    int output_degree = (r_elt->p_degree + s_elt->p_degree);
     uint output_dimension = algebra->basis_table[output_degree].length;
     memset(result, 0, output_dimension *sizeof(uint));
     uint rows = r.length + 1;
@@ -702,7 +702,7 @@ void MilnorAlgebra__multiplyEven(MilnorAlgebraInternal *algebra, uint *result, M
         }
         if(coeff != 0) {
             MilnorBasisElement m = (MilnorBasisElement){0, 0, output_degree, max_nonzero_diagonal, diagonal_sums};
-            uint idx = MilnorAlgebra_basisElement_toIndex((MilnorAlgebra*)algebra, m);
+            uint idx = MilnorAlgebra_basisElement_toIndex((MilnorAlgebra*)algebra, &m);
             result[idx] = (result[idx] + coeff) % p;
         }
     } while(milnor_matrix_step(p, M, r, s));
@@ -712,14 +712,14 @@ void MilnorAlgebra__multiplyEven(MilnorAlgebraInternal *algebra, uint *result, M
 
 // Reduce m1 * f = (Q_e0 Q_e1 ... P(r1, r2, ...)) * (Q_f0 Q_f1 ...) into the form Sum of Q's * P's
 // Result is represented as dictionary of pairs of tuples.
-void MilnorAlgebra__multiplyQpart(MilnorAlgebraInternal *algebra, uint *output, MilnorBasisElement m1, uint f) {
+void MilnorAlgebra__multiplyQpart(MilnorAlgebraInternal *algebra, uint *output, MilnorBasisElement *m1, uint f) {
     uint p = algebra->public_algebra.algebra.p;
     uint q;
     q = 2*p-2;
     uint *tau_degrees = getTauDegrees(p);
     uint *xi_degrees = getXiDegrees(p);
-    int p_degree = m1.p_degree;
-    int q_degree = m1.q_degree;
+    int p_degree = m1->p_degree;
+    int q_degree = m1->q_degree;
     uint idx = MilnorAlgebra_basisElement_toIndex((MilnorAlgebra*)algebra, m1);
 
     int result_degree = p_degree + q_degree;
@@ -761,22 +761,22 @@ void MilnorAlgebra__multiplyQpart(MilnorAlgebraInternal *algebra, uint *output, 
             if(old_result[idx] == 0){
                 continue;
             }
-            MilnorBasisElement mono = MilnorAlgebra_basisElement_fromIndex((MilnorAlgebra*)algebra, old_result_degree, idx);
-            for(uint i = 0; i < mono.p_length + 1; i++){
+            MilnorBasisElement *mono = MilnorAlgebra_basisElement_fromIndex((MilnorAlgebra*)algebra, old_result_degree, idx);
+            for(uint i = 0; i < mono->p_length + 1; i++){
                 // There is already a Q of this index on the other side, so moving another one over will give 0.
-                if((mono.q_part & (1 << (k+i))) != 0){
+                if((mono->q_part & (1 << (k+i))) != 0){
                     continue;
                 }
                 // Make sure mono.p_part[i - 1] is large enough to deduct p^k from it
-                if(i > 0 && mono.p_part[i - 1] < p_to_the_k ){
+                if(i > 0 && mono->p_part[i - 1] < p_to_the_k ){
                     continue;
                 }
 
-                uint q_mono = mono.q_part;
-                int q_degree = mono.q_degree;
-                uint *p_mono = mono.p_part;
-                uint p_mono_length = mono.p_length;
-                int p_degree = mono.p_degree;
+                uint q_mono = mono->q_part;
+                int q_degree = mono->q_degree;
+                uint *p_mono = mono->p_part;
+                uint p_mono_length = mono->p_length;
+                int p_degree = mono->p_degree;
 
                 uint new_p_mono[MAX_XI_TAU];
                 if(i > 0){
@@ -800,7 +800,7 @@ void MilnorAlgebra__multiplyQpart(MilnorAlgebraInternal *algebra, uint *output, 
                 }
                 uint coeff = MinusOneToTheN(p, larger_Qs) * old_result[idx];
                 MilnorBasisElement m = (MilnorBasisElement){q_degree, q_mono, p_degree, p_mono_length, p_mono};
-                uint out_idx = MilnorAlgebra_basisElement_toIndex((MilnorAlgebra*)algebra, m);
+                uint out_idx = MilnorAlgebra_basisElement_toIndex((MilnorAlgebra*)algebra, &m);
                 result[out_idx] += coeff;
                 result[out_idx] = modPLookup(p, result[out_idx]);
             }
@@ -827,21 +827,21 @@ void MilnorAlgebra__multiplyQpart(MilnorAlgebraInternal *algebra, uint *output, 
 // This computes the product of the Milnor basis elements
 // $Q_{e_1} Q_{e_2} ... P(r_1, r_2, ...)$ and
 // $Q_{f_1} Q_{f_2} ... P(s_1, s_2, ...)$.
-void MilnorAlgebra__multiplyFull(MilnorAlgebraInternal *algebra, uint *result, MilnorBasisElement m1, MilnorBasisElement m2) {
+void MilnorAlgebra__multiplyFull(MilnorAlgebraInternal *algebra, uint *result, MilnorBasisElement *m1, MilnorBasisElement *m2) {
     uint p = algebra->public_algebra.algebra.p;
-    MilnorBasisElement s = (MilnorBasisElement) {0, 0, m2.p_degree, m2.p_length, m2.p_part};
-    int m1_times_f_degree = m1.q_degree + m1.p_degree + m2.q_degree;
+    MilnorBasisElement s = (MilnorBasisElement) {0, 0, m2->p_degree, m2->p_length, m2->p_part};
+    int m1_times_f_degree = m1->q_degree + m1->p_degree + m2->q_degree;
     uint m1_times_f_dimension = algebra->basis_table[m1_times_f_degree].length;
     uint m1_times_f[m1_times_f_dimension];
     memset(m1_times_f, 0, m1_times_f_dimension * sizeof(uint));
     // uint out_degree = m1_times_f_degree + m2.p_degree;
     // uint out_dimension = algebra->basis_table[out_degree].length;
-    MilnorAlgebra__multiplyQpart(algebra, m1_times_f, m1, m2.q_part);
+    MilnorAlgebra__multiplyQpart(algebra, m1_times_f, m1, m2->q_part);
 
     // Now for the Milnor matrices.  For each entry '(e,r): coeff' in answer,
     // multiply r with s.  Record coefficient for matrix and multiply by coeff.
     // Store in 'result'.
-    if (m2.p_length == 0) {
+    if (m2->p_length == 0) {
         memcpy(result, m1_times_f, m1_times_f_dimension * sizeof(uint));
         return;
     }
@@ -850,12 +850,12 @@ void MilnorAlgebra__multiplyFull(MilnorAlgebraInternal *algebra, uint *result, M
             continue;
         }
         uint coeff = m1_times_f[i];
-        MilnorBasisElement er_mono = MilnorAlgebra_basisElement_fromIndex((MilnorAlgebra *) algebra, m1_times_f_degree, i);
-        MilnorBasisElement r = (MilnorBasisElement) {0, 0, er_mono.p_degree, er_mono.p_length, er_mono.p_part};
+        MilnorBasisElement *er_mono = MilnorAlgebra_basisElement_fromIndex((MilnorAlgebra *) algebra, m1_times_f_degree, i);
+        MilnorBasisElement r = (MilnorBasisElement) {0, 0, er_mono->p_degree, er_mono->p_length, er_mono->p_part};
         int prod_degree = r.p_degree + s.p_degree;
         uint prod_dimension = algebra->basis_table[prod_degree].length;
         uint prod[prod_dimension];
-        MilnorAlgebra__multiplyEven(algebra, prod, r, s);
+        MilnorAlgebra__multiplyEven(algebra, prod, &r, &s);
         // Vector *prod_test = Vector_construct(p, prod_dimension, 0);
         // Vector_pack(prod_test, prod);
         // MilnorElement_print("prod: %s\n", algebra, prod_degree, prod_test);
@@ -867,10 +867,9 @@ void MilnorAlgebra__multiplyFull(MilnorAlgebraInternal *algebra, uint *result, M
             if(prod[j] == 0){
                 continue;
             }
-            MilnorBasisElement m = MilnorAlgebra_basisElement_fromIndex((MilnorAlgebra *) algebra, prod_degree, j);
-            m.q_degree = er_mono.q_degree;
-            m.q_part = er_mono.q_part;
-            uint out_idx = MilnorAlgebra_basisElement_toIndex((MilnorAlgebra *) algebra, m);
+            MilnorBasisElement *b = MilnorAlgebra_basisElement_fromIndex((MilnorAlgebra *) algebra, prod_degree, j);
+            MilnorBasisElement m = (MilnorBasisElement){er_mono->q_degree, er_mono->q_part, b->p_degree, b->p_length, b->p_part};
+            uint out_idx = MilnorAlgebra_basisElement_toIndex((MilnorAlgebra *) algebra, &m);
             result[out_idx] += coeff * prod[j];
             result[out_idx] = result[out_idx] % p;
         }
@@ -886,7 +885,7 @@ void MilnorAlgebra__multiplyFull(MilnorAlgebraInternal *algebra, uint *result, M
 // doesn't need to care about the profile function at all.
 void MilnorAlgebra_multiply(Algebra *this, Vector *result, uint coeff, int r_degree, uint r_index, int s_degree, uint s_index, int excess __attribute__((unused)))  {
     MilnorAlgebraInternal *algebra = (MilnorAlgebraInternal*) this;
-    MilnorBasisElement r, s;
+    MilnorBasisElement *r, *s;
     assert(r_index < MilnorAlgebra_getDimension(this, r_degree, excess));
     assert(s_index < MilnorAlgebra_getDimension(this, s_degree, excess));
 

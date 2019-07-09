@@ -51,7 +51,7 @@ uint MilnorAlgebra_basisElementIndex_toString(Algebra *this, char *buffer, int d
 uint MilnorAlgebra_basisElement_toString(char *buffer, MilnorAlgebra *algebra, MilnorBasisElement *b);
 char *MilnorAlgebra_basisElement_constructString(MilnorAlgebra *algebra, MilnorBasisElement *b);
 void MilnorAlgebra_basisElement_print(char *fmt_string, MilnorAlgebra *algebra, MilnorBasisElement *b);
-MilnorBasisElement MilnorAlgebra_basisElement_fromString(MilnorAlgebra *algebra, char *elt_string);
+MilnorBasisElement *MilnorAlgebra_basisElement_fromString(MilnorAlgebra *algebra, char *elt_string);
 
 // Implemented in milnor.c
 
@@ -63,8 +63,8 @@ void MilnorAlgebra_freeBasis(MilnorAlgebra *algebra);
 
 uint MilnorAlgebra_getDimension(Algebra *this, int degree, int excess);
 MilnorBasisElement_list MilnorAlgebra_getBasis(MilnorAlgebra *algebra, int degree);
-MilnorBasisElement MilnorAlgebra_basisElement_fromIndex(MilnorAlgebra *algebra, int degree, uint index);
-uint MilnorAlgebra_basisElement_toIndex(MilnorAlgebra *algebra,  MilnorBasisElement b);
+MilnorBasisElement *MilnorAlgebra_basisElement_fromIndex(MilnorAlgebra *algebra, int degree, uint index);
+uint MilnorAlgebra_basisElement_toIndex(MilnorAlgebra *algebra,  MilnorBasisElement *b);
 
 void MilnorAlgebra_multiply(Algebra *this, Vector *result, uint coeff, int r_degree, uint r_index, int s_degree, uint s_index, int excess);
 

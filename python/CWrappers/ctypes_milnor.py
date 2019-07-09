@@ -95,9 +95,9 @@ def wrap_milnor(CSteenrod):
     
     #MilnorBasisElement MilnorAlgebra_basisElement_fromIndex(MilnorAlgebra *algebra, int degree, uint idx);
     CSteenrod.MilnorAlgebra_basisElement_fromIndex.argtypes = [POINTER(c_MilnorAlgebra), c_int, c_uint]
-    CSteenrod.MilnorAlgebra_basisElement_fromIndex.restype = c_MilnorBasisElement
+    CSteenrod.MilnorAlgebra_basisElement_fromIndex.restype = POINTER(c_MilnorBasisElement)
     #uint MilnorAlgebra_basisElement_toIndex(MilnorAlgebra *algebra,  MilnorBasisElement b);
-    CSteenrod.MilnorAlgebra_basisElement_toIndex.argtypes = [POINTER(c_MilnorAlgebra), c_MilnorBasisElement]
+    CSteenrod.MilnorAlgebra_basisElement_toIndex.argtypes = [POINTER(c_MilnorAlgebra), POINTER(c_MilnorBasisElement)]
     CSteenrod.MilnorAlgebra_basisElement_toIndex.restype = c_uint   
     
     #void MilnorAlgebra_multiply(Algebra * algebra, Vector * result, uint coeff, int r_degree, uint r_index, int s_degree, uint s_index, int excess);

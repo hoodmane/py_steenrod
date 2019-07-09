@@ -79,7 +79,7 @@ add_executable(CSteenrod
         ../C/src/resolution.c
         ../C/src/milnor.c
         ../C/src/milnor.h
-        ../C/src/milnor_datatypes.c
+        ../C/src/milnor_io.c
         ../C/src/milnor_private.h
         ../C/src/adem.h
         ../C/src/adem.c

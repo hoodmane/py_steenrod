@@ -55,9 +55,9 @@ void MilnorAlgebra__freeQPartTable(MilnorAlgebraInternal * algebra);
 void MilnorAlgebra__generateBasis2(MilnorAlgebraInternal * algebra, int old_n, int n);
 void MilnorAlgebra__generateBasisGeneric(MilnorAlgebraInternal * algebra, int old_n, int n);
 
-void MilnorAlgebra__multiplyFull(MilnorAlgebraInternal *algebra, uint *result, MilnorBasisElement m1, MilnorBasisElement m2);
-void MilnorAlgebra__multiplyEven(MilnorAlgebraInternal * algebra, uint * result, MilnorBasisElement r_elt, MilnorBasisElement s_elt);
-void MilnorAlgebra__multiplyQpart(MilnorAlgebraInternal * algebra, uint * result, MilnorBasisElement m1, uint f);
+void MilnorAlgebra__multiplyFull(MilnorAlgebraInternal *algebra, uint *result, MilnorBasisElement *m1, MilnorBasisElement *m2);
+void MilnorAlgebra__multiplyEven(MilnorAlgebraInternal * algebra, uint * result, MilnorBasisElement *r_elt, MilnorBasisElement *s_elt);
+void MilnorAlgebra__multiplyQpart(MilnorAlgebraInternal * algebra, uint * result, MilnorBasisElement *m1, uint f);
 
 void milnor_matrix_initialize(uint M[MAX_XI_TAU][MAX_XI_TAU], P_part r, P_part s);
 bool milnor_matrix_step(uint p, uint M[MAX_XI_TAU][MAX_XI_TAU], P_part r, P_part s);

@@ -42,7 +42,6 @@ uint AdemAlgebra_basisElementIndex_toString(Algebra *this, char *buffer, int deg
 }
 
 uint AdemAlgebra_basisElement_toString(char *buffer, AdemAlgebra *algebra, AdemBasisElement *b){
-    printf("AdemAlgebra_basisElement_toString\n");
     uint len = 0;
     bool generic = algebra->generic;
     char P_or_Sq[4];

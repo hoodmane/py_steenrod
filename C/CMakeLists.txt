@@ -26,7 +26,7 @@ add_executable(csteen
         src/milnor.h
         src/milnor_private.h
         src/milnor.c
-        src/milnor_datatypes.c
+        src/milnor_io.c
         src/adem.h
         src/adem.c
         src/adem_io.c
@@ -44,7 +44,7 @@ add_library(CSteenrod SHARED
         src/resolution.c
         src/milnor.c
         src/milnor.h
-        src/milnor_datatypes.c
+        src/milnor_io.c
         src/milnor_private.h
         src/adem.h
         src/adem.c
