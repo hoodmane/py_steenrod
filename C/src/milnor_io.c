@@ -2,15 +2,17 @@
 // Created by Hood on 5/17/2019.
 //
 
-#include <stdio.h>
+#include <assert.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-#include <assert.h>
 
-#include "milnor.h"
-#include "FpVector.h"
+
 #include "combinatorics.h"
+#include "FpVector.h"
+#include "MilnorAlgebra.h"
+
 
 // Private functions
 uint get_profile_name(char *buffer, Profile P);

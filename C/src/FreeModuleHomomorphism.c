@@ -43,7 +43,7 @@ void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism
     assert(shifted_degree >= 0);
     f->max_computed_degree = degree + 1;
     uint p = f->source->module.p;
-    uint dimension = module_getDimension(f->target, degree);
+    uint dimension = Module_getDimension(f->target, degree);
     uint vector_size = Vector_getSize(p, dimension, 0);
     f->outputs[shifted_degree] = (Vector**)malloc(
         num_gens * sizeof(Vector*) 
@@ -68,12 +68,12 @@ void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism
 Vector *FreeModuleHomomorphism_getOutput(FreeModuleHomomorphism *f, int generator_degree, uint generator_index){
     assert(generator_degree - f->source->module.min_degree >= 0);
     assert(generator_degree < f->max_computed_degree);
-    assert(generator_index < module_getDimension((Module*)f->source, generator_degree));
+    assert(generator_index < Module_getDimension((Module*)f->source, generator_degree));
     return f->outputs[generator_degree - f->source->module.min_degree][generator_index];
 }
 
 void FreeModuleHomomorphism_setOutput(FreeModuleHomomorphism *f, int generator_degree, uint generator_index, Vector *output){
-    assert(output->dimension == module_getDimension(f->target, generator_degree));
+    assert(output->dimension == Module_getDimension(f->target, generator_degree));
     assert(output->offset == 0);
     assert(generator_index < FreeModule_getNumberOfGensInDegree(f->source, generator_degree));
     Vector_assign(f->outputs[generator_degree - f->source->module.min_degree][generator_index], output);
@@ -106,7 +106,7 @@ void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism *f, Vecto
     ){
         if(it.value != 0){
             uint c = modPLookup( f->source->module.p, it.value*coeff);
-            module_actOnBasis(f->target, result, c, operation_degree, operation_index, generator_degree, it.index);
+            Module_actOnBasis(f->target, result, c, operation_degree, operation_index, generator_degree, it.index);
         }
     }
 }
@@ -117,11 +117,11 @@ void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism *f, Vecto
 // the transpose of the usual convention.
 void FreeModuleHomomorphism_getMatrix(FreeModuleHomomorphism *f, Matrix *result, int degree){
     assert(degree < f->max_degree);
-    assert(module_getDimension(&f->source->module, degree) <= result->rows);
-    assert(module_getDimension(f->target, degree) <= result->columns);
+    assert(Module_getDimension(&f->source->module, degree) <= result->rows);
+    assert(Module_getDimension(f->target, degree) <= result->columns);
     // The shorter implementation if we do FreeModuleConstructBlockOffsetTable first.
     // Maybe we ought to do that...
-    // for(int i = 0; i < module_getDimension(&f->source->module, degree); i++){
+    // for(int i = 0; i < Module_getDimension(&f->source->module, degree); i++){
     //     FreeModuleHomomorphism_applyToBasisElement(f, result->matrix[i], 1, degree, i);
     // }    
     FreeModule *source = f->source;
@@ -130,7 +130,7 @@ void FreeModuleHomomorphism_getMatrix(FreeModuleHomomorphism *f, Matrix *result,
     uint i = 0;
     for(int gen_deg = f->source->module.min_degree; gen_deg <= degree; gen_deg++){
         int op_deg = degree - gen_deg;
-        uint num_ops = algebra_getDimension(algebra, op_deg, gen_deg);
+        uint num_ops = Algebra_getDimension(algebra, op_deg, gen_deg);
         for(uint gen_idx = 0; gen_idx < FreeModule_getNumberOfGensInDegree(f->source, gen_deg); gen_idx++){
             for(uint op_idx = 0; op_idx < num_ops; op_idx++){
                 Vector *output_on_generator = FreeModuleHomomorphism_getOutput(f, gen_deg, gen_idx);
@@ -141,7 +141,7 @@ void FreeModuleHomomorphism_getMatrix(FreeModuleHomomorphism *f, Matrix *result,
                 ){
                     if(it.value != 0){
                         // our element of our source is op * gen. It maps to op * (f(gen)).
-                        module_actOnBasis(f->target, result->matrix[i], it.value, op_deg, op_idx, gen_deg, it.index);
+                        Module_actOnBasis(f->target, result->matrix[i], it.value, op_deg, op_idx, gen_deg, it.index);
                     }
                 }
                 i++;                

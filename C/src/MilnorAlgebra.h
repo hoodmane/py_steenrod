@@ -7,7 +7,7 @@
 #include <stdbool.h>
 
 #include "combinatorics.h"
-#include "algebra.h"
+#include "Algebra.h"
 
 typedef struct {
     bool generic;

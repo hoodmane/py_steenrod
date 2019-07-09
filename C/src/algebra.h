@@ -27,16 +27,16 @@ typedef struct Algebra {
 } Algebra;
 
 // Careful with these macros: could cause multiple evaluation of algebra / module.
-#define algebra_computeBasis(algebra, degree) (*(algebra)->computeBasis)(algebra, degree)
-#define algebra_getDimension(algebra, degree, excess) (*(algebra)->getDimension)(algebra, degree, excess)
-#define algebra_multiplyBasisElements(algebra, result, coeff, r_deg, r, s_deg, s, excess) (*(algebra)->multiplyBasisElements)(algebra, result, coeff, r_deg, r, s_deg, s, excess)
-#define algebra_basisElementToString(algebra, result, degree, idx) (*(algebra)->basisElementToString)(algebra, result, degree, idx)
+#define Algebra_computeBasis(algebra, degree) (*(algebra)->computeBasis)(algebra, degree)
+#define Algebra_getDimension(algebra, degree, excess) (*(algebra)->getDimension)(algebra, degree, excess)
+#define Algebra_multiplyBasisElements(algebra, result, coeff, r_deg, r, s_deg, s, excess) (*(algebra)->multiplyBasisElements)(algebra, result, coeff, r_deg, r, s_deg, s, excess)
+#define Algebra_basisElementToString(algebra, result, degree, idx) (*(algebra)->basisElementToString)(algebra, result, degree, idx)
 
 // These are for calling from python / javascript
-void algebra_computeBasis_function(Algebra *algebra, int degree);
-uint algebra_getDimension_function(Algebra *algebra, int degree, int excess);
-void algebra_multiplyBasisElements_function(Algebra *algebra, Vector *result, uint coeff, int r_deg, uint r_idx, int s_deg, uint s_idx, int excess);
-uint algebra_basisElementToString_function(Algebra *algebra, char *result, int degree, uint idx);
+void Algebra_computeBasis_function(Algebra *algebra, int degree);
+uint Algebra_getDimension_function(Algebra *algebra, int degree, int excess);
+void Algebra_multiplyBasisElements_function(Algebra *algebra, Vector *result, uint coeff, int r_deg, uint r_idx, int s_deg, uint s_idx, int excess);
+uint Algebra_basisElementToString_function(Algebra *algebra, char *result, int degree, uint idx);
 
 
 

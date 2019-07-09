@@ -17,8 +17,8 @@ add_executable(csteen
         src/combinatorics.c
         src/FpVector.h
         src/FpVector.c
-        src/algebra.h
-        src/algebra.c
+        src/Algebra.h
+        src/Algebra.c
         src/Module.h
         src/Module.c  
         src/FiniteDimensionalModule.h
@@ -27,14 +27,14 @@ add_executable(csteen
         src/FreeModule.c
         src/FreeModuleHomomorphism.h
         src/FreeModuleHomomorphism.c
-        src/resolution.h
-        src/resolution.c
-        src/milnor.h
+        src/Resolution.h
+        src/Resolution.c
+        src/MilnorAlgebra.h
         src/milnor_private.h
-        src/milnor.c
+        src/MilnorAlgebra.c
         src/milnor_io.c
-        src/adem.h
-        src/adem.c
+        src/AdemAlgebra.h
+        src/AdemAlgebra.c
         src/adem_io.c
     )
 add_library(CSteenrod SHARED
@@ -43,23 +43,24 @@ add_library(CSteenrod SHARED
         src/combinatorics.c
         src/FpVector.h
         src/FpVector.c
-        src/algebra.h
+        src/Algebra.h
+        src/Algebra.c
         src/Module.h
-        src/Module.c
+        src/Module.c  
         src/FiniteDimensionalModule.h
         src/FiniteDimensionalModule.c
         src/FreeModule.h
         src/FreeModule.c
         src/FreeModuleHomomorphism.h
         src/FreeModuleHomomorphism.c
-        src/resolution.h
-        src/resolution.c
-        src/milnor.h
-        src/milnor.c
-        src/milnor_io.c
+        src/Resolution.h
+        src/Resolution.c
+        src/MilnorAlgebra.h
         src/milnor_private.h
-        src/adem.h
-        src/adem.c
+        src/MilnorAlgebra.c
+        src/milnor_io.c
+        src/AdemAlgebra.h
+        src/AdemAlgebra.c
         src/adem_io.c
     )
 

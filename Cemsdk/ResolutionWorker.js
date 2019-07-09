@@ -189,6 +189,7 @@ message_handlers["get_cocyle"] = function getCocycle(data){
     let dimension = cModule_getDimension(cTarget, degree);
     let cResult_vector = cVector_construct(self.p, dimension, 0);    
     cFreeModuleHomomorphism_applyToGenerator(cf, cResult_vector,  1, degree, index);
+    // cVector_print
     let cResult_json_offset = Module._malloc(2000);
     let length = cFreeModule_element_toJSONString(cResult_json_offset, cTarget, degree, cResult_vector);
     let s = "";

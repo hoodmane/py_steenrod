@@ -4,17 +4,17 @@
 
 // TODO: split up this file a bit.
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
 
 #include "combinatorics.h"
-#include "algebra.h"
-#include "milnor.h"
-#include "adem.h"
+#include "Algebra.h"
+#include "AdemAlgebra.h"
+#include "MilnorAlgebra.h"
 #include "Module.h"
-#include "resolution.h"
+#include "Resolution.h"
 
 #define max(a,b) ((a) > (b) ? (a) : (b))
 void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uint homological_degree, int degree);
@@ -121,7 +121,7 @@ void Resolution_step(Resolution *res, uint homological_degree, int degree){
     uint shifted_degree = degree - res->min_degree;
     if(homological_degree == 0){
         FreeModuleHomomorphism *dminus1 = res->differentials[0];
-        uint module_dim = module_getDimension(res->module, degree);
+        uint module_dim = Module_getDimension(res->module, degree);
         dminus1->kernel[shifted_degree] = Kernel_construct(res->algebra->p, module_dim, module_dim);
         for(uint j = 0; j < module_dim; j++){
             dminus1->kernel[shifted_degree]->column_to_pivot_row[j] = j;
@@ -207,8 +207,8 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     FreeModuleHomomorphism *previous_differential = resolution->differentials[homological_degree];
     FreeModule *source = current_differential->source;
 
-    uint source_dimension = module_getDimension(&current_differential->source->module, degree);
-    uint target_dimension = module_getDimension(current_differential->target, degree);
+    uint source_dimension = Module_getDimension(&current_differential->source->module, degree);
+    uint target_dimension = Module_getDimension(current_differential->target, degree);
     assert(current_differential->source->number_of_generators_in_degree[shifted_degree] == 0);
 
     // The Homomorphism matrix has size source_dimension x target_dimension, but we are going to augment it with an
@@ -397,7 +397,7 @@ int main(int argc, char *argv[]){
     uint degree_range = 0;
     uint max_generator_degree = degree_range + min_degree + 1;
     uint graded_dimension[5] = {1};
-    algebra_computeBasis(algebra, degree - min_degree);
+    Algebra_computeBasis(algebra, degree - min_degree);
     FiniteDimensionalModule *module = 
         FiniteDimensionalModule_construct(algebra, min_degree, max_generator_degree, graded_dimension);
     // uint output[1] = {1};

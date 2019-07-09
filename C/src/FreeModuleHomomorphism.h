@@ -2,6 +2,7 @@
 #define CSTEENROD_FREE_MODULE_HOMOMORPHISM_H
 #include "FreeModule.h"
 
+
 typedef struct {
     FreeModule *source;
     Module *target;

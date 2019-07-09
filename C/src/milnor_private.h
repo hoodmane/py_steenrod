@@ -7,7 +7,7 @@
 
 #include "khash.h"
 
-#include "milnor.h"
+#include "MilnorAlgebra.h"
 
 typedef struct {
     uint degree;

@@ -60,14 +60,14 @@ uint FreeModule_getDimension(Module *this, int degree){
     for(int i = this->min_degree; i <= degree; i++){
         // for the excess make sure to use math degree
         result += FreeModule_getNumberOfGensInDegree(module, i)
-            * algebra_getDimension(this->algebra, degree - i, i);
+            * Algebra_getDimension(this->algebra, degree - i, i);
     }
     return result;
 }
 
 // Run FreeModule_ConstructBlockOffsetTable(module, degree) before using this on an input in that degree
 void FreeModule_actOnBasis(Module *this, Vector *result, uint coeff, int op_deg, uint op_idx, int module_degree, uint module_idx){
-    assert(op_idx < algebra_getDimension(this->algebra, op_deg, module_degree));
+    assert(op_idx < Algebra_getDimension(this->algebra, op_deg, module_degree));
     assert(FreeModule_getDimension(this, op_deg + module_degree) <= result->dimension);
     FreeModuleInternal *module = (FreeModuleInternal *) this;
     FreeModuleOperationGeneratorPair operation_generator = FreeModule_indexToOpGen((FreeModule*)module, module_degree, module_idx);
@@ -76,7 +76,7 @@ void FreeModule_actOnBasis(Module *this, Vector *result, uint coeff, int op_deg,
     int generator_degree = operation_generator.generator_degree; 
     uint generator_index  = operation_generator.generator_index;
     // Now all of the output elements are going to be of the form s * x. Find where such things go in the output vector.
-    uint num_ops = algebra_getDimension(this->algebra, module_operation_degree + op_deg, generator_degree);
+    uint num_ops = Algebra_getDimension(this->algebra, module_operation_degree + op_deg, generator_degree);
     uint output_block_min = FreeModule_operationGeneratorToIndex((FreeModule*)module, module_operation_degree + op_deg, 0, generator_degree, generator_index);
 
     uint output_block_max = output_block_min + num_ops;
@@ -84,7 +84,7 @@ void FreeModule_actOnBasis(Module *this, Vector *result, uint coeff, int op_deg,
     Vector *output_block = Vector_initialize(this->p, output_block_memory, NULL, 0, 0);     
     Vector_slice(output_block, result, output_block_min, output_block_max); 
     // Now we multiply s * r and write the result to the appropriate position.
-    algebra_multiplyBasisElements(module->module.algebra, output_block, coeff, op_deg, op_idx, module_operation_degree, module_operation_index, generator_degree);
+    Algebra_multiplyBasisElements(module->module.algebra, output_block, coeff, op_deg, op_idx, module_operation_degree, module_operation_index, generator_degree);
 }
 
 
@@ -108,7 +108,7 @@ void FreeModule_ConstructBlockOffsetTable(FreeModule *M, int degree){
     size_t total_size = 0;
     for(int gen_deg = M->module.min_degree; gen_deg <= degree; gen_deg++){
         int op_deg = degree - gen_deg;
-        uint num_ops = algebra_getDimension(module->module.algebra, op_deg, gen_deg);
+        uint num_ops = Algebra_getDimension(module->module.algebra, op_deg, gen_deg);
         uint num_gens = FreeModule_getNumberOfGensInDegree(M, gen_deg);
         gen_to_idx_size += num_gens * sizeof(uint);
         total_size += num_gens * num_ops * sizeof(FreeModuleOperationGeneratorPair);
@@ -126,7 +126,7 @@ void FreeModule_ConstructBlockOffsetTable(FreeModule *M, int degree){
     for(int gen_deg = M->module.min_degree; gen_deg <= degree; gen_deg++){
         *gentoidx_degree_ptr = gentoidx_index_ptr;
         int op_deg = degree - gen_deg;
-        uint num_ops = algebra_getDimension(module->module.algebra, op_deg, gen_deg);
+        uint num_ops = Algebra_getDimension(module->module.algebra, op_deg, gen_deg);
         for(uint gen_idx = 0; gen_idx < FreeModule_getNumberOfGensInDegree(M, gen_deg); gen_idx++){
             *gentoidx_index_ptr = offset;
             for(uint op_idx = 0; op_idx < num_ops; op_idx++){
@@ -188,7 +188,7 @@ uint FreeModule_element_toJSONString(char *result, FreeModule *this, int degree,
         len += sprintf(result + len, "\"gen_idx\": %d,", opgen.generator_index);
         len += sprintf(result + len, "\"coeff\" : %d,", it.value);
         len += sprintf(result + len, "\"op_str\" : \"");
-        len += algebra_basisElementToString(this->module.algebra, result + len, opgen.operation_degree, opgen.operation_index);
+        len += Algebra_basisElementToString(this->module.algebra, result + len, opgen.operation_degree, opgen.operation_index);
         len += sprintf(result + len, "\"},");
     }
     len --;

@@ -2,16 +2,16 @@
 // Created by Hood on 5/8/2019.
 //
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <assert.h>
 
 #include "khash.h"
 
 #include "combinatorics.h"
 #include "FpVector.h"
-#include "milnor.h"
+#include "MilnorAlgebra.h"
 #include "milnor_private.h"
 
 // Milnor Algebra

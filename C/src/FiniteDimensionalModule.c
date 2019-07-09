@@ -59,7 +59,7 @@ FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint
             if(graded_dimension[output_degree] == 0){
                 continue;
             }
-            uint number_of_operations = algebra_getDimension(algebra, output_degree - input_degree, input_degree);
+            uint number_of_operations = Algebra_getDimension(algebra, output_degree - input_degree, input_degree);
             action_matrix_size_3 += sizeof(Vector**) * number_of_operations;
             action_matrix_size_4 += sizeof(Vector*) * number_of_operations * graded_dimension[input_degree];
             uint vector_size = Vector_getSize(p, graded_dimension[output_degree], 0);
@@ -101,7 +101,7 @@ FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint
             *current_ptr_2 = current_ptr_3;
             uint vector_size = Vector_getSize(p, graded_dimension[output_degree], 0);
             uint vector_total_size = vector_size + vector_container_size;
-            uint number_of_operations = algebra_getDimension(algebra, output_degree - input_degree, input_degree);
+            uint number_of_operations = Algebra_getDimension(algebra, output_degree - input_degree, input_degree);
             for(uint operation_idx = 0; operation_idx < number_of_operations; operation_idx ++){
                 *current_ptr_3 = current_ptr_4;
                 for(uint input_idx = 0; input_idx < graded_dimension[input_degree]; input_idx ++ ){
@@ -183,9 +183,9 @@ uint FiniteDimensionalModule_getDimension(Module *this, int degree){
 
 void FiniteDimensionalModule_actOnBasis(Module *this, Vector *result, uint coeff, int op_degree, uint op_index, int mod_degree, uint mod_index){
     FiniteDimensionalModule *module = (FiniteDimensionalModule*)this;
-    assert(op_index < algebra_getDimension(this->algebra, op_degree, mod_degree));
-    assert(mod_index < module_getDimension(this, mod_degree));
-    uint output_dimension = module_getDimension(this, mod_degree + op_degree);    
+    assert(op_index < Algebra_getDimension(this->algebra, op_degree, mod_degree));
+    assert(mod_index < Module_getDimension(this, mod_degree));
+    uint output_dimension = Module_getDimension(this, mod_degree + op_degree);    
     if(mod_degree + op_degree >= module->max_basis_degree || output_dimension == 0){
         return;
     }  

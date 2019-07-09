@@ -2,7 +2,7 @@
 #ifndef CSTEENROD_ADEM_H
 #define CSTEENROD_ADEM_H
 
-#include "algebra.h"
+#include "Algebra.h"
 
 
 typedef struct {

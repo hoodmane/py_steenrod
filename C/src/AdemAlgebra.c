@@ -1,12 +1,12 @@
-#include <string.h>
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <string.h>
 
 
 #include "khash.h"
 #include "combinatorics.h"
-#include "adem.h"
+#include "AdemAlgebra.h"
 
 
 typedef struct {
@@ -868,8 +868,8 @@ void AdemAlgebra_multiply(Algebra *this, Vector *result, uint coeff,
         return;
     }
     AdemAlgebra *algebra = (AdemAlgebra*)this;
-    assert(r_index < algebra_getDimension(this, r_degree, excess + s_degree));
-    assert(s_index < algebra_getDimension(this, s_degree, excess));
+    assert(r_index < Algebra_getDimension(this, r_degree, excess + s_degree));
+    assert(s_index < Algebra_getDimension(this, s_degree, excess));
 
     if(s_degree == 0){
         // If s is of length 0 then max_idx "r->P_length" is off the edge of the list and it segfaults.
@@ -956,7 +956,7 @@ static void AdemAlgebra__makeMonoAdmissible2(
             uint idx = AdemAlgebra_basisElement_toIndex(public_algebra, monomial);
             // If excess is too large, quit. It's faster to check this by comparing idx to dimension
             // than to use fromIndex because fromIndex  dereferences a hash map.
-            if(public_algebra->unstable && idx >= algebra_getDimension((Algebra*)algebra, monomial->degree, excess)){
+            if(public_algebra->unstable && idx >= Algebra_getDimension((Algebra*)algebra, monomial->degree, excess)){
                 return;
             }
             Vector_addBasisElement(result, idx, 1);
@@ -973,7 +973,7 @@ static void AdemAlgebra__makeMonoAdmissible2(
     uint adm_idx = AdemAlgebra_basisElement_toIndex(public_algebra, &tail_of_monomial);
     int tail_degree = tail_of_monomial.degree + x;
     Vector *reduced_tail = algebra->multiplication_table[tail_degree][x][adm_idx];
-    uint dim = algebra_getDimension((Algebra*)algebra, tail_degree, excess);
+    uint dim = Algebra_getDimension((Algebra*)algebra, tail_degree, excess);
     for(
         VectorIterator it = Vector_getIterator(reduced_tail);
         it.index < dim;
@@ -1010,7 +1010,7 @@ static void AdemAlgebra__makeMonoAdmissibleGeneric(
         if(idx < 0 || stop_early){
             // Admissible so write monomial to result.
             uint idx = AdemAlgebra_basisElement_toIndex(public_algebra, monomial);
-            if(public_algebra->unstable && idx >= algebra_getDimension((Algebra*)algebra, monomial->degree, excess)){
+            if(public_algebra->unstable && idx >= Algebra_getDimension((Algebra*)algebra, monomial->degree, excess)){
                 return;
             }        
             Vector_addBasisElement(result, idx, coeff);
@@ -1033,7 +1033,7 @@ static void AdemAlgebra__makeMonoAdmissibleGeneric(
     uint adm_idx = AdemAlgebra_basisElement_toIndex(public_algebra, &tail_of_monomial);
     int tail_degree = tail_of_monomial.degree + q*x + b1;
     Vector *reduced_tail = algebra->multiplication_table[tail_degree][bx][adm_idx];
-    uint dim = algebra_getDimension((Algebra*)algebra, tail_degree, excess);    
+    uint dim = Algebra_getDimension((Algebra*)algebra, tail_degree, excess);    
     for(
         VectorIterator it = Vector_getIterator(reduced_tail);
         it.index < dim;

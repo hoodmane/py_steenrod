@@ -1096,11 +1096,11 @@ function updateGlobalBufferViews() {
 
 
 var STATIC_BASE = 1024,
-    STACK_BASE = 20016,
+    STACK_BASE = 20032,
     STACKTOP = STACK_BASE,
-    STACK_MAX = 5262896,
-    DYNAMIC_BASE = 5262896,
-    DYNAMICTOP_PTR = 19760;
+    STACK_MAX = 5262912,
+    DYNAMIC_BASE = 5262912,
+    DYNAMICTOP_PTR = 19776;
 
 
 
@@ -1486,7 +1486,7 @@ var ASM_CONSTS = [];
 
 
 
-// STATICTOP = STATIC_BASE + 18992;
+// STATICTOP = STATIC_BASE + 19008;
 /* global initializers */ /*__ATINIT__.push();*/
 
 
@@ -1497,7 +1497,7 @@ var ASM_CONSTS = [];
 
 
 /* no memory initializer */
-var tempDoublePtr = 20000
+var tempDoublePtr = 20016
 
 function copyTempFloat(ptr) { // functions, because inlining this code increases code size too much
   HEAP8[tempDoublePtr] = HEAP8[ptr];
@@ -1752,6 +1752,10 @@ var _AdemAlgebra_generateBasis = Module["_AdemAlgebra_generateBasis"] = function
 var _AdemAlgebra_getDimension = Module["_AdemAlgebra_getDimension"] = function() {  return Module["asm"]["_AdemAlgebra_getDimension"].apply(null, arguments) };
 var _AdemAlgebra_makeMonoAdmissible = Module["_AdemAlgebra_makeMonoAdmissible"] = function() {  return Module["asm"]["_AdemAlgebra_makeMonoAdmissible"].apply(null, arguments) };
 var _AdemAlgebra_multiply = Module["_AdemAlgebra_multiply"] = function() {  return Module["asm"]["_AdemAlgebra_multiply"].apply(null, arguments) };
+var _Algebra_basisElementToString_function = Module["_Algebra_basisElementToString_function"] = function() {  return Module["asm"]["_Algebra_basisElementToString_function"].apply(null, arguments) };
+var _Algebra_computeBasis_function = Module["_Algebra_computeBasis_function"] = function() {  return Module["asm"]["_Algebra_computeBasis_function"].apply(null, arguments) };
+var _Algebra_getDimension_function = Module["_Algebra_getDimension_function"] = function() {  return Module["asm"]["_Algebra_getDimension_function"].apply(null, arguments) };
+var _Algebra_multiplyBasisElements_function = Module["_Algebra_multiplyBasisElements_function"] = function() {  return Module["asm"]["_Algebra_multiplyBasisElements_function"].apply(null, arguments) };
 var _FiniteDimensionalModule_construct = Module["_FiniteDimensionalModule_construct"] = function() {  return Module["asm"]["_FiniteDimensionalModule_construct"].apply(null, arguments) };
 var _FiniteDimensionalModule_free = Module["_FiniteDimensionalModule_free"] = function() {  return Module["asm"]["_FiniteDimensionalModule_free"].apply(null, arguments) };
 var _FiniteDimensionalModule_setAction = Module["_FiniteDimensionalModule_setAction"] = function() {  return Module["asm"]["_FiniteDimensionalModule_setAction"].apply(null, arguments) };
@@ -1776,10 +1780,6 @@ var _Vector_pack = Module["_Vector_pack"] = function() {  return Module["asm"]["
 var _Vector_print = Module["_Vector_print"] = function() {  return Module["asm"]["_Vector_print"].apply(null, arguments) };
 var _Vector_unpack = Module["_Vector_unpack"] = function() {  return Module["asm"]["_Vector_unpack"].apply(null, arguments) };
 var ___errno_location = Module["___errno_location"] = function() {  return Module["asm"]["___errno_location"].apply(null, arguments) };
-var _algebra_basisElementToString_function = Module["_algebra_basisElementToString_function"] = function() {  return Module["asm"]["_algebra_basisElementToString_function"].apply(null, arguments) };
-var _algebra_computeBasis_function = Module["_algebra_computeBasis_function"] = function() {  return Module["asm"]["_algebra_computeBasis_function"].apply(null, arguments) };
-var _algebra_getDimension_function = Module["_algebra_getDimension_function"] = function() {  return Module["asm"]["_algebra_getDimension_function"].apply(null, arguments) };
-var _algebra_multiplyBasisElements_function = Module["_algebra_multiplyBasisElements_function"] = function() {  return Module["asm"]["_algebra_multiplyBasisElements_function"].apply(null, arguments) };
 var _free = Module["_free"] = function() {  return Module["asm"]["_free"].apply(null, arguments) };
 var _initializePrime = Module["_initializePrime"] = function() {  return Module["asm"]["_initializePrime"].apply(null, arguments) };
 var _malloc = Module["_malloc"] = function() {  return Module["asm"]["_malloc"].apply(null, arguments) };

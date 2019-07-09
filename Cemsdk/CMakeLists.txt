@@ -18,8 +18,8 @@ SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
     '_Vector_construct', '_Vector_pack', '_Vector_unpack', '_Vector_print', '_Vector_free'")
 
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
-    '_algebra_computeBasis_function', '_algebra_getDimension_function', \
-    '_algebra_multiplyBasisElements_function', '_algebra_basisElementToString_function'")
+    '_Algebra_computeBasis_function', '_Algebra_getDimension_function', \
+    '_Algebra_multiplyBasisElements_function', '_Algebra_basisElementToString_function'")
 
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
     '_MilnorAlgebra_construct', '_MilnorAlgebra_free', \
@@ -71,8 +71,8 @@ add_executable(CSteenrod
         ../C/src/combinatorics.c
         ../C/src/FpVector.h
         ../C/src/FpVector.c
-        ../C/src/algebra.h
-        ../C/src/algebra.c
+        ../C/src/Algebra.h
+        ../C/src/Algebra.c
         ../C/src/Module.h
         ../C/src/Module.c  
         ../C/src/FiniteDimensionalModule.h
@@ -81,15 +81,15 @@ add_executable(CSteenrod
         ../C/src/FreeModule.c
         ../C/src/FreeModuleHomomorphism.h
         ../C/src/FreeModuleHomomorphism.c
+        ../C/src/MilnorAlgebra.h
+        ../C/src/milnor_private.h
+        ../C/src/MilnorAlgebra.c
+        ../C/src/milnor_io.c
+        ../C/src/AdemAlgebra.h
+        ../C/src/AdemAlgebra.c
+        ../C/src/adem_io.c        
         ../C/src/resolution.h
         ../C/src/resolution.c
-        ../C/src/milnor.h
-        ../C/src/milnor_private.h
-        ../C/src/milnor.c
-        ../C/src/milnor_io.c
-        ../C/src/adem.h
-        ../C/src/adem.c
-        ../C/src/adem_io.c
     )
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")

@@ -1,7 +1,7 @@
 #ifndef CSTEENROD_RESOLUTION_H
 #define CSTEENROD_RESOLUTION_H
 
-#include "algebra.h"
+#include "Algebra.h"
 #include "Module.h"
 #include "FiniteDimensionalModule.h"
 #include "FreeModule.h"

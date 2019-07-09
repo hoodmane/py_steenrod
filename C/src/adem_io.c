@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include "adem.h"
+#include "AdemAlgebra.h"
 
 
 uint AdemAlgebra__generateName(AdemAlgebra *algebra){
