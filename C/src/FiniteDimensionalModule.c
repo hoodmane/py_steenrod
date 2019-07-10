@@ -108,9 +108,8 @@ FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint
             for(uint operation_idx = 0; operation_idx < number_of_operations; operation_idx ++){
                 *current_ptr_3 = current_ptr_4;
                 for(uint input_idx = 0; input_idx < graded_dimension[input_degree]; input_idx ++ ){
-                    *current_ptr_4 = Vector_initialize(p, current_ptr_5, graded_dimension[output_degree], 0);
+                    *current_ptr_4 = Vector_initialize(p, &current_ptr_5, graded_dimension[output_degree], 0);
                     current_ptr_4 ++;
-                    current_ptr_5 += vector_size;
                 }
                 current_ptr_3 ++;
             }
@@ -194,7 +193,8 @@ void FiniteDimensionalModule_actOnBasis(Module *this, Vector *result, uint coeff
     }  
     // Why do we take this slice?
     char output_block_memory[Vector_getSize(this->p, 0, 0)];    
-    Vector *output_block = Vector_initialize(this->p, output_block_memory, 0, 0);     
+    char *output_block_ptr = output_block_memory;
+    Vector *output_block = Vector_initialize(this->p, &output_block_ptr, 0, 0);     
     Vector_slice(output_block, result, 0, output_dimension); 
     Vector *output = FiniteDimensionalModule_getAction(module, op_degree, op_index, mod_degree, mod_index);
     // if(op_degree == 4 && op_index == 0 && mod_degree - this->min_degree == 0 && mod_index == 0){

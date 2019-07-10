@@ -202,18 +202,19 @@ uint Vector_getPaddedDimension(uint p, uint dimension, uint offset){
  *      char memory[total_size];
  *      myVector = Vector_initialize(p, memory, dimension, offset);
  */
-Vector *Vector_initialize(uint p, char *memory, uint dimension, uint offset){
+Vector *Vector_initialize(uint p, char **memory, uint dimension, uint offset){
     assert(offset < 64); // Offset >= 64 leads to undefined behavior!!
     VectorImplementation *vectImpl = getVectorImplementation(p);
-    VectorPrivate *v = (VectorPrivate *) memory;
+    VectorPrivate *v = (VectorPrivate *) *memory;
     v->implementation = vectImpl;
     v->dimension = dimension;
     v->size = Vector_getSize(p, dimension, offset);
     size_t limb_size = v->size - sizeof(VectorPrivate);
     v->offset = offset;
     v->number_of_limbs = (limb_size + sizeof(uint64) - 1)/sizeof(uint64);
-    v->limbs = dimension == 0 ? NULL : (uint64*)(memory + sizeof(VectorPrivate));
+    v->limbs = dimension == 0 ? NULL : (uint64*)(*memory + sizeof(VectorPrivate));
     memset(v->limbs, 0, limb_size);
+    *memory += v->size;
     return (Vector*)v;
 }
 
@@ -224,7 +225,7 @@ Vector *Vector_construct(uint p, uint dimension, uint offset){
     size_t container_size = sizeof(VectorPrivate);
     size_t total_size = container_size + Vector_getSize(p, dimension, offset);
     char *memory = malloc(total_size);
-    Vector *result = Vector_initialize(p, memory, dimension, offset);
+    Vector *result = Vector_initialize(p, &memory, dimension, offset);
     return result;
 }
 
@@ -274,7 +275,7 @@ uint unpackLimb(uint *limb_array, VectorPrivate *vector, uint limb_idx){
         bit_min = vector->offset;
     }
     if(limb_idx == vector->number_of_limbs - 1){
-        // Calculates how many bits of th last field we need to use. But if it divides
+        // Calculates how many bits of the last field we need to use. But if it divides
         // perfectly, we want bit max equal to bit_length * entries_per_64_bits, so subtract and add 1.
         // to make the output in the range 1 -- bit_length * entries_per_64_bits.
         uint bits_needed_for_entire_vector = vector->offset + vector->dimension * bit_length;
@@ -755,18 +756,20 @@ void Vector_print(char *fmt_string, Vector *v){
     printf("%s\n", buffer);
 }
 
-uint Vector_serialize(char *buffer, Vector *v){
-    uint len = 0;
-    VectorPrivate *vect = (VectorPrivate*) v;
-    memcpy(buffer + len, vect, 3*sizeof(uint));
-    len += 3*sizeof(uint);
-    memcpy(buffer + len, vect->limbs, vect->number_of_limbs*sizeof(uint64));
-    len += vect->number_of_limbs*sizeof(uint64);
-    return len;
+void Vector_serialize(char **buffer, Vector *v){
+    VectorPrivate * vect = (VectorPrivate*) v;
+    size_t limbs_size = v->size - sizeof(VectorPrivate);
+    memcpy(*buffer, v, sizeof(VectorPrivate));
+    memcpy(*buffer + sizeof(VectorPrivate), vect->limbs, limbs_size);
+    ((VectorPrivate*)*buffer)->limbs = NULL;
+    *buffer += v->size;
 }
 
-void Vector_deserialize(char *target_buffer, char *source_buffer){
-
+Vector *Vector_deserialize(char **source_buffer){
+    VectorPrivate *v = (VectorPrivate*)*source_buffer;
+    v->limbs = (uint64*)(*source_buffer + sizeof(VectorPrivate));
+    *source_buffer += v->size;
+    return (Vector*)v;
 }
 
 uint Matrix_getSize(uint p, uint rows, uint cols){
@@ -776,18 +779,37 @@ uint Matrix_getSize(uint p, uint rows, uint cols){
 }
 
 Matrix *Matrix_initialize(char *memory, uint p, uint rows, uint columns)  {
-    uint vector_size = Vector_getSize(p, columns, 0);
     Matrix *matrix = (Matrix*)memory;
     Vector **vector_ptr = (Vector**)(matrix+1);
-    char *container_ptr = (char*)(vector_ptr + rows);
+    char *container_ptr = (char*)(vector_ptr + rows); //
     matrix->p = p;
     matrix->rows = rows;
     matrix->columns = columns;
     matrix->matrix = vector_ptr;
     for(uint row = 0; row < rows; row++){
-        *vector_ptr = Vector_initialize(p, container_ptr, columns, 0);
+        *vector_ptr = Vector_initialize(p, &container_ptr, columns, 0);
+        vector_ptr ++; 
+    }
+    return matrix;
+}
+
+size_t Matrix_serialize(char *buffer, Matrix *M){
+    size_t size = Matrix_getSize(M->p, M->rows, M->columns);
+    memcpy(buffer, M, size);
+    return size;
+}
+
+Matrix *Matrix_deserialize(char **buffer){
+    Matrix *matrix = (Matrix*)buffer;
+    uint p = matrix->p;
+    uint rows = matrix->rows;
+    uint columns = matrix->columns;
+    Vector **vector_ptr = (Vector**)(matrix+1);
+    char *container_ptr = (char*)(vector_ptr + rows);
+    matrix->matrix = vector_ptr;
+    for(uint row = 0; row < rows; row++){
+        *vector_ptr = Vector_deserialize(&container_ptr);
         vector_ptr ++;
-        container_ptr += vector_size;
     }
     return matrix;
 }
@@ -817,18 +839,17 @@ Matrix *Matrix_slice(Matrix *M, char *memory, uint row_min, uint row_max, uint c
     result->rows = num_rows;
     result->columns = num_cols;
     result->matrix = (Vector**)(result + 1);
-    VectorPrivate **matrix_ptr = (VectorPrivate**)result->matrix; 
-    VectorPrivate *vector_ptr = (VectorPrivate*)(matrix_ptr + num_rows);
+    Vector **matrix_ptr = (Vector**)result->matrix; 
+    char *vector_ptr = (char*)(matrix_ptr + num_rows);
     Vector *initialized_vector_ptr;
     for(uint i = 0; i < num_rows; i++){
-        *matrix_ptr = vector_ptr;
-        initialized_vector_ptr = Vector_initialize(M->p, (char*)vector_ptr, 0, 0);
+        initialized_vector_ptr = Vector_initialize(M->p, &vector_ptr, 0, 0);
+        *matrix_ptr = initialized_vector_ptr;
         Vector_slice(initialized_vector_ptr, M->matrix[i], column_min, column_max);
         matrix_ptr ++;
-        vector_ptr++;
     }
-    assert(matrix_ptr == (VectorPrivate **)(result->matrix + num_rows));
-    assert(vector_ptr == (VectorPrivate*)matrix_ptr + num_rows);
+    assert(matrix_ptr == (Vector **)(result->matrix + num_rows));
+    assert(vector_ptr == (char*)matrix_ptr + num_rows * sizeof(VectorPrivate));
     return result;
 }
 
@@ -855,7 +876,8 @@ void Matrix_printSlice(Matrix *M, uint col_end, uint col_start){
         char buffer[2000];
         uint len = 0;
         char slice_memory[sizeof(VectorPrivate)];
-        Vector *slice = Vector_initialize(M->p, slice_memory, 0, 0);
+        char *slice_ptr = slice_memory;
+        Vector *slice = Vector_initialize(M->p, &slice_ptr, 0, 0);
         len += sprintf(buffer + len, "    ");
         Vector_slice(slice, M->matrix[i], 0, col_end);
         len += Vector_toString(buffer + len, slice);
@@ -867,18 +889,6 @@ void Matrix_printSlice(Matrix *M, uint col_end, uint col_start){
     printf("\n");
 }
 
-uint Matrix_serialize(char *buffer, Matrix *M){
-    uint len = 0;
-    // (uint*)buffer;
-    *((uint*)(buffer+len)) = M->rows;
-    len += sizeof(uint);
-    *((uint*)(buffer+len)) = M->columns;
-    len += sizeof(uint);
-    for(uint i=0; i<M->rows; i++){
-        len += Vector_serialize(buffer + len, M->matrix[i]);
-    }
-    return len;
-}
 
 void rowReduce(Matrix *M, int *column_to_pivot_row, uint col_end, uint col_start){
     Vector **matrix = M->matrix;
@@ -973,12 +983,21 @@ Kernel *Kernel_construct(uint p, uint rows, uint columns){
     Kernel *k = malloc(
         sizeof(Kernel) 
         + columns * sizeof(uint)
-        + Matrix_getSize(p, rows, columns) * sizeof(uint64)
+        + Matrix_getSize(p, rows, columns)
     );
     k->column_to_pivot_row = (int*)(k + 1);
     k->kernel = Matrix_initialize((char*)(k->column_to_pivot_row + columns), p, rows, columns);
     return k;
 }
+
+size_t Kernel_serialize(char *buffer, Kernel *kernel){
+    
+}
+
+Kernel *Kernel_deserialize(){
+
+}
+
 
 void Kernel_free(Kernel *k){
     free(k);

@@ -561,8 +561,7 @@ static void AdemAlgebra__generateMultiplicationTable2(AdemAlgebraInternal *algeb
             *current_ptr_1 = current_ptr_2;
             uint dimension = AdemAlgebra_getDimension((Algebra*)algebra, n-i, -1);
             for(uint j=0; j < dimension; j++){
-                *current_ptr_2 = Vector_initialize(p, current_ptr_3, output_dimension, 0);
-                current_ptr_3 += vector_size;
+                *current_ptr_2 = Vector_initialize(p, &current_ptr_3, output_dimension, 0);
                 current_ptr_2++;
             }
             current_ptr_1++;
@@ -614,8 +613,7 @@ static void AdemAlgebra__generateMultiplicationTableGeneric(AdemAlgebraInternal 
                 *current_ptr_1 = current_ptr_2;
                 uint dimension = AdemAlgebra_getDimension((Algebra*)algebra, n - q*i - b, -1);
                 for(uint j=0; j < dimension; j++){
-                    *current_ptr_2 = Vector_initialize(p, current_ptr_3, output_dimension, 0);
-                    current_ptr_3 += vector_size;
+                    *current_ptr_2 = Vector_initialize(p, &current_ptr_3, output_dimension, 0);
                     current_ptr_2++;
                 }
                 current_ptr_1++;

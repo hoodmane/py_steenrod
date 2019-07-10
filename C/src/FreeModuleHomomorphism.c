@@ -52,9 +52,8 @@ void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism
     Vector **vector_ptr_ptr = f->outputs[shifted_degree];
     char *vector_memory_ptr = (char*)(vector_ptr_ptr + num_gens);
     for(uint i = 0; i < num_gens; i++){
-        f->outputs[shifted_degree][i] = Vector_initialize(p, vector_memory_ptr, dimension, 0);
+        f->outputs[shifted_degree][i] = Vector_initialize(p, &vector_memory_ptr, dimension, 0);
         vector_ptr_ptr ++;
-        vector_memory_ptr += vector_size;
     }
     assert(vector_ptr_ptr == f->outputs[shifted_degree] + num_gens);
     assert(vector_memory_ptr == (char*)(vector_ptr_ptr) + num_gens * vector_size);

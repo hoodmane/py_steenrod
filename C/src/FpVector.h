@@ -84,7 +84,7 @@ uint Vector_getPaddedDimension(uint p, uint dimension, uint offset);
  *      char memory[total_size];
  *      myVector = Vector_initialize(p, memory, memory + container_size, dimension, offset);
  */
-Vector *Vector_initialize(uint p, char *memory, uint dimension, uint offset);
+Vector *Vector_initialize(uint p, char **memory, uint dimension, uint offset);
 Vector *Vector_construct(uint p, uint dimension, uint offset);
 
 void Vector_free(Vector *v); 
@@ -142,7 +142,8 @@ void Vector_scale(Vector *target, uint c);
 uint Vector_toString(char *buffer, Vector *v);
 void Vector_print(char *fmt_string, Vector *v);
 
-uint Vector_serialize(char *buffer, Vector *v);
+void Vector_serialize(char **buffer, Vector *v);
+Vector *Vector_deserialize(char **buffer);
 
 typedef struct {
     uint p;
