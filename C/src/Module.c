@@ -2,22 +2,28 @@
 // Created by Hood on 5/20/2019.
 //
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-#include "Module.h"
 #include "FpVector.h"
-#include "algebra.h"
-
-
-
+#include "Algebra.h"
+#include "Module.h"
 
 // For javascript
+bool Module_computeBasis_function(Module *this, int degree){
+    return Module_computeBasis(this, degree);
+}
+
 uint Module_getDimension_function(Module *module, int degree){
     uint result = module->getDimension(module, degree);
     return result;
 }
+
+void Module_actOnBasis_function(Module *this, Vector *result, uint coeff, int op_degree, uint op_index, int mod_degree, uint mod_index){
+    Module_actOnBasis(this, result, coeff, op_degree, op_index, mod_degree, mod_index);
+}
+
 
 
 /*

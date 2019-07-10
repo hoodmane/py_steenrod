@@ -111,7 +111,6 @@ void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism *f, Vecto
     }
 }
 
-
 // result should be big enough to hold output (how big is that?)
 // Well it should have dim(target) columns and dim(source) rows. I guess this is 
 // the transpose of the usual convention.
@@ -149,7 +148,6 @@ void FreeModuleHomomorphism_getMatrix(FreeModuleHomomorphism *f, Matrix *result,
         }
     }
 }
-
 
 FreeModule *FreeModuleHomomorphism_getSource(FreeModuleHomomorphism *f){
     return f->source;

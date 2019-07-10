@@ -2,6 +2,14 @@
 importScripts("CSteenrod.js");
 importScripts("CSteenrodWrappers.js");
 
+function javascriptStringToC(offset, string){
+    for(let i = 0; i < string.length; i++){
+        // Hopefully all of the characters are <= 255
+        Module.HEAPU8[offset + i] = string.charCodeAt(i);
+    }
+    Module.HEAPU8[offset + string.length + 1] = 0;
+}
+
 const sizeof_uint = Uint32Array.BYTES_PER_ELEMENT;
 
 let t0 = performance.now();
@@ -189,14 +197,16 @@ message_handlers["get_cocyle"] = function getCocycle(data){
     let dimension = cModule_getDimension(cTarget, degree);
     let cResult_vector = cVector_construct(self.p, dimension, 0);    
     cFreeModuleHomomorphism_applyToGenerator(cf, cResult_vector,  1, degree, index);
-    // cVector_print
     let cResult_json_offset = Module._malloc(2000);
-    let length = cFreeModule_element_toJSONString(cResult_json_offset, cTarget, degree, cResult_vector);
+    javascriptStringToC(cResult_json_offset, "%s");
+    cVector_print(cResult_json_offset, cResult_vector);
+    let len = cFreeModule_element_toJSONString(cResult_json_offset, cTarget, degree, cResult_vector);
     let s = "";
-    for (let i = 0; i < length; ++i){
+    for (let i = 0; i < len; ++i){
         s += String.fromCharCode(Module.HEAPU8[cResult_json_offset+i]);
     } 
     let result = JSON.parse(s);
+    Module._free(cResult_json_offset);
     result = result.map((entry) => {
         let output = "";
         if(entry.coeff != 1){

@@ -1,6 +1,7 @@
-#include "FreeModule.h"
 #include <assert.h>
 #include <stdio.h>
+
+#include "FreeModule.h"
 
 typedef struct {
     Module module;

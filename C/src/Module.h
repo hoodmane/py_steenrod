@@ -7,6 +7,7 @@
 
 #include "Algebra.h"
 
+// TODO: Maybe use these?
 #define MODULE_TYPE_FREE 0
 #define MODULE_TYPE_FINITE_DIMENSIONAL 1
 #define MODULE_TYPE_FINITELY_PRESENTED 2
@@ -28,7 +29,9 @@ typedef struct Module {
 #define Module_actOnBasis(module, result, coeff, op_deg, op, r_deg, r) ((module)->actOnBasis)(module, result, coeff, op_deg, op, r_deg, r)
 
 // For javascript
-uint Module_getDimension_function(Module *module, int degree);
+bool Module_computeBasis_function(Module *this, int degree);
+uint Module_getDimension_function(Module *this, int degree);
+void Module_actOnBasis_function(Module *this, Vector *result, uint coeff, int op_degree, uint op_index, int mod_degree, uint mod_index);
 
 
 

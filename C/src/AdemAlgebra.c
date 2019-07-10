@@ -61,6 +61,7 @@ typedef struct {
     khash_t(monomial_index_map) **basis_element_to_index_map; // degree -> admissible sequence -> index
     Vector ****multiplication_table;// degree -> first square -> admissibile sequence idx -> result vector
     uint **excess_table;
+    AdemBasisElement_list filtrationOneProduct_basisElements;
 } AdemAlgebraInternal;
 
 static void AdemAlgebra__initializeFields(AdemAlgebraInternal *algebra, uint p, bool generic, bool unstable);
@@ -118,6 +119,56 @@ static void AdemAlgebra__initializeFields(AdemAlgebraInternal *algebra, uint p, 
     // Length field has to match with amount of space we decided to allocate for this
     // in constructor function directly before this.
     FiltrationOneProductList *product_list = algebra->public_algebra.algebra.product_list;
+    uint num_basis_elements;
+    uint total_p_length;
+    if(generic){
+        num_basis_elements = 2;
+        total_p_length = 1;
+    } else {
+        num_basis_elements = 3;
+        total_p_length = 3;
+    }
+    algebra->filtrationOneProduct_basisElements.length = num_basis_elements;
+    AdemBasisElement **product_basisElement_table = malloc(
+        num_basis_elements*(sizeof(AdemBasisElement*) + sizeof(AdemBasisElement)) + total_p_length*sizeof(uint)
+    );
+
+    AdemBasisElement *basis_elt_ptr = (AdemBasisElement*)(product_basisElement_table + num_basis_elements);
+    for(uint i = 0; i < num_basis_elements; i++){
+        product_basisElement_table[i] = basis_elt_ptr;
+        basis_elt_ptr ++;
+    }
+    uint *Ps_ptr = (uint*)basis_elt_ptr;
+
+    algebra->filtrationOneProduct_basisElements.list = product_basisElement_table;
+    if(generic){
+        AdemBasisElement *b = *product_basisElement_table;
+        // beta
+        b->degree = 1;
+        b->bocksteins = 1;
+        b->P_length = 0;
+        b->Ps = NULL;
+        b++;
+        // P1
+        b->degree = 2*(p-1);
+        b->bocksteins = 0;
+        b->P_length = 1;
+        b->Ps = Ps_ptr;
+        b->Ps[0] = 1;
+        b++;
+    } else {
+        AdemBasisElement *b = *product_basisElement_table;
+        for(int hi = 0; hi < 3; hi++){
+            uint degree = 1 << hi; // degree is 2^hi 
+            b->degree = degree;
+            b->bocksteins = 0;
+            b->P_length = 1;
+            b->Ps = Ps_ptr;
+            Ps_ptr += b->P_length;
+            b->Ps[0] = degree;
+            b++;
+        }
+    }
     if(generic){
         product_list->length = 2;
         product_list->degrees[0] = 1; // beta
@@ -195,6 +246,13 @@ void AdemAlgebra_generateBasis(Algebra *this, int max_degree){
     }
     if(algebra->public_algebra.unstable){
         AdemAlgebra__generateExcessTable(algebra, old_max_degree, max_degree);
+    }
+    // Make sure product_list reflects sort order.
+    for(uint i = 0; i < algebra->filtrationOneProduct_basisElements.length; i++){
+        AdemBasisElement *b = algebra->filtrationOneProduct_basisElements.list[i];
+        if(b->degree < max_degree){
+            this->product_list->indices[i] = AdemAlgebra_basisElement_toIndex(&algebra->public_algebra, b);
+        }
     }
 }
 

@@ -2,7 +2,6 @@
 #define CSTEENROD_FINITE_DIMENSIONAL_MODULE_H
 #include "Module.h"
 
-
 typedef struct {
     Module module;
     int max_basis_degree;

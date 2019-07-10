@@ -38,8 +38,9 @@ SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
     '_AdemAlgebra_basisElement_getBocksteins', '_AdemAlgebra_basisElement_fromIndex'"
 )
 
-SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
-    '_Module_getDimension_function'"
+SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS}, \
+    '_Module_computeBasis_function', '_Module_getDimension_function', \
+    '_Module_actOnBasis_function'"
 )
 
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\

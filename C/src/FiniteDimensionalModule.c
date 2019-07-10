@@ -1,6 +1,6 @@
 #include <assert.h>
-#include "FiniteDimensionalModule.h"
 
+#include "FiniteDimensionalModule.h"
 
 // The allocator is horrendous so we're going to separate it out.
 FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint max_basis_degree, uint *graded_dimension);

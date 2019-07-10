@@ -93,7 +93,6 @@ void Resolution_free(Resolution *res){
     free(res);
 }
 
-
 void Resolution_resolveThroughDegree(Resolution *res, int degree){
 //     for(uint hom_deg = 0; hom_deg < degree; hom_deg++){
 //        for(uint int_deg = hom_deg; int_deg <= degree; int_deg ++){
@@ -189,7 +188,6 @@ void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_d
     }
 }
 
-
 //   It's assumed that before this function runs, we should have a complex whose homology H^{i,j} is 0 when 
 //   i <= homological_degree, j <= degree and at least one of these inequalities is strict.
 //   The output is a complex that's also exact in degree i, j.
@@ -242,7 +240,6 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     // Matrix_printSlice(matrix, target_dimension, padded_target_dimension);
     rowReduce(matrix, column_to_pivot_row, 0, 0);//target_dimension, padded_target_dimension);
     // Matrix_printSlice(matrix, target_dimension, padded_target_dimension);
-
 
     // Stage 1: Find kernel of current differential
     // Locate first kernel row
@@ -349,6 +346,7 @@ uint Resolution_gradedDimensionString(char *buffer, Resolution *resolution){
     len += sprintf(buffer + len, "\n]\n");
     return len;
 }
+
 /**/
 int main(int argc, char *argv[]){
     // assert(false);

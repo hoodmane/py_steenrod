@@ -752,7 +752,7 @@ uint Vector_toString(char *buffer, Vector *vector){
 void Vector_print(char *fmt_string, Vector *v){
     char buffer[10000];
     Vector_toString(buffer, v);
-    printf(fmt_string, buffer);
+    printf("%s\n", buffer);
 }
 
 
