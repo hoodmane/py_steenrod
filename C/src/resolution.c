@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "tpl.h"
 #include "parson.h"
 #include "combinatorics.h"
 #include "Algebra.h"
@@ -110,7 +109,7 @@ void Resolution_resolveThroughDegree(Resolution *res, int degree){
         }
     }
     // printf
-    Resolution_serialize(res);
+    // Resolution_serialize(res);
     // for(int i = degree - 1 - res->min_degree; i >= 0; i--){
     //     printf("stage %*d: ", 2, i);
     //     array_print("%s\n", &res->modules[i+1]->number_of_generators_in_degree[i], degree - i - res->min_degree);
@@ -356,7 +355,7 @@ uint Resolution_gradedDimensionString(char *buffer, Resolution *resolution){
     return len;
 }
 
-void Resolution_serialize(Resolution *res){
+SerializedResolution *Resolution_serialize(Resolution *res){
     JSON_Value *root_value = json_value_init_object();
     JSON_Object *root_object = json_object(root_value);
     json_object_set_number(root_object, "p", res->algebra->p);
@@ -403,10 +402,23 @@ void Resolution_serialize(Resolution *res){
         json_array_append_value(differentials_array, current_differential_value);
     }
     json_object_set_value(root_object, "matrices", differentials_value);
+    SerializedResolution *result = malloc(sizeof(SerializedResolution) + binary_size);
+    result->json_data = json_serialize_to_string(root_value);
+    result->json_size = strlen(result->json_data);
+    char *serialized_matrices = (char *)(result + 1);
+    result->binary_size = binary_size;   
+    result->binary_data = serialized_matrices;
+    for(uint i=0; i<res->max_homological_degree; i++){
+        FreeModuleHomomorphism *f = res->differentials[i+1];
+        for(uint j=0; j < f->max_computed_degree; j++){
+            if(f->coimage_to_image_isomorphism[j] == NULL){
+                continue;
+            }
+            Matrix_serialize(&serialized_matrices, f->coimage_to_image_isomorphism[i]);
+        }
+    }
+    return result;
 
-    char *serialized_string = NULL;
-    serialized_string = json_serialize_to_string_pretty(root_value);
-    puts(serialized_string);
 
 
     // tpl_node *tn = tpl_map(
@@ -451,6 +463,21 @@ void Resolution_serialize(Resolution *res){
     // printf("\n");  
 }
 
+size_t SerializedResolution_getJSONSize(SerializedResolution *sres){
+    return sres->json_size;
+}
+
+char *SerializedResolution_getJSONData(SerializedResolution *sres){
+    return sres->json_data;
+}
+
+size_t SerializedResolution_getBinarySize(SerializedResolution *sres){
+    return sres->binary_size;
+}
+
+char *SerializedResolution_getBinaryData(SerializedResolution *sres){
+    return sres->binary_data;
+}
 
 /**/
 int main(int argc, char *argv[]){
@@ -516,8 +543,6 @@ int main(int argc, char *argv[]){
     res->module = NULL;
     // MilnorAlgebra_free((MilnorAlgebra*)res->algebra);
     res->algebra = NULL;
-    void *serialized_address;
-    size_t serialized_length;
     Resolution_free(res);
     FiniteDimensionalModule_free(module);
     return 0;   

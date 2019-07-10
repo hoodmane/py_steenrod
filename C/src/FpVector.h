@@ -163,6 +163,9 @@ uint Matrix_getSliceSize(uint p, uint rows);
 Matrix *Matrix_slice(Matrix *M, char *memory, uint row_min, uint row_max, uint column_min, uint column_max);
 void Matrix_printSlice(Matrix *M, uint col_end, uint col_start);
 
+void Matrix_serialize(char **buffer, Matrix *v);
+Matrix *Matrix_deserialize(char **buffer);
+
 // Row reduce M. For each column i, column_to_pivot_row[i] is equal to: the row
 // with a pivot in column i or -1 if no such row exists.
 // When you delete the -1's from column_to_pivot_row, it looks like [0,1,2,...,rank(M)].

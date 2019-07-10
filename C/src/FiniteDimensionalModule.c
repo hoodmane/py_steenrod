@@ -103,7 +103,6 @@ FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint
                 continue;
             }
             *current_ptr_2 = current_ptr_3;
-            uint vector_size = Vector_getSize(p, graded_dimension[output_degree], 0);
             uint number_of_operations = Algebra_getDimension(algebra, output_degree - input_degree, input_degree);
             for(uint operation_idx = 0; operation_idx < number_of_operations; operation_idx ++){
                 *current_ptr_3 = current_ptr_4;

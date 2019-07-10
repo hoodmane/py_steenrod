@@ -1780,6 +1780,11 @@ var _Profile_free = Module["_Profile_free"] = function() {  return Module["asm"]
 var _Resolution_construct = Module["_Resolution_construct"] = function() {  return Module["asm"]["_Resolution_construct"].apply(null, arguments) };
 var _Resolution_getDifferential = Module["_Resolution_getDifferential"] = function() {  return Module["asm"]["_Resolution_getDifferential"].apply(null, arguments) };
 var _Resolution_resolveThroughDegree = Module["_Resolution_resolveThroughDegree"] = function() {  return Module["asm"]["_Resolution_resolveThroughDegree"].apply(null, arguments) };
+var _Resolution_serialize = Module["_Resolution_serialize"] = function() {  return Module["asm"]["_Resolution_serialize"].apply(null, arguments) };
+var _SerializedResolution_getBinaryData = Module["_SerializedResolution_getBinaryData"] = function() {  return Module["asm"]["_SerializedResolution_getBinaryData"].apply(null, arguments) };
+var _SerializedResolution_getBinarySize = Module["_SerializedResolution_getBinarySize"] = function() {  return Module["asm"]["_SerializedResolution_getBinarySize"].apply(null, arguments) };
+var _SerializedResolution_getJSONData = Module["_SerializedResolution_getJSONData"] = function() {  return Module["asm"]["_SerializedResolution_getJSONData"].apply(null, arguments) };
+var _SerializedResolution_getJSONSize = Module["_SerializedResolution_getJSONSize"] = function() {  return Module["asm"]["_SerializedResolution_getJSONSize"].apply(null, arguments) };
 var _Vector_construct = Module["_Vector_construct"] = function() {  return Module["asm"]["_Vector_construct"].apply(null, arguments) };
 var _Vector_free = Module["_Vector_free"] = function() {  return Module["asm"]["_Vector_free"].apply(null, arguments) };
 var _Vector_pack = Module["_Vector_pack"] = function() {  return Module["asm"]["_Vector_pack"].apply(null, arguments) };
@@ -1789,7 +1794,6 @@ var ___errno_location = Module["___errno_location"] = function() {  return Modul
 var _free = Module["_free"] = function() {  return Module["asm"]["_free"].apply(null, arguments) };
 var _initializePrime = Module["_initializePrime"] = function() {  return Module["asm"]["_initializePrime"].apply(null, arguments) };
 var _malloc = Module["_malloc"] = function() {  return Module["asm"]["_malloc"].apply(null, arguments) };
-var _memalign = Module["_memalign"] = function() {  return Module["asm"]["_memalign"].apply(null, arguments) };
 var _memcpy = Module["_memcpy"] = function() {  return Module["asm"]["_memcpy"].apply(null, arguments) };
 var _memset = Module["_memset"] = function() {  return Module["asm"]["_memset"].apply(null, arguments) };
 var _sbrk = Module["_sbrk"] = function() {  return Module["asm"]["_sbrk"].apply(null, arguments) };

@@ -16,6 +16,14 @@ function javascriptStringToC(offset, string){
     Module.HEAPU8[offset + string.length + 1] = 0;
 }
 
+function cStringToJavascript(offset, length){
+    let result = [];
+    for(let i = 0; i < length; i++){
+        result.push(Module.HEAPU8[offset + i]);
+    }
+    return String.fromCharCode(...result);
+}
+
 const sizeof_uint = Uint32Array.BYTES_PER_ELEMENT;
 
 let t0 = performance.now();
@@ -194,6 +202,7 @@ message_handlers["resolve"] = function resolve(data){
     self.p = p;
     self.cResolution = cResolution_construct(module.cModule, max_degree, callbacks.addClassPtr, callbacks.addStructlinePtr);
     cResolution_resolveThroughDegree(self.cResolution, max_degree);
+    message_handlers["serialize"](0);
 };
 
 message_handlers["get_cocyle"] = function getCocycle(data){
@@ -234,6 +243,13 @@ message_handlers["get_cocyle"] = function getCocycle(data){
     });
 };
 
+message_handlers["serialize"] = function serialize(data){
+    let serialized_resolution = cResolution_serialize(self.cResolution);
+    let serialized_resolution_json_data = cSerializedResolution_getJSONData(serialized_resolution);
+    let serialized_resolution_json_length = cSerializedResolution_getJSONSize(serialized_resolution);
+    let json_string = cStringToJavascript(serialized_resolution_json_data, serialized_resolution_json_length);
+    Module.print(json_string);
+}
 
 
 // // typedef struct Resolution_s {

@@ -240,7 +240,7 @@ void Vector_free(Vector *vector){
 void Vector_setToZero(Vector *target){
     assert(target->offset == 0); // setToZero doesn't handle slices right now.
     VectorPrivate *t = (VectorPrivate*) target;
-    memset(t->limbs, 0, t->size);
+    memset(t->limbs, 0, t->size - sizeof(VectorPrivate));
 }
 
 /**
@@ -379,7 +379,7 @@ void Vector_slice(Vector *result, Vector *source, uint start, uint end){
     assert(r->implementation == s->implementation);    
     r->dimension = end - start;
     if(start == end){
-        r->size = 0;
+        r->size = sizeof(VectorPrivate);
         r->number_of_limbs = 0;
         r->limbs = NULL;
         return;    
@@ -793,22 +793,21 @@ Matrix *Matrix_initialize(char *memory, uint p, uint rows, uint columns)  {
     return matrix;
 }
 
-size_t Matrix_serialize(char *buffer, Matrix *M){
+void Matrix_serialize(char **buffer, Matrix *M){
     size_t size = Matrix_getSize(M->p, M->rows, M->columns);
-    memcpy(buffer, M, size);
-    return size;
+    memcpy(*buffer, M, size);
+    buffer += size;
 }
 
 Matrix *Matrix_deserialize(char **buffer){
-    Matrix *matrix = (Matrix*)buffer;
-    uint p = matrix->p;
-    uint rows = matrix->rows;
-    uint columns = matrix->columns;
-    Vector **vector_ptr = (Vector**)(matrix+1);
-    char *container_ptr = (char*)(vector_ptr + rows);
+    Matrix *matrix = (Matrix*)*buffer;
+    *buffer += sizeof(Matrix);
+    Vector **vector_ptr = (Vector**)buffer;
     matrix->matrix = vector_ptr;
+    uint rows = matrix->rows;    
+    *buffer += rows * sizeof(Vector*);
     for(uint row = 0; row < rows; row++){
-        *vector_ptr = Vector_deserialize(&container_ptr);
+        *vector_ptr = Vector_deserialize(buffer);
         vector_ptr ++;
     }
     return matrix;
@@ -990,13 +989,13 @@ Kernel *Kernel_construct(uint p, uint rows, uint columns){
     return k;
 }
 
-size_t Kernel_serialize(char *buffer, Kernel *kernel){
-    
-}
+// size_t Kernel_serialize(char *buffer, Kernel *kernel){
 
-Kernel *Kernel_deserialize(){
+// }
 
-}
+// Kernel *Kernel_deserialize(){
+
+// }
 
 
 void Kernel_free(Kernel *k){

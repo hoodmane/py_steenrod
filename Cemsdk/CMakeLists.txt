@@ -59,6 +59,12 @@ SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
     '_Resolution_getDifferential'"
 )
 
+SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
+    '_Resolution_serialize', \
+    '_SerializedResolution_getJSONSize', '_SerializedResolution_getJSONData', \
+    '_SerializedResolution_getBinarySize', '_SerializedResolution_getBinaryData'"
+)
+
 SET(EMCC_EXPORT_FLAGS "-s EXTRA_EXPORTED_RUNTIME_METHODS=\"${EXTRA_EXPORTED_RUNTIME_METHODS}\"")
 SET(EMCC_EXPORT_FLAGS "${EMCC_EXPORT_FLAGS} -s EXPORTED_FUNCTIONS=\"[${EXPORTED_FUNCTIONS}]\"")
 SET(EMCC_EXPORT_FLAGS "${EMCC_EXPORT_FLAGS} -s RESERVED_FUNCTION_POINTERS=20")
@@ -70,8 +76,6 @@ add_executable(CSteenrod
         ../C/src/khash.h
         ../C/src/parson.h
         ../C/src/parson.c
-        ../C/src/tpl.h
-        ../C/src/tpl.c
 
         ../C/src/combinatorics.h
         ../C/src/combinatorics.c

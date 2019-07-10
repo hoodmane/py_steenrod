@@ -146,3 +146,18 @@ let cResolution_getDifferential = Module.cwrap("Resolution_getDifferential", 'po
 
 // void Resolution_resolveThroughDegree(Resolution *res, uint degree);
 let cResolution_resolveThroughDegree = Module.cwrap("Resolution_resolveThroughDegree", 'void', ['pointer', 'number']);
+
+// SerializedResolution *Resolution_serialize(Resolution *res);
+let cResolution_serialize = Module.cwrap("Resolution_serialize", "pointer", ["pointer"]);
+
+// size_t SerializedResolution_getJSONSize(SerializedResolution *sres);
+let cSerializedResolution_getJSONSize = Module.cwrap("SerializedResolution_getJSONSize", 'number', ['pointer']);
+
+// char *SerializedResolution_getJSONData(SerializedResolution *sres);
+let cSerializedResolution_getJSONData = Module.cwrap('SerializedResolution_getJSONData', 'pointer', ['pointer']);
+
+// size_t SerializedResolution_getBinarySize(SerializedResolution *sres);
+let cSerializedResolution_getBinarySize = Module.cwrap("SerializedResolution_getBinarySize", 'number', ['pointer']);
+
+// char *SerializedResolution_getBinaryData(SerializedResolution *sres);
+let cSerializedResolution_getBinaryData = Module.cwrap('SerializedResolution_getBinaryData', 'pointer', ['pointer']);

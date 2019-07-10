@@ -46,6 +46,19 @@ void Resolution_free(Resolution *resolution);
 void Resolution_step(Resolution *resolution, uint homological_degree, int degree);
 void Resolution_resolveThroughDegree(Resolution *res, int degree);
 
-void Resolution_serialize(Resolution *res);
+typedef struct {
+    size_t json_size;
+    char *json_data;
+    size_t binary_size;
+    char *binary_data;
+} SerializedResolution;
+
+SerializedResolution *Resolution_serialize(Resolution *res);
+
+size_t SerializedResolution_getJSONSize(SerializedResolution *sres);
+char *SerializedResolution_getJSONData(SerializedResolution *sres);
+
+size_t SerializedResolution_getBinarySize(SerializedResolution *sres);
+char *SerializedResolution_getBinaryData(SerializedResolution *sres);
 
 #endif // CSTEENROD_RESOLUTION_H
