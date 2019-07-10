@@ -244,6 +244,19 @@ message_handlers["cocycle_result"] = function cocycle_result(data){
     console.log(data.value);
 }
 
+message_handlers["serialized_matrices"] = function serialized_matrices(data){
+    let element = document.createElement('a');
+    let file_name = "test.bin";
+    let dataView = new DataView(data.binary_data);
+    let blob = new Blob([dataView], {type: 'application/octet-stream'});
+    element.href = window.URL.createObjectURL(blob);
+    element.setAttribute('download', file_name);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+}
+
 // {
     // "profile" : {
     //     "truncated" : true,

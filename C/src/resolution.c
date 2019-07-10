@@ -414,7 +414,7 @@ SerializedResolution *Resolution_serialize(Resolution *res){
             if(f->coimage_to_image_isomorphism[j] == NULL){
                 continue;
             }
-            Matrix_serialize(&serialized_matrices, f->coimage_to_image_isomorphism[i]);
+            Matrix_serialize(&serialized_matrices, f->coimage_to_image_isomorphism[j]);
         }
     }
     return result;

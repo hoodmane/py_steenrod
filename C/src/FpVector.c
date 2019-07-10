@@ -796,7 +796,7 @@ Matrix *Matrix_initialize(char *memory, uint p, uint rows, uint columns)  {
 void Matrix_serialize(char **buffer, Matrix *M){
     size_t size = Matrix_getSize(M->p, M->rows, M->columns);
     memcpy(*buffer, M, size);
-    buffer += size;
+    *buffer += size;
 }
 
 Matrix *Matrix_deserialize(char **buffer){

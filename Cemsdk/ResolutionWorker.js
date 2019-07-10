@@ -8,6 +8,17 @@ function constructCString(string){
     return offset;
 }
 
+
+function _arrayBufferToBase64( buffer ) {
+    var binary = '';
+    var bytes = new Uint8Array( buffer );
+    var len = bytes.byteLength;
+    for (var i = 0; i < len; i++) {
+        binary += String.fromCharCode( bytes[ i ] );
+    }
+    return self.btoa( binary );
+}
+
 function javascriptStringToC(offset, string){
     for(let i = 0; i < string.length; i++){
         // Hopefully all of the characters are <= 255
@@ -247,8 +258,20 @@ message_handlers["serialize"] = function serialize(data){
     let serialized_resolution = cResolution_serialize(self.cResolution);
     let serialized_resolution_json_data = cSerializedResolution_getJSONData(serialized_resolution);
     let serialized_resolution_json_length = cSerializedResolution_getJSONSize(serialized_resolution);
+    let serialized_resolution_binary_data = cSerializedResolution_getBinaryData(serialized_resolution);
+    let serialized_resolution_binary_length = cSerializedResolution_getBinarySize(serialized_resolution);
     let json_string = cStringToJavascript(serialized_resolution_json_data, serialized_resolution_json_length);
-    Module.print(json_string);
+    let buffer = new ArrayBuffer(serialized_resolution_binary_length);
+    for(let i=0; i<serialized_resolution_binary_length; i++){
+        buffer[i] = Module.HEAPU8[serialized_resolution_binary_data + i];
+    }
+    // Module.print("byte_length: ", buffer.byteLength);
+    self.postMessage({
+        "cmd" : "serialized_matrices",
+        "binary_data" : buffer
+    }, [buffer]);
+    // Module.print("byte_length: ", buffer.byteLength);
+    // Module.print(json_string);
 }
 
 
