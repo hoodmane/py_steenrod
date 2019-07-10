@@ -2,6 +2,12 @@
 importScripts("CSteenrod.js");
 importScripts("CSteenrodWrappers.js");
 
+function constructCString(string){
+    let offset = Module._malloc(string.length + 1);
+    javascriptStringToC(offset, string);
+    return offset;
+}
+
 function javascriptStringToC(offset, string){
     for(let i = 0; i < string.length; i++){
         // Hopefully all of the characters are <= 255
@@ -102,9 +108,11 @@ function constructFiniteDimensionalModule(module, cAlgebra){
         index_to_basis_element[degree - min_basis_degree] = index_to_basis_element[degree - min_basis_degree] || {}
         index_to_basis_element[degree - min_basis_degree][index] = b;
     }
+    let c_module_name = constructCString(module.file_name);
     let c_array_offset = Module._malloc(sizeof_uint * Math.max(max_basis_degree, ...graded_dimension));
     Module.HEAPU32.set(graded_dimension, c_array_offset/sizeof_uint);
-    let cModule = cFiniteDimensionalModule_construct(cAlgebra, min_basis_degree, min_basis_degree + max_basis_degree, c_array_offset);
+    let cModule = cFiniteDimensionalModule_construct(cAlgebra, c_module_name, min_basis_degree, min_basis_degree + max_basis_degree, c_array_offset);
+    Module._free(c_module_name);
     for(let {op, input, output} of module.milnor_actions){
         let op_degree;
         if(p==2){

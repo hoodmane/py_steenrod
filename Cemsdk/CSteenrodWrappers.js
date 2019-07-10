@@ -23,16 +23,16 @@ let cVector_print = cwrap("Vector_print", 'void', ['pointer', 'pointer']);
  * algebra.h
  */
 // void algebra_computeBasis_function(Algebra *algebra, int degree);
-let cAlgebra_computeBasis = cwrap('algebra_computeBasis_function', 'void', ['pointer', 'number']);
+let cAlgebra_computeBasis = cwrap('Algebra_computeBasis_function', 'void', ['pointer', 'number']);
 
 // uint algebra_getDimension_function(Algebra *algebra, int degree, int excess);
-let cAlgebra_getDimension = cwrap('algebra_getDimension_function', 'number', ['pointer', 'number', 'number']);
+let cAlgebra_getDimension = cwrap('Algebra_getDimension_function', 'number', ['pointer', 'number', 'number']);
 
 // void algebra_multiplyBasisElements_function(Algebra *algebra, Vector *result, uint coeff, int r_deg, uint r_idx, int s_deg, uint s_idx, int excess);
-let cAlgebra_multiplyBasisElements = cwrap('algebra_multiplyBasisElements_function', 'void', ['pointer', 'pointer', 'number', 'number', 'number', 'number', 'number', 'number']);
+let cAlgebra_multiplyBasisElements = cwrap('Algebra_multiplyBasisElements_function', 'void', ['pointer', 'pointer', 'number', 'number', 'number', 'number', 'number', 'number']);
 
 // uint algebra_basisElementToString_function(Algebra *algebra, char *result, int degree, uint idx);
-let cAlgebra_basisElementToString_function = cwrap('algebra_basisElementToString_function', 'number', ['pointer', 'pointer', 'number', 'number']);
+let cAlgebra_basisElementToString_function = cwrap('Algebra_basisElementToString_function', 'number', ['pointer', 'pointer', 'number', 'number']);
 
 
 /**
@@ -102,8 +102,8 @@ let cMilnorAlgebra_getDimension = Module.cwrap("MilnorAlgebra_getDimension", 'nu
 // uint Module_getDimension_function(Module *module, int degree);
 let cModule_getDimension = Module.cwrap("Module_getDimension_function", 'number', ['pointer', 'number'])
 
-// FiniteDimensionalModule *FiniteDimensionalModule_construct(Algebra *algebra, int min_degree, int max_degree, uint *graded_dimension);
-let cFiniteDimensionalModule_construct = Module.cwrap("FiniteDimensionalModule_construct", 'pointer', ['bool', 'pointer', 'number', 'number', 'pointer']);
+// FiniteDimensionalModule *FiniteDimensionalModule_construct(Algebra *algebra, char *name, int min_degree, int max_degree, uint *graded_dimension);
+let cFiniteDimensionalModule_construct = Module.cwrap("FiniteDimensionalModule_construct", 'pointer', ['bool', 'pointer', 'pointer', 'number', 'number', 'pointer']);
 
 // void FiniteDimensionalModule_free(FiniteDimensionalModule *module);
 let cFiniteDimensionalModule_free = Module.cwrap("FiniteDimensionalModule_free", 'void', ['pointer']);

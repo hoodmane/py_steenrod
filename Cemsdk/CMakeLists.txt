@@ -68,6 +68,11 @@ SET(EMCC_EXPORT_FLAGS "${EMCC_EXPORT_FLAGS} -s TOTAL_MEMORY=167772160")
 include(GNUInstallDirs)
 add_executable(CSteenrod
         ../C/src/khash.h
+        ../C/src/parson.h
+        ../C/src/parson.c
+        ../C/src/tpl.h
+        ../C/src/tpl.c
+
         ../C/src/combinatorics.h
         ../C/src/combinatorics.c
         ../C/src/FpVector.h

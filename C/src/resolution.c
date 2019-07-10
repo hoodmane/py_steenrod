@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "tpl.h"
+#include "parson.h"
 #include "combinatorics.h"
 #include "Algebra.h"
 #include "AdemAlgebra.h"
@@ -46,6 +48,7 @@ Resolution * Resolution_construct(
         uint target_hom_deg, int target_int_deg, uint target_idx
     )    
 ){
+    printf("Module name: %s\n", module->module.name);
     int min_degree = module->module.min_degree;
     uint num_degrees = max_degree - min_degree;
     // The 0th index in "modules" and "differentials" is the module we're resolving.
@@ -106,6 +109,8 @@ void Resolution_resolveThroughDegree(Resolution *res, int degree){
             Resolution_step(res, hom_deg, int_deg);
         }
     }
+    // printf
+    Resolution_serialize(res);
     // for(int i = degree - 1 - res->min_degree; i >= 0; i--){
     //     printf("stage %*d: ", 2, i);
     //     array_print("%s\n", &res->modules[i+1]->number_of_generators_in_degree[i], degree - i - res->min_degree);
@@ -260,8 +265,8 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
 
     // Copy kernel matrix into kernel
     for(uint row = 0; row < kernel_dimension; row++){
-        char slice_memory[Vector_getContainerSize(p)];
-        Vector *slice = Vector_initialize(p, slice_memory, NULL, 0, 0);
+        char slice_memory[Vector_getSize(p, 0, 0)];
+        Vector *slice = Vector_initialize(p, slice_memory, 0, 0);
         Vector_slice(slice, matrix->matrix[first_kernel_row + row], padded_target_dimension, padded_target_dimension + source_dimension);
         Vector_assign(kernel->kernel->matrix[row], slice);
     }
@@ -282,8 +287,8 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
             // assert(kernel_vector_row < previous_kernel->kernel->rows);
             Vector *new_image = previous_cycles->kernel->matrix[kernel_vector_row];
             // Stack allocate slice
-            char slice_memory[Vector_getContainerSize(p)];
-            Vector *slice = Vector_initialize(p, slice_memory, NULL, 0, 0);
+            char slice_memory[Vector_getSize(p, 0, 0)];
+            Vector *slice = Vector_initialize(p, slice_memory, 0, 0);
             // Write new image to full_matrix
             Vector_slice(slice, full_matrix->matrix[current_target_row], 0, previous_cycles->kernel->columns);
             Vector_assign(slice, new_image);
@@ -302,8 +307,8 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     // Copy the outputs, currently stored in the coimage_to_image matrix, to the FreeModuleHomomorphism outputs field.
     FreeModuleHomomorphism_AllocateSpaceForNewGenerators(current_differential, degree, homology_dimension);
     for(uint i = 0; i < homology_dimension; i++){
-        char slice_memory[Vector_getContainerSize(p)]; 
-        Vector *slice = Vector_initialize(p, slice_memory, NULL, 0, 0);
+        char slice_memory[Vector_getSize(p, 0, 0)]; 
+        Vector *slice = Vector_initialize(p, slice_memory, 0, 0);
         Vector_slice(slice, full_matrix->matrix[first_kernel_row + i], 0, target_dimension);
         FreeModuleHomomorphism_setOutput(current_differential, degree, i, slice);
     }
@@ -317,13 +322,13 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     current_differential->coimage_to_image_isomorphism[shifted_degree] = coimage_to_image;
     // Copy matrix contents to coimage_to_image
     for(uint i = 0; i < coimage_to_image_rows; i++) {
-        char slice_memory[Vector_getContainerSize(p)]; 
-        Vector *slice = Vector_initialize(p, slice_memory, NULL, 0, 0);
+        char slice_memory[Vector_getSize(p, 0, 0)]; 
+        Vector *slice = Vector_initialize(p, slice_memory, 0, 0);
         Vector_slice(slice, full_matrix->matrix[i], 0, coimage_to_image_columns);
         Vector_assign(coimage_to_image->matrix[i], slice);
     }
-    // int useless_pivot_row_info[coimage_to_image_columns];
-    // rowReduce(coimage_to_image, useless_pivot_row_info, 0, 0);
+    int useless_pivot_row_info[coimage_to_image_columns];
+    rowReduce(coimage_to_image, useless_pivot_row_info, 0, 0);
     
     // printMatrixSlice(coimage_to_image, target_dimension, padded_target_dimension);
     // TODO: assertion about contents of useless_pivot_row_info?
@@ -346,6 +351,102 @@ uint Resolution_gradedDimensionString(char *buffer, Resolution *resolution){
     len += sprintf(buffer + len, "\n]\n");
     return len;
 }
+
+void Resolution_serialize(Resolution *res){
+    JSON_Value *root_value = json_value_init_object();
+    JSON_Object *root_object = json_object(root_value);
+    json_object_set_number(root_object, "p", res->algebra->p);
+    json_object_set_string(root_object, "algebra", res->algebra->name);
+    json_object_set_string(root_object, "module", res->module->name);
+    json_object_set_number(root_object, "max_homological_degree", res->max_homological_degree);
+    // Number of generators of each free module
+    JSON_Value *dimensions_value = json_value_init_array();
+    JSON_Array *dimensions_array = json_array(dimensions_value);
+    for(uint i = 0; i < res->max_homological_degree; i++){
+        FreeModule *M = res->modules[i+1];
+        JSON_Value *current_module_dimensions_value = json_value_init_array();
+        JSON_Array *current_module_dimensions_array = json_array(current_module_dimensions_value);
+        for(uint j = 0; j < M->module.max_degree - M->module.min_degree; j++){
+            json_array_append_number(current_module_dimensions_array, M->number_of_generators_in_degree[j]);
+        }
+        json_array_append_value(dimensions_array, current_module_dimensions_value);
+    }
+    json_object_set_value(root_object, "dimensions", dimensions_value);
+    // Matrix sizes and offsets
+    JSON_Value *differentials_value = json_value_init_array();
+    JSON_Array *differentials_array = json_array(differentials_value);
+    size_t binary_size = 0;
+    for(uint i=0; i<res->max_homological_degree; i++){
+        FreeModuleHomomorphism *f = res->differentials[i+1];
+        JSON_Value *current_differential_value = json_value_init_array();
+        JSON_Array *current_differential_array = json_array(current_differential_value);
+        for(uint j=0; j < f->max_computed_degree; j++){
+            if(f->coimage_to_image_isomorphism[j] == NULL){
+                json_array_append_null(current_differential_array);
+            } else {
+                Matrix *M = f->coimage_to_image_isomorphism[j];
+                JSON_Value *current_matrix_value = json_value_init_object();
+                JSON_Object *current_matrix_object = json_object(current_matrix_value);
+                json_object_set_number(current_matrix_object, "rows", M->rows);
+                json_object_set_number(current_matrix_object, "columns", M->rows);
+                size_t matrix_size = Matrix_getSize(M->p, M->rows, M->columns);
+                json_object_set_number(current_matrix_object, "size", matrix_size);
+                json_object_set_number(current_matrix_object, "address", binary_size);
+                binary_size += matrix_size;
+                json_array_append_value(current_differential_array, current_matrix_value);
+            }
+        }
+        json_array_append_value(differentials_array, current_differential_value);
+    }
+    json_object_set_value(root_object, "matrices", differentials_value);
+
+    char *serialized_string = NULL;
+    serialized_string = json_serialize_to_string_pretty(root_value);
+    puts(serialized_string);
+
+
+    // tpl_node *tn = tpl_map(
+    //     "u" // prime
+    //     "s"// algebra name
+    //     "s"// module name
+    //     "u" // max degree
+    //     // "A(u)#"// resolution generators
+    //     //"A(uuA(B))#" // coimage to image iso matrix
+    //     //""
+    //     ,
+    //     &p, &algebra_name, &module_name, &max_degree
+    // );
+    // tpl_pack(tn, 0);
+    // tpl_dump(tn, TPL_MEM, serialized_address, serialized_length);
+    // tpl_free(tn);
+    // p = 0;
+    // algebra_name = NULL;
+    // module_name = NULL;
+    // max_degree = 0;
+    // tn = tpl_map("ussu", &p, &algebra_name, &module_name, &max_degree);
+    // tpl_load(tn, TPL_MEM, serialized_address, serialized_length);
+    // tpl_unpack(tn, 0);
+    // tpl_free(tn);
+    // printf("p: %d, algebra: %s, module: %s, max_degree: %d", p, algebra_name, module_name, max_degree);
+    // int i;
+    // tpl_node *tn = tpl_map("A(i)", &i);
+    // for(i=0; i<10; i++){
+    //     tpl_pack(tn, 1);
+    // }
+    // tpl_dump(tn, TPL_MEM, &serialized_address, &serialized_length);
+    // tpl_free(tn);
+    // tpl_map("A(i)", &i);
+    // // uint *serialized_address_uint = (uint*) *serialized_address;
+    // // for(uint i = 0; i < *serialized_length; i++){
+    // //     printf("%08x\n", serialized_address_uint[i]);
+    // // }
+    // tpl_load(tn, TPL_MEM, serialized_address, serialized_length);
+    // while (tpl_unpack( tn, 1) > 0){
+    //     printf("%d,", i);
+    // }
+    // printf("\n");  
+}
+
 
 /**/
 int main(int argc, char *argv[]){
@@ -397,7 +498,7 @@ int main(int argc, char *argv[]){
     uint graded_dimension[5] = {1};
     Algebra_computeBasis(algebra, degree - min_degree);
     FiniteDimensionalModule *module = 
-        FiniteDimensionalModule_construct(algebra, min_degree, max_generator_degree, graded_dimension);
+        FiniteDimensionalModule_construct(algebra, "my_module", min_degree, max_generator_degree, graded_dimension);
     // uint output[1] = {1};
     // FiniteDimensionalModule_setAction(module, 1, 0, min_degree, 1, output);
     // FiniteDimensionalModule_setAction(module, 1, 0, min_degree, 1, output);
@@ -411,9 +512,11 @@ int main(int argc, char *argv[]){
     res->module = NULL;
     // MilnorAlgebra_free((MilnorAlgebra*)res->algebra);
     res->algebra = NULL;
+    void *serialized_address;
+    size_t serialized_length;
     Resolution_free(res);
     FiniteDimensionalModule_free(module);
-    return 0;
+    return 0;   
 }
 //*/
 

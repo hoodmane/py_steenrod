@@ -81,8 +81,8 @@ void FreeModule_actOnBasis(Module *this, Vector *result, uint coeff, int op_deg,
     uint output_block_min = FreeModule_operationGeneratorToIndex((FreeModule*)module, module_operation_degree + op_deg, 0, generator_degree, generator_index);
 
     uint output_block_max = output_block_min + num_ops;
-    char output_block_memory[Vector_getContainerSize(this->p)];    
-    Vector *output_block = Vector_initialize(this->p, output_block_memory, NULL, 0, 0);     
+    char output_block_memory[Vector_getSize(this->p, 0, 0)];    
+    Vector *output_block = Vector_initialize(this->p, output_block_memory, 0, 0);     
     Vector_slice(output_block, result, output_block_min, output_block_max); 
     // Now we multiply s * r and write the result to the appropriate position.
     Algebra_multiplyBasisElements(module->module.algebra, output_block, coeff, op_deg, op_idx, module_operation_degree, module_operation_index, generator_degree);

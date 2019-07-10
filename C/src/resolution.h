@@ -46,4 +46,6 @@ void Resolution_free(Resolution *resolution);
 void Resolution_step(Resolution *resolution, uint homological_degree, int degree);
 void Resolution_resolveThroughDegree(Resolution *res, int degree);
 
+void Resolution_serialize(Resolution *res);
+
 #endif // CSTEENROD_RESOLUTION_H

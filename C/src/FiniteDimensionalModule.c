@@ -3,11 +3,13 @@
 #include "FiniteDimensionalModule.h"
 
 // The allocator is horrendous so we're going to separate it out.
-FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint max_basis_degree, uint *graded_dimension);
+FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint name_length, uint max_basis_degree, uint *graded_dimension);
 
-FiniteDimensionalModule *FiniteDimensionalModule_construct(Algebra *algebra, int min_degree, int max_basis_degree, uint *graded_dimension){
-    FiniteDimensionalModule *result = FiniteDimensionalModule_allocate(algebra, max_basis_degree - min_degree, graded_dimension);
+FiniteDimensionalModule *FiniteDimensionalModule_construct(Algebra *algebra, char *name, int min_degree, int max_basis_degree, uint *graded_dimension){
+    uint name_length = strlen(name) + 1;
+    FiniteDimensionalModule *result = FiniteDimensionalModule_allocate(algebra, name_length, max_basis_degree - min_degree, graded_dimension);
     result->module.p = algebra->p;
+    strcpy(result->module.name, name);
     result->module.algebra = algebra;
     result->module.computeBasis = FiniteDimensionalModule_computeBasis;
     result->module.getDimension = FiniteDimensionalModule_getDimension;
@@ -26,9 +28,9 @@ void FiniteDimensionalModule_free(FiniteDimensionalModule *module){
 // This is the grossest allocator.
 // The most important part of the FD module is the 5d ragged array used to fetch actions.
 // It takes a fair bit of effort to lay it out in memory...
-FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint max_basis_degree, uint *graded_dimension){
+FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint name_length, uint max_basis_degree, uint *graded_dimension){
     uint p = algebra->p;
-    uint vector_container_size = Vector_getContainerSize(p);
+    uint name_length_padded = ((name_length + sizeof(uint) - 1)/sizeof(uint)) * sizeof(uint);
     // Count number of triples (x, y, op) with |x| + |op| = |y|.
     // The amount of memory we need to allocate is:
     // # of input_degrees  * sizeof(***Vector)
@@ -63,7 +65,7 @@ FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint
             action_matrix_size_3 += sizeof(Vector**) * number_of_operations;
             action_matrix_size_4 += sizeof(Vector*) * number_of_operations * graded_dimension[input_degree];
             uint vector_size = Vector_getSize(p, graded_dimension[output_degree], 0);
-            action_matrix_size_5 += (vector_container_size + vector_size) * number_of_operations * graded_dimension[input_degree];
+            action_matrix_size_5 += vector_size * number_of_operations * graded_dimension[input_degree];
         }
     }
 
@@ -74,11 +76,13 @@ FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint
 
     FiniteDimensionalModule *result = malloc(
             sizeof(FiniteDimensionalModule)
+            + name_length_padded
             + max_basis_degree * sizeof(uint) // graded_dimension
             + action_matrix_size_5
     );
-    result->graded_dimension = (uint *) (result + 1);
-    char *top_of_action_table = (char *) (result + 1) + max_basis_degree *sizeof(uint);
+    result->module.name = (char *) (result + 1);
+    result->graded_dimension = (uint *) (result->module.name + name_length_padded);
+    char *top_of_action_table = (char *)(result->graded_dimension + max_basis_degree);
     Vector *****current_ptr_1 = (Vector *****) top_of_action_table;
     Vector ****current_ptr_2 = (Vector ****) (top_of_action_table + action_matrix_size_1);
     Vector ***current_ptr_3 = (Vector ***) (top_of_action_table + action_matrix_size_2);
@@ -100,14 +104,13 @@ FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint
             }
             *current_ptr_2 = current_ptr_3;
             uint vector_size = Vector_getSize(p, graded_dimension[output_degree], 0);
-            uint vector_total_size = vector_size + vector_container_size;
             uint number_of_operations = Algebra_getDimension(algebra, output_degree - input_degree, input_degree);
             for(uint operation_idx = 0; operation_idx < number_of_operations; operation_idx ++){
                 *current_ptr_3 = current_ptr_4;
                 for(uint input_idx = 0; input_idx < graded_dimension[input_degree]; input_idx ++ ){
-                    *current_ptr_4 = Vector_initialize(p, current_ptr_5, current_ptr_5 + vector_container_size, graded_dimension[output_degree], 0);
+                    *current_ptr_4 = Vector_initialize(p, current_ptr_5, graded_dimension[output_degree], 0);
                     current_ptr_4 ++;
-                    current_ptr_5 += vector_total_size;
+                    current_ptr_5 += vector_size;
                 }
                 current_ptr_3 ++;
             }
@@ -190,8 +193,8 @@ void FiniteDimensionalModule_actOnBasis(Module *this, Vector *result, uint coeff
         return;
     }  
     // Why do we take this slice?
-    char output_block_memory[Vector_getContainerSize(this->p)];    
-    Vector *output_block = Vector_initialize(this->p, output_block_memory, NULL, 0, 0);     
+    char output_block_memory[Vector_getSize(this->p, 0, 0)];    
+    Vector *output_block = Vector_initialize(this->p, output_block_memory, 0, 0);     
     Vector_slice(output_block, result, 0, output_dimension); 
     Vector *output = FiniteDimensionalModule_getAction(module, op_degree, op_index, mod_degree, mod_index);
     // if(op_degree == 4 && op_index == 0 && mod_degree - this->min_degree == 0 && mod_index == 0){

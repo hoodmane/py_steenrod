@@ -8,6 +8,8 @@
 
 #include "FpVector.h"
 
+// List of structlines to indicate.
+// TODO: generalize to higher filtration elements?
 typedef struct {
     uint length;
     int *degrees;

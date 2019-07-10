@@ -47,21 +47,17 @@ void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism
     uint vector_size = Vector_getSize(p, dimension, 0);
     f->outputs[shifted_degree] = (Vector**)malloc(
         num_gens * sizeof(Vector*) 
-        + num_gens * Vector_getContainerSize(p)
         + num_gens * vector_size
     );
     Vector **vector_ptr_ptr = f->outputs[shifted_degree];
-    char *vector_container_ptr = (char*)(vector_ptr_ptr + num_gens);
-    char *vector_memory_ptr = vector_container_ptr + num_gens * Vector_getContainerSize(p);
+    char *vector_memory_ptr = (char*)(vector_ptr_ptr + num_gens);
     for(uint i = 0; i < num_gens; i++){
-        f->outputs[shifted_degree][i] = Vector_initialize(p, vector_container_ptr, vector_memory_ptr, dimension, 0);
+        f->outputs[shifted_degree][i] = Vector_initialize(p, vector_memory_ptr, dimension, 0);
         vector_ptr_ptr ++;
-        vector_container_ptr += Vector_getContainerSize(p);
         vector_memory_ptr += vector_size;
     }
     assert(vector_ptr_ptr == f->outputs[shifted_degree] + num_gens);
-    assert(vector_container_ptr == (char*)(vector_ptr_ptr) + num_gens * Vector_getContainerSize(p));
-    assert(vector_memory_ptr == vector_container_ptr + num_gens * vector_size);
+    assert(vector_memory_ptr == (char*)(vector_ptr_ptr) + num_gens * vector_size);
 
 }
 

@@ -14,7 +14,8 @@
 
 typedef struct Module {
     uint p;
-    Algebra *algebra;    
+    Algebra *algebra;
+    char *name;
     uint type;
     int min_degree;
     int max_degree;        

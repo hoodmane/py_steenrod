@@ -61,7 +61,7 @@ typedef struct VectorImplementation_s VectorImplementation;
 VectorImplementation *getVectorImplementation(uint p);
 
 typedef struct {
-    uint dimension;
+    uint dimension; // These have to match the definition of Vector in FpVector.h
     uint size;
     uint offset;
 // Private fields:
@@ -143,9 +143,6 @@ uint modPLookup(uint p, uint n){
     return modplookuptable[prime_to_index_map[p]][n];
 }
 
-uint Vector_getContainerSize(uint p __attribute__((unused))){
-    return sizeof(VectorPrivate);
-}
 
 typedef struct {
     uint limb;
@@ -183,6 +180,7 @@ size_t Vector_getSize(uint p, uint dimension, uint offset){
     uint bit_length = getBitlength(p);
     size_t size = (dimension == 0) ? 0 : (getLimbBitIndexPair(p, dimension + offset/bit_length - 1).limb + 1);
     size *= sizeof(uint64);
+    size += sizeof(VectorPrivate);
     return size; // Need extra space for vector fields.
 }
 
@@ -202,19 +200,20 @@ uint Vector_getPaddedDimension(uint p, uint dimension, uint offset){
  *      size_t container_size = Vector_getContainerSize(p);
  *      size_t total_size = container_size + Vector_getSize(p, dimension, offset);
  *      char memory[total_size];
- *      myVector = Vector_initialize(p, memory, memory + container_size, dimension, offset);
+ *      myVector = Vector_initialize(p, memory, dimension, offset);
  */
-Vector *Vector_initialize(uint p, char *container, char *memory, uint dimension, uint offset){
+Vector *Vector_initialize(uint p, char *memory, uint dimension, uint offset){
     assert(offset < 64); // Offset >= 64 leads to undefined behavior!!
     VectorImplementation *vectImpl = getVectorImplementation(p);
-    VectorPrivate *v = (VectorPrivate *) container;
+    VectorPrivate *v = (VectorPrivate *) memory;
     v->implementation = vectImpl;
     v->dimension = dimension;
     v->size = Vector_getSize(p, dimension, offset);
+    size_t limb_size = v->size - sizeof(VectorPrivate);
     v->offset = offset;
-    v->number_of_limbs = (v->size + sizeof(uint64) - 1)/sizeof(uint64);
-    v->limbs = dimension == 0 ? NULL : (uint64*)memory;
-    memset(v->limbs, 0, v->size);
+    v->number_of_limbs = (limb_size + sizeof(uint64) - 1)/sizeof(uint64);
+    v->limbs = dimension == 0 ? NULL : (uint64*)(memory + sizeof(VectorPrivate));
+    memset(v->limbs, 0, limb_size);
     return (Vector*)v;
 }
 
@@ -222,10 +221,10 @@ Vector *Vector_initialize(uint p, char *container, char *memory, uint dimension,
  * Construct a vector
  */
 Vector *Vector_construct(uint p, uint dimension, uint offset){
-    size_t container_size = Vector_getContainerSize(p);
+    size_t container_size = sizeof(VectorPrivate);
     size_t total_size = container_size + Vector_getSize(p, dimension, offset);
     char *memory = malloc(total_size);
-    Vector *result = Vector_initialize(p, memory, memory + container_size, dimension, offset);
+    Vector *result = Vector_initialize(p, memory, dimension, offset);
     return result;
 }
 
@@ -255,7 +254,7 @@ void Vector_assign(Vector *target, Vector *source){
     assert(source->offset == 0); // Vector_assign doesn't handle slices right now.
     VectorPrivate *t = (VectorPrivate*) target;
     VectorPrivate *s = (VectorPrivate*) source;
-    memcpy(t->limbs, s->limbs, s->size);
+    memcpy(t->limbs, s->limbs, s->size - sizeof(VectorPrivate));
 }
 
 /**
@@ -388,7 +387,8 @@ void Vector_slice(Vector *result, Vector *source, uint start, uint end){
     LimbBitIndexPair limb_index = getLimbBitIndexPair(r->implementation->p, start + source->offset/bit_length);
     r->offset = limb_index.bit_index;
     r->size = Vector_getSize(r->implementation->p, r->dimension, r->offset);
-    r->number_of_limbs = r->size/sizeof(uint64);
+    size_t limb_size = r->size - sizeof(VectorPrivate);
+    r->number_of_limbs = limb_size/sizeof(uint64);
     r->limbs = s->limbs + limb_index.limb;
 }
 
@@ -755,30 +755,39 @@ void Vector_print(char *fmt_string, Vector *v){
     printf("%s\n", buffer);
 }
 
+uint Vector_serialize(char *buffer, Vector *v){
+    uint len = 0;
+    VectorPrivate *vect = (VectorPrivate*) v;
+    memcpy(buffer + len, vect, 3*sizeof(uint));
+    len += 3*sizeof(uint);
+    memcpy(buffer + len, vect->limbs, vect->number_of_limbs*sizeof(uint64));
+    len += vect->number_of_limbs*sizeof(uint64);
+    return len;
+}
 
+void Vector_deserialize(char *target_buffer, char *source_buffer){
+
+}
 
 uint Matrix_getSize(uint p, uint rows, uint cols){
     assert(cols < MAX_DIMENSION);
     return sizeof(Matrix) 
-      + rows * (sizeof(Vector*) + Vector_getContainerSize(p)  + Vector_getSize(p, cols, 0));
+      + rows * (sizeof(Vector*) + Vector_getSize(p, cols, 0));
 }
 
 Matrix *Matrix_initialize(char *memory, uint p, uint rows, uint columns)  {
-    uint container_size = Vector_getContainerSize(p);
     uint vector_size = Vector_getSize(p, columns, 0);
     Matrix *matrix = (Matrix*)memory;
     Vector **vector_ptr = (Vector**)(matrix+1);
     char *container_ptr = (char*)(vector_ptr + rows);
-    char *values_ptr = container_ptr + rows * container_size;
     matrix->p = p;
     matrix->rows = rows;
     matrix->columns = columns;
     matrix->matrix = vector_ptr;
     for(uint row = 0; row < rows; row++){
-        *vector_ptr = Vector_initialize(p, container_ptr, values_ptr, columns, 0);
+        *vector_ptr = Vector_initialize(p, container_ptr, columns, 0);
         vector_ptr ++;
-        container_ptr += container_size;
-        values_ptr += vector_size;
+        container_ptr += vector_size;
     }
     return matrix;
 }
@@ -795,7 +804,7 @@ void Matrix_free(Matrix *M){
 
 
 uint Matrix_getSliceSize(uint p, uint rows){
-    return sizeof(Matrix) + rows*(sizeof(Vector*) + Vector_getContainerSize(p));
+    return sizeof(Matrix) + rows*(sizeof(Vector*) + sizeof(VectorPrivate));
 }
 
 Matrix *Matrix_slice(Matrix *M, char *memory, uint row_min, uint row_max, uint column_min, uint column_max){
@@ -813,7 +822,7 @@ Matrix *Matrix_slice(Matrix *M, char *memory, uint row_min, uint row_max, uint c
     Vector *initialized_vector_ptr;
     for(uint i = 0; i < num_rows; i++){
         *matrix_ptr = vector_ptr;
-        initialized_vector_ptr = Vector_initialize(M->p, (char*)vector_ptr, NULL, 0, 0);
+        initialized_vector_ptr = Vector_initialize(M->p, (char*)vector_ptr, 0, 0);
         Vector_slice(initialized_vector_ptr, M->matrix[i], column_min, column_max);
         matrix_ptr ++;
         vector_ptr++;
@@ -845,8 +854,8 @@ void Matrix_printSlice(Matrix *M, uint col_end, uint col_start){
     for(uint i = 0; i < M->rows; i++){
         char buffer[2000];
         uint len = 0;
-        char slice_memory[Vector_getContainerSize(M->p)];
-        Vector *slice = Vector_initialize(M->p, slice_memory, NULL, 0, 0);
+        char slice_memory[sizeof(VectorPrivate)];
+        Vector *slice = Vector_initialize(M->p, slice_memory, 0, 0);
         len += sprintf(buffer + len, "    ");
         Vector_slice(slice, M->matrix[i], 0, col_end);
         len += Vector_toString(buffer + len, slice);
@@ -856,6 +865,19 @@ void Matrix_printSlice(Matrix *M, uint col_end, uint col_start){
         printf("%s\n", buffer);
     }
     printf("\n");
+}
+
+uint Matrix_serialize(char *buffer, Matrix *M){
+    uint len = 0;
+    // (uint*)buffer;
+    *((uint*)(buffer+len)) = M->rows;
+    len += sizeof(uint);
+    *((uint*)(buffer+len)) = M->columns;
+    len += sizeof(uint);
+    for(uint i=0; i<M->rows; i++){
+        len += Vector_serialize(buffer + len, M->matrix[i]);
+    }
+    return len;
 }
 
 void rowReduce(Matrix *M, int *column_to_pivot_row, uint col_end, uint col_start){
