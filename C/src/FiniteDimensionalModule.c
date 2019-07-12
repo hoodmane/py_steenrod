@@ -3,7 +3,7 @@
 #include "FiniteDimensionalModule.h"
 
 // The allocator is horrendous so we're going to separate it out.
-FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint name_length, uint max_basis_degree, uint *graded_dimension);
+FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint name_length, int max_basis_degree, uint *graded_dimension);
 
 FiniteDimensionalModule *FiniteDimensionalModule_construct(Algebra *algebra, char *name, int min_degree, int max_basis_degree, uint *graded_dimension){
     uint name_length = strlen(name) + 1;
@@ -28,7 +28,7 @@ void FiniteDimensionalModule_free(FiniteDimensionalModule *module){
 // This is the grossest allocator.
 // The most important part of the FD module is the 5d ragged array used to fetch actions.
 // It takes a fair bit of effort to lay it out in memory...
-FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint name_length, uint max_basis_degree, uint *graded_dimension){
+FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint name_length, int max_basis_degree, uint *graded_dimension){
     uint p = algebra->p;
     uint name_length_padded = ((name_length + sizeof(uint) - 1)/sizeof(uint)) * sizeof(uint);
     // Count number of triples (x, y, op) with |x| + |op| = |y|.
@@ -53,11 +53,11 @@ FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint
     //  ****    -> ***       -> **Vector   -> *Vector    -> Vector -> uint
     action_matrix_size_1 += max_basis_degree * sizeof(Vector***);
     action_matrix_size_2 += number_of_nonempty_degrees * max_basis_degree * sizeof(Vector**);
-    for(uint input_degree = 0; input_degree < max_basis_degree; input_degree++){
+    for(int input_degree = 0; input_degree < max_basis_degree; input_degree++){
         if(graded_dimension[input_degree] == 0){
             continue;
         }
-        for(uint output_degree = input_degree + 1; output_degree < max_basis_degree; output_degree++){
+        for(int output_degree = input_degree + 1; output_degree < max_basis_degree; output_degree++){
             if(graded_dimension[output_degree] == 0){
                 continue;
             }
@@ -90,14 +90,14 @@ FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint
     char *current_ptr_5 = (char *) (top_of_action_table + action_matrix_size_4);
     result->actions = current_ptr_1; 
     memset(top_of_action_table, 0, action_matrix_size_4);
-    for(uint input_degree = 0; input_degree < max_basis_degree; input_degree++){
+    for(int input_degree = 0; input_degree < max_basis_degree; input_degree++){
         if(graded_dimension[input_degree] == 0){
             current_ptr_1 ++;
             continue;
         }
         *current_ptr_1 = current_ptr_2;
         current_ptr_2 += input_degree + 1;
-        for(uint output_degree = input_degree + 1; output_degree < max_basis_degree; output_degree++){
+        for(int output_degree = input_degree + 1; output_degree < max_basis_degree; output_degree++){
             if(graded_dimension[output_degree] == 0){
                 current_ptr_2 ++;
                 continue;

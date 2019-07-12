@@ -268,7 +268,8 @@ message_handlers["serialize"] = function serialize(data){
     // Module.print("byte_length: ", buffer.byteLength);
     self.postMessage({
         "cmd" : "serialized_matrices",
-        "binary_data" : buffer
+        "binary_data" : buffer,
+        "json_data" : json_string
     }, [buffer]);
     // Module.print("byte_length: ", buffer.byteLength);
     // Module.print(json_string);

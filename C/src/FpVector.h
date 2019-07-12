@@ -143,7 +143,7 @@ uint Vector_toString(char *buffer, Vector *v);
 void Vector_print(char *fmt_string, Vector *v);
 
 void Vector_serialize(char **buffer, Vector *v);
-Vector *Vector_deserialize(char **buffer);
+Vector *Vector_deserialize(uint p, char **buffer);
 
 typedef struct {
     uint p;

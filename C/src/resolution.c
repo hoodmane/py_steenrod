@@ -88,7 +88,7 @@ void Resolution_free(Resolution *res){
         return;
     }
     FreeModuleHomomorphism_free(res->differentials[0]);
-    for(uint i = 0; i < res->max_degree; i++){
+    for(int i = 0; i < res->max_degree; i++){
         FreeModuleHomomorphism_free(res->differentials[i + 1]);
         FreeModule_free(res->modules[i + 1]);
     }
@@ -103,7 +103,7 @@ void Resolution_resolveThroughDegree(Resolution *res, int degree){
 //        }
 //    }
     for(int int_deg = res->min_degree; int_deg < degree; int_deg ++){
-        for(uint hom_deg = 0; hom_deg <= int_deg - res->min_degree; hom_deg++){           
+        for(int hom_deg = 0; hom_deg <= int_deg - res->min_degree; hom_deg++){           
             // printf("(%d, %d)\n", hom_deg, int_deg);
             Resolution_step(res, hom_deg, int_deg);
         }
@@ -342,7 +342,7 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
 uint Resolution_gradedDimensionString(char *buffer, Resolution *resolution){
     uint len = 0;
     len += sprintf(buffer + len, "[\n");
-    for(uint i = 0; i < resolution->max_degree; i++){
+    for(int i = 0; i < resolution->max_degree; i++){
         len += sprintf(buffer + len, "  ");
         len += array_toString(buffer + len, 
                     &resolution->modules[i+1]->number_of_generators_in_degree[i], 
@@ -362,105 +362,146 @@ SerializedResolution *Resolution_serialize(Resolution *res){
     json_object_set_string(root_object, "algebra", res->algebra->name);
     json_object_set_string(root_object, "module", res->module->name);
     json_object_set_number(root_object, "max_homological_degree", res->max_homological_degree);
+
+
+    // Max computed degree
+    JSON_Value *max_computed_degree_value = json_value_init_array();
+    JSON_Array *max_computed_degree_array = json_array(max_computed_degree_value);
+    for(uint i = 0; i < res->max_homological_degree; i++){
+        json_array_append_number(max_computed_degree_array, res->differentials[i+1]->max_computed_degree);
+    }
+    json_object_set_value(root_object, "max_computed_degrees", max_computed_degree_value);
+
     // Number of generators of each free module
     JSON_Value *dimensions_value = json_value_init_array();
     JSON_Array *dimensions_array = json_array(dimensions_value);
     for(uint i = 0; i < res->max_homological_degree; i++){
         FreeModule *M = res->modules[i+1];
+        FreeModuleHomomorphism *f = res->differentials[i+1];
         JSON_Value *current_module_dimensions_value = json_value_init_array();
         JSON_Array *current_module_dimensions_array = json_array(current_module_dimensions_value);
-        for(uint j = 0; j < M->module.max_degree - M->module.min_degree; j++){
+        for(int j = 0; j < f->max_computed_degree - M->module.min_degree; j++){
             json_array_append_number(current_module_dimensions_array, M->number_of_generators_in_degree[j]);
         }
         json_array_append_value(dimensions_array, current_module_dimensions_value);
     }
     json_object_set_value(root_object, "dimensions", dimensions_value);
-    // Matrix sizes and offsets
+
+
+    
+    // differential "outputs" field
     JSON_Value *differentials_value = json_value_init_array();
     JSON_Array *differentials_array = json_array(differentials_value);
     size_t binary_size = 0;
     for(uint i=0; i<res->max_homological_degree; i++){
+        JSON_Value *ds1_value = json_value_init_array();
+        JSON_Array *ds1_array = json_array(ds1_value);
         FreeModuleHomomorphism *f = res->differentials[i+1];
-        JSON_Value *current_differential_value = json_value_init_array();
-        JSON_Array *current_differential_array = json_array(current_differential_value);
-        for(uint j=0; j < f->max_computed_degree; j++){
+        for(int j=0; j < f->max_computed_degree; j++){
             if(f->coimage_to_image_isomorphism[j] == NULL){
-                json_array_append_null(current_differential_array);
+                json_array_append_null(ds1_array);
             } else {
                 Matrix *M = f->coimage_to_image_isomorphism[j];
-                JSON_Value *current_matrix_value = json_value_init_object();
-                JSON_Object *current_matrix_object = json_object(current_matrix_value);
-                json_object_set_number(current_matrix_object, "rows", M->rows);
-                json_object_set_number(current_matrix_object, "columns", M->rows);
+                JSON_Value *matrix_value = json_value_init_object();
+                JSON_Object *matrix_object = json_object(matrix_value);
+                size_t vectors_size = 0;
+                for(uint k=0; k<f->source->number_of_generators_in_degree[j]; k++){
+                    vectors_size += f->outputs[j][k]->size;
+                }
+                json_object_set_number(matrix_object, "output_vectors_address", binary_size);                
+                json_object_set_number(matrix_object, "output_vectors_size", vectors_size);
+                binary_size += vectors_size;
+                json_object_set_number(matrix_object, "matrix_rows", M->rows);
+                json_object_set_number(matrix_object, "matrix_columns", M->rows);
                 size_t matrix_size = Matrix_getSize(M->p, M->rows, M->columns);
-                json_object_set_number(current_matrix_object, "size", matrix_size);
-                json_object_set_number(current_matrix_object, "address", binary_size);
+                json_object_set_number(matrix_object, "matrix_size", matrix_size);
+                json_object_set_number(matrix_object, "matrix_address", binary_size);
                 binary_size += matrix_size;
-                json_array_append_value(current_differential_array, current_matrix_value);
-            }
+                json_array_append_value(ds1_array, matrix_value);
+            }            
         }
-        json_array_append_value(differentials_array, current_differential_value);
+        json_array_append_value(differentials_array, ds1_value);
     }
-    json_object_set_value(root_object, "matrices", differentials_value);
+    json_object_set_value(root_object, "differential_data", differentials_value);
     SerializedResolution *result = malloc(sizeof(SerializedResolution) + binary_size);
     result->json_data = json_serialize_to_string(root_value);
     result->json_size = strlen(result->json_data);
-    char *serialized_matrices = (char *)(result + 1);
+    char *binary_data = (char *)(result + 1);
     result->binary_size = binary_size;   
-    result->binary_data = serialized_matrices;
+    result->binary_data = binary_data;
+
     for(uint i=0; i<res->max_homological_degree; i++){
         FreeModuleHomomorphism *f = res->differentials[i+1];
-        for(uint j=0; j < f->max_computed_degree; j++){
+        for(int j=0; j < f->max_computed_degree; j++){
             if(f->coimage_to_image_isomorphism[j] == NULL){
                 continue;
+            }            
+            for(uint k=0; k<f->source->number_of_generators_in_degree[j]; k++){
+                  Vector_serialize(&binary_data, f->outputs[j][k]);
             }
-            Matrix_serialize(&serialized_matrices, f->coimage_to_image_isomorphism[j]);
+            Matrix_serialize(&binary_data, f->coimage_to_image_isomorphism[j]);
         }
     }
     return result;
+}
 
-
-
-    // tpl_node *tn = tpl_map(
-    //     "u" // prime
-    //     "s"// algebra name
-    //     "s"// module name
-    //     "u" // max degree
-    //     // "A(u)#"// resolution generators
-    //     //"A(uuA(B))#" // coimage to image iso matrix
-    //     //""
-    //     ,
-    //     &p, &algebra_name, &module_name, &max_degree
-    // );
-    // tpl_pack(tn, 0);
-    // tpl_dump(tn, TPL_MEM, serialized_address, serialized_length);
-    // tpl_free(tn);
-    // p = 0;
-    // algebra_name = NULL;
-    // module_name = NULL;
-    // max_degree = 0;
-    // tn = tpl_map("ussu", &p, &algebra_name, &module_name, &max_degree);
-    // tpl_load(tn, TPL_MEM, serialized_address, serialized_length);
-    // tpl_unpack(tn, 0);
-    // tpl_free(tn);
-    // printf("p: %d, algebra: %s, module: %s, max_degree: %d", p, algebra_name, module_name, max_degree);
-    // int i;
-    // tpl_node *tn = tpl_map("A(i)", &i);
-    // for(i=0; i<10; i++){
-    //     tpl_pack(tn, 1);
+Resolution *Resolution_deserialize(
+    FiniteDimensionalModule *module, SerializedResolution *sres,
+    void (*addClass)(uint hom_deg, int int_deg, char *cocycle_name),
+    void (*addStructline)(
+        uint source_hom_deg, int source_int_deg, uint source_idx, 
+        uint target_hom_deg, int target_int_deg, uint target_idx
+    )    
+){
+    JSON_Value *root_value = json_parse_string(sres->json_data);
+    JSON_Object *root_object = json_object(root_value);
+    uint max_homological_degree = json_object_get_number(root_object, "max_homological_degree");
+    JSON_Array *dimensions = json_object_get_array(root_object, "dimensions");
+    JSON_Array *max_computed_degrees = json_object_get_array(root_object, "max_computed_degrees");
+    Resolution *res = Resolution_construct(module, max_homological_degree, addClass, addStructline);
+    // Construct new FreeModule.
+    for(uint homological_degree = 0; homological_degree < max_homological_degree; homological_degree++){
+        res->max_homological_degree ++;
+        FreeModule *F = 
+            FreeModule_construct(res->algebra, res->min_degree, res->max_degree);
+        res->modules[homological_degree + 1] = F;
+        JSON_Array *cur_dimensions = json_array_get_array(dimensions, homological_degree);
+        for(uint i = 0; i < json_array_get_count(cur_dimensions); i++){
+            F->number_of_generators_in_degree[i] = json_array_get_number(cur_dimensions, i);
+            FreeModule_ConstructBlockOffsetTable(F, i);
+        }
+        FreeModuleHomomorphism *f =
+            FreeModuleHomomorphism_construct(
+                res->modules[homological_degree + 1], 
+                (Module*)res->modules[homological_degree],
+                res->max_degree
+            );
+        res->differentials[homological_degree + 1] = f;
+        int max_computed_degree = json_array_get_number(max_computed_degrees, homological_degree); 
+        for(int i=0; i < max_computed_degree; i++){
+            FreeModuleHomomorphism_AllocateSpaceForNewGenerators(f, i, f->source->number_of_generators_in_degree[i]);
+        }
+    }
+    // for(uint i = 0; i < homology_dimension; i++){
+    //     FreeModuleHomomorphism_setOutput(current_differential, degree, i, slice);
     // }
-    // tpl_dump(tn, TPL_MEM, &serialized_address, &serialized_length);
-    // tpl_free(tn);
-    // tpl_map("A(i)", &i);
-    // // uint *serialized_address_uint = (uint*) *serialized_address;
-    // // for(uint i = 0; i < *serialized_length; i++){
-    // //     printf("%08x\n", serialized_address_uint[i]);
-    // // }
-    // tpl_load(tn, TPL_MEM, serialized_address, serialized_length);
-    // while (tpl_unpack( tn, 1) > 0){
-    //     printf("%d,", i);
-    // }
-    // printf("\n");  
+    JSON_Array *matrices_outer_array = json_object_get_array(root_object, "differential_data");
+    char *binary_data = sres->binary_data;
+    for(uint i=0; i<res->max_homological_degree; i++){
+        JSON_Array *matrices_inner_array = json_array_get_array(matrices_outer_array, i);        
+        FreeModuleHomomorphism *f = res->differentials[i+1];
+        for(int j=0; j < f->max_computed_degree; j++){
+            JSON_Object *obj = json_array_get_object(matrices_inner_array, j);
+            if(obj == NULL){
+                continue;
+            }
+            for(uint k=0; k<f->source->number_of_generators_in_degree[j]; k++){
+                f->outputs[j][k] = Vector_deserialize(res->algebra->p, &binary_data);
+            }            
+            f->coimage_to_image_isomorphism[j] = Matrix_deserialize(&binary_data);
+        }
+    }
+    return res;
 }
 
 size_t SerializedResolution_getJSONSize(SerializedResolution *sres){
@@ -536,13 +577,16 @@ int main(int argc, char *argv[]){
     // degree--;
     Resolution *res = Resolution_construct(module, degree, NULL, NULL);
     Resolution_resolveThroughDegree(res, degree);
+    SerializedResolution *sres = Resolution_serialize(res);
+    Resolution *res2 = Resolution_deserialize(module, sres, NULL, NULL);
+    Matrix_printSlice(res->differentials[3]->coimage_to_image_isomorphism[8], 5,64);
+    Matrix_printSlice(res2->differentials[3]->coimage_to_image_isomorphism[8],5,64);
+    
     for(int i = degree - 1 - res->min_degree; i >= 0; i--){
         printf("stage %*d: ", 2, i);
         array_print("%s\n", &res->modules[i+1]->number_of_generators_in_degree[i], degree - i - res->min_degree);
     }       
-    res->module = NULL;
     // MilnorAlgebra_free((MilnorAlgebra*)res->algebra);
-    res->algebra = NULL;
     Resolution_free(res);
     FiniteDimensionalModule_free(module);
     return 0;   

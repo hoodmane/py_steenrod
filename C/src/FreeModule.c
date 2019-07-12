@@ -43,7 +43,7 @@ void FreeModule_free(FreeModule *module){
         return;
     }
     FreeModuleInternal *M = (FreeModuleInternal*) module;
-    for(uint i = 0; i < module->module.max_degree - module->module.min_degree; i++){
+    for(int i = 0; i < module->module.max_degree - module->module.min_degree; i++){
         free(M->generator_to_index_table[i]);
     }
     free(module);

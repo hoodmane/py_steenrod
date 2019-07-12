@@ -279,17 +279,17 @@ uint Binomial(uint p, int n, int k){
 }
 
 
-uint * xi_degrees[MAX_PRIME_INDEX] = {0};
-uint * tau_degrees[MAX_PRIME_INDEX] = {0};
+int * xi_degrees[MAX_PRIME_INDEX] = {0};
+int * tau_degrees[MAX_PRIME_INDEX] = {0};
 
 /**
  * Build the table of degrees of xi and tau.
  */
 void initializeXiTauDegrees(uint p){
-    uint * xi = (uint*)malloc(MAX_XI_TAU * sizeof(uint));
-    uint * tau = (uint*)malloc(MAX_XI_TAU * sizeof(uint));
-    uint current_xi_degree = 0;
-    uint p_to_the_i = 1;
+    int *xi = malloc(MAX_XI_TAU * sizeof(uint));
+    int *tau = malloc(MAX_XI_TAU * sizeof(uint));
+    int current_xi_degree = 0;
+    int p_to_the_i = 1;
     for(uint i = 0; i < MAX_XI_TAU; i++ ){
         current_xi_degree += p_to_the_i;
         xi[i] = current_xi_degree;
@@ -301,11 +301,11 @@ void initializeXiTauDegrees(uint p){
 }
 
 
-uint* getTauDegrees(uint p) {
+int* getTauDegrees(uint p) {
     return tau_degrees[prime_to_index_map[p]];
 }
 
-uint* getXiDegrees(uint p) {
+int* getXiDegrees(uint p) {
     return xi_degrees[prime_to_index_map[p]];
 }
 

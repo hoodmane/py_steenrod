@@ -18,8 +18,10 @@ html, body {
 }
 
 #main {
-        height: 100%;
-        min-height: 100%;
+    height: 100%;
+    min-height: 100%;
+    /* position: absolute; */
+    margin-left: -50px;
 }
 
 #main-svg {
@@ -102,57 +104,62 @@ document.body.prepend(main_div);
 let worker = {};
 worker.terminate = function(){};
 
-IO.loadFromServer("modules/module_registry.json").then((json) => {
-    let module_groups = groupBy(json, "p");
-    let heading = document.createElement("h1");
-    heading.innerHTML = "Adams E2 Pages";
-    let table = document.createElement("table");
-    let max_rows = Math.max(...Object.values(module_groups).map(x => x.length));
-    let table_rows = [];
-    for(let i = 0; i < max_rows; i++){
-        let tr = document.createElement("tr");
-        tr.id = `row${i}`;
-        table.appendChild(tr);
-        table_rows.push(tr);
-    }
-    for(let [p, modules] of Object.entries(module_groups)){
-        let i = -1;
-        for(let module of modules){
-            i++;
-            let tdA = document.createElement("td");
-            tdA.style.width = "150px"
-            tdA.className = "module_${p}";
-            // let tdB = document.createElement("td");
-            // tdB.className = "description";
-            let a = document.createElement("a");
-            let dictionary = {"module" : module.file_name, "degree" : 50};
-            a.href = URLHashFromDictionary(dictionary);
-            // a.onclick = () => main();
-            a.innerHTML = katexMathInDelims(module["name"]);
-            tdA.appendChild(a);
-            // tdB.innerHTML = module['description'];
-            table_rows[i].appendChild(tdA);
-            // if(module['description']){
-            //     tr.appendChild(tdB);
-            // }       
+function display_listing(){
+    let page_indicator = document.getElementById('page_indicator') || {};
+    page_indicator.innerText = "";
+    main_div.style.display = 'none';
+    IO.loadFromServer("modules/module_registry.json").then((json) => {
+        let module_groups = groupBy(json, "p");
+        let heading = document.createElement("h1");
+        heading.innerHTML = "Adams E2 Pages";
+        let table = document.createElement("table");
+        let max_rows = Math.max(...Object.values(module_groups).map(x => x.length));
+        let table_rows = [];
+        for(let i = 0; i < max_rows; i++){
+            let tr = document.createElement("tr");
+            tr.id = `row${i}`;
+            table.appendChild(tr);
+            table_rows.push(tr);
         }
-    }
-    document.body.appendChild(heading);    
-    document.body.appendChild(table);
-})
+        for(let [p, modules] of Object.entries(module_groups)){
+            let i = -1;
+            for(let module of modules){
+                i++;
+                let tdA = document.createElement("td");
+                tdA.style.width = "150px"
+                tdA.className = "module_${p}";
+                // let tdB = document.createElement("td");
+                // tdB.className = "description";
+                let a = document.createElement("a");
+                let dictionary = {"module" : module.file_name, "degree" : 50};
+                a.href = URLHashFromDictionary(dictionary);
+                // a.onclick = () => main();
+                a.innerHTML = katexMathInDelims(module["name"]);
+                tdA.appendChild(a);
+                // tdB.innerHTML = module['description'];
+                table_rows[i].appendChild(tdA);
+                // if(module['description']){
+                //     tr.appendChild(tdB);
+                // }       
+            }
+        }
+        document.body.appendChild(heading);    
+        document.body.appendChild(table);
+    });
+}
 
 function main(){
     let params = getURLDictionary();
     if(params.module){
         worker.terminate();
-        main_div.style.display = '';
+        // main_div.style.display = '';
+        // main_div.style.position = 'absolute';
+        // main_div.style.left = '20px';
         // console.log(main_div.offsetHeight);
         startResolution(params);
     } else {
         worker.terminate();        
-        let page_indicator = document.getElementById('page_indicator') || {};
-        page_indicator.innerText = "";
-        main_div.style.display = 'none';
+        display_listing();
         // main_div.style.minHeight = 0;
         // console.log(main_div.offsetHeight);
     }
@@ -245,6 +252,7 @@ message_handlers["cocycle_result"] = function cocycle_result(data){
 }
 
 message_handlers["serialized_matrices"] = function serialized_matrices(data){
+    console.log(data.json_data);
     let element = document.createElement('a');
     let file_name = "test.bin";
     let dataView = new DataView(data.binary_data);
@@ -253,7 +261,7 @@ message_handlers["serialized_matrices"] = function serialized_matrices(data){
     element.setAttribute('download', file_name);
     element.style.display = 'none';
     document.body.appendChild(element);
-    element.click();
+    // element.click();
     document.body.removeChild(element);
 }
 

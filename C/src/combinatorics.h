@@ -59,7 +59,7 @@ uint BinomialOdd(uint p, int n, int k);
 // Get the degrees of xi_i and tau_i. 
 // We only work with xi_i for i < 10 -- xi_10 is at least of degree 2^10 = 1024, 
 // so probably we'll never get out that far.
-uint* getXiDegrees(uint);
-uint* getTauDegrees(uint);
+int* getXiDegrees(uint);
+int* getTauDegrees(uint);
 
 #endif //CSTEENROD_COMBINATORICS_H

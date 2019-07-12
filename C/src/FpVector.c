@@ -753,7 +753,7 @@ uint Vector_toString(char *buffer, Vector *vector){
 void Vector_print(char *fmt_string, Vector *v){
     char buffer[10000];
     Vector_toString(buffer, v);
-    printf("%s\n", buffer);
+    printf(fmt_string, buffer);
 }
 
 void Vector_serialize(char **buffer, Vector *v){
@@ -765,8 +765,9 @@ void Vector_serialize(char **buffer, Vector *v){
     *buffer += v->size;
 }
 
-Vector *Vector_deserialize(char **source_buffer){
+Vector *Vector_deserialize(uint p, char **source_buffer){
     VectorPrivate *v = (VectorPrivate*)*source_buffer;
+    v->implementation = getVectorImplementation(p);
     v->limbs = (uint64*)(*source_buffer + sizeof(VectorPrivate));
     *source_buffer += v->size;
     return (Vector*)v;
@@ -795,22 +796,28 @@ Matrix *Matrix_initialize(char *memory, uint p, uint rows, uint columns)  {
 
 void Matrix_serialize(char **buffer, Matrix *M){
     size_t size = Matrix_getSize(M->p, M->rows, M->columns);
-    memcpy(*buffer, M, size);
-    *buffer += size;
+    memcpy(*buffer, M, sizeof(Matrix));
+    *buffer += sizeof(Matrix);
+    *buffer += M->rows * sizeof(Vector*);
+    for(uint row = 0; row < M->rows; row++){
+        Vector_serialize(buffer, M->matrix[row]);
+    }
 }
 
 Matrix *Matrix_deserialize(char **buffer){
-    Matrix *matrix = (Matrix*)*buffer;
+    Matrix *M = (Matrix*)*buffer;
+    char *start_ptr = *buffer;
     *buffer += sizeof(Matrix);
-    Vector **vector_ptr = (Vector**)buffer;
-    matrix->matrix = vector_ptr;
-    uint rows = matrix->rows;    
+    Vector **vector_ptr = (Vector**)*buffer;
+    M->matrix = vector_ptr;
+    uint rows = M->rows;    
     *buffer += rows * sizeof(Vector*);
     for(uint row = 0; row < rows; row++){
-        *vector_ptr = Vector_deserialize(buffer);
+        *vector_ptr = Vector_deserialize(M->p, buffer);
         vector_ptr ++;
     }
-    return matrix;
+    assert(start_ptr + Matrix_getSize(M->p, M->rows, M->columns) == *buffer);
+    return M;
 }
 
 Matrix *Matrix_construct(uint p,  uint rows, uint columns)  {
@@ -824,7 +831,7 @@ void Matrix_free(Matrix *M){
 }
 
 
-uint Matrix_getSliceSize(uint p, uint rows){
+uint Matrix_getSliceSize(uint p __attribute__((unused)), uint rows){
     return sizeof(Matrix) + rows*(sizeof(Vector*) + sizeof(VectorPrivate));
 }
 

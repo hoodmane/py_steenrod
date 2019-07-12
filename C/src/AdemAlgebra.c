@@ -224,7 +224,7 @@ void AdemAlgebra_generateBasis(Algebra *this, int max_degree){
             max_degree * sizeof(khash_t(monomial_index_map) *)
         );
     khash_t(monomial_index_map) **name_table = algebra->basis_element_to_index_map;
-    for(uint k = old_max_degree; k < max_degree; k++){
+    for(int k = old_max_degree; k < max_degree; k++){
         name_table[k] = kh_init(monomial_index_map);
     }
     if(algebra->public_algebra.generic){
@@ -330,7 +330,7 @@ static void AdemAlgebra__generateBasisGeneric_degreen(AdemAlgebraInternal *algeb
     // First we need to know how many bocksteins we'll use so we know how much degree
     // to assign to the Ps. The Ps all have degree divisible by q=2p-2, so num_bs needs to
     // be congruent to degree mod q.
-    for(uint num_bs = residue; num_bs < MAX_XI_TAU && num_bs <= n; num_bs += q){
+    for(uint num_bs = residue; num_bs < MAX_XI_TAU && num_bs <= (uint)n; num_bs += q){
         uint P_deg = (n - num_bs)/q;
         AdemBasisElement_list P_list = algebra->even_basis_table[P_deg];
         for(int i = P_list.length-1; i>=0; i--){
@@ -838,12 +838,12 @@ void AdemAlgebra__generateExcessTable(AdemAlgebraInternal *algebra, int old_max_
         uint cur_excess = 0;
         for(uint i=0; i < dim; i++){
             AdemBasisElement *elt = AdemAlgebra_basisElement_fromIndex((AdemAlgebra*)algebra, n, i);
-            for(uint j=cur_excess; j<elt->excess; j++){
+            for(int j=cur_excess; j<elt->excess; j++){
                 algebra->excess_table[n][j] = i;
             }
             cur_excess = elt->excess;
         }
-        for(uint j=cur_excess; j<n; j++){
+        for(int j=cur_excess; j<n; j++){
             algebra->excess_table[n][j] = dim;
         }        
     }
@@ -851,7 +851,7 @@ void AdemAlgebra__generateExcessTable(AdemAlgebraInternal *algebra, int old_max_
 
 void AdemAlgebra_freeBasis(AdemAlgebra *public_algebra){
     AdemAlgebraInternal *algebra = (AdemAlgebraInternal *) public_algebra;
-    for(uint n = 0; n < public_algebra->algebra.max_degree; n++){
+    for(int n = 0; n < public_algebra->algebra.max_degree; n++){
         free(algebra->basis_table[n].list);
     }
 }
@@ -1002,7 +1002,7 @@ static void AdemAlgebra__makeMonoAdmissible2(
 ){
     AdemAlgebraInternal *algebra = (AdemAlgebraInternal*)public_algebra;
     // Check for admissibility;
-    while(idx < 0 || idx == monomial->P_length - 1 || monomial->Ps[idx] >= 2*monomial->Ps[idx + 1]){
+    while(idx < 0 || (uint)idx == monomial->P_length - 1 || monomial->Ps[idx] >= 2*monomial->Ps[idx + 1]){
         if(idx < 0 || stop_early){
             // Admissible so write monomial to result.
             uint idx = AdemAlgebra_basisElement_toIndex(public_algebra, monomial);
@@ -1058,7 +1058,7 @@ static void AdemAlgebra__makeMonoAdmissibleGeneric(
     // Check for admissibility    
     uint b1 = (monomial->bocksteins >> idx) & 1;
     uint b2 = (monomial->bocksteins >> (idx+1)) & 1;
-    while(idx < 0 || idx == monomial->P_length - 1 || monomial->Ps[idx] >= p*monomial->Ps[idx + 1] + b2){
+    while(idx < 0 || (uint)idx == monomial->P_length - 1 || monomial->Ps[idx] >= p*monomial->Ps[idx + 1] + b2){
         if(idx < 0 || stop_early){
             // Admissible so write monomial to result.
             uint idx = AdemAlgebra_basisElement_toIndex(public_algebra, monomial);

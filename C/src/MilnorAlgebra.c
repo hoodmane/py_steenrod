@@ -144,13 +144,13 @@ MilnorBasisElement_list MilnorAlgebra_getBasis(MilnorAlgebra *public_algebra, in
 // However, we keep it around so that if we need to extend the table we don't have to redo our work.
 void MilnorAlgebra__generatePpartTable(MilnorAlgebraInternal *algebra, int new_max_degree) {
     uint p = algebra->public_algebra.algebra.p;
-    uint *xi_degrees = getXiDegrees(p);
+    int *xi_degrees = getXiDegrees(p);
 
     uint profile_list[MAX_XI_TAU];
     for(uint idx = 0;  idx < MAX_XI_TAU; idx ++){
         profile_list[idx] = Profile__getExponent(algebra->public_algebra.profile, p, idx) - 1;
     }
-    uint old_max_degree = algebra -> P_table_max_degree;
+    int old_max_degree = algebra -> P_table_max_degree;
     if(new_max_degree < old_max_degree){
         return;
     }
@@ -199,7 +199,7 @@ void MilnorAlgebra__generatePpartTable(MilnorAlgebraInternal *algebra, int new_m
         // Now populate the tables.
         // Loop over the highest degree xi_i in the new monomial
         for(uint xi = 0; xi < MAX_XI_TAU; xi ++){
-            uint xi_degree = xi_degrees[xi];
+            int xi_degree = xi_degrees[xi];
             if(xi_degree > current_degree){
                 break;
             }
@@ -245,7 +245,7 @@ void MilnorAlgebra__freePPartTable(MilnorAlgebraInternal *algebra){
     if(algebra->P_table == NULL){
         return;
     }
-    uint max_degree = algebra -> P_table_max_degree;
+    int max_degree = algebra -> P_table_max_degree;
     P_part_list *degree_table = algebra->P_table;
     P_part_list **tau_table = algebra->P_table_by_P_length;
     for(int current_degree = 0; current_degree < max_degree; current_degree++){
@@ -276,7 +276,7 @@ void MilnorAlgebra__freePPartTable(MilnorAlgebraInternal *algebra){
 void MilnorAlgebra__generateQpartTable(MilnorAlgebraInternal *algebra, int new_max_degree){
     uint p = algebra->public_algebra.algebra.p;
     uint q = 2*(p-1);
-    uint *tau_degrees = getTauDegrees(p);
+    int *tau_degrees = getTauDegrees(p);
     uint profile = algebra->public_algebra.profile.q_part;
 
     uint old_max_tau = algebra->Q_table_max_tau;
@@ -392,7 +392,7 @@ void MilnorAlgebra_generateBasis(Algebra *this, int max_degree) {
             max_degree * sizeof(khash_t(monomial_index_map) *)
         );
     khash_t(monomial_index_map) **name_table = algebra->basis_element_to_index_map;
-    for(uint k = old_max_degree; k < max_degree; k++){
+    for(int k = old_max_degree; k < max_degree; k++){
         name_table[k] = kh_init(monomial_index_map);
     }
     if(algebra->public_algebra.generic){
@@ -423,7 +423,7 @@ void MilnorAlgebra_freeBasis(MilnorAlgebra *public_algebra){
         MilnorAlgebra__freeQPartTable(algebra);
     }
 
-    for(uint k = 0; k < algebra->public_algebra.algebra.max_degree; k++){
+    for(int k = 0; k < algebra->public_algebra.algebra.max_degree; k++){
         kh_destroy(monomial_index_map, algebra->basis_element_to_index_map[k]);
     }
     free(algebra->basis_element_to_index_map);
@@ -477,7 +477,7 @@ void MilnorAlgebra__generateBasisGeneric(MilnorAlgebraInternal *algebra, int old
         MilnorBasisElement degree_list_buffer[MAX_DIMENSION];
         for(uint i = 0; i < q_list.length; i++) {
             Q_part q_part = q_list.list[i];
-            uint q_deg = q_part.degree;
+            int q_deg = q_part.degree;
             // The q_parts in a given residue class are ordered increasing in degree
             // so if this one is too big so are all later ones.
             if(q_deg > degree){
@@ -716,8 +716,8 @@ void MilnorAlgebra__multiplyQpart(MilnorAlgebraInternal *algebra, uint *output, 
     uint p = algebra->public_algebra.algebra.p;
     uint q;
     q = 2*p-2;
-    uint *tau_degrees = getTauDegrees(p);
-    uint *xi_degrees = getXiDegrees(p);
+    int *tau_degrees = getTauDegrees(p);
+    int *xi_degrees = getXiDegrees(p);
     int p_degree = m1->p_degree;
     int q_degree = m1->q_degree;
     uint idx = MilnorAlgebra_basisElement_toIndex((MilnorAlgebra*)algebra, m1);

@@ -229,8 +229,8 @@ MilnorBasisElement *MilnorAlgebra_basisElement_fromString(MilnorAlgebra * algebr
     free(tofree);
     tofree = NULL;
     string = NULL;
-    uint* tau_degrees = getTauDegrees(p);
-    uint* xi_degrees = getXiDegrees(p);
+    int* tau_degrees = getTauDegrees(p);
+    int* xi_degrees = getXiDegrees(p);
     uint Q_bit_string = 0;
     for(uint i = 0; i < Q_part_len; i++){
         Q_bit_string += (1 << Q_part[i]);
