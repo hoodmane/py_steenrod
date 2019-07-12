@@ -195,7 +195,7 @@ function startResolution(dict){
         window.dss = dss;        
         sseq.offset_size = 0.1
         dss.getPageDescriptor = (page) => katexMathInDelims(module.name);        
-        sseq.display();
+        sseq.display(main_div);
         worker.postMessage({
             "cmd" : "resolve",
             "module" : module,
