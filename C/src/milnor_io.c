@@ -123,7 +123,7 @@ uint MilnorAlgebra_basisElementIndex_toString(Algebra *this, char *buffer, int d
 
 uint MilnorAlgebra_basisElement_toString(char *buffer, MilnorAlgebra *A, MilnorBasisElement *b){
     if(b->p_length == 0 && b->q_part == 0){
-        buffer[0] = '0';
+        buffer[0] = '1';
         buffer[1] = '\0';
         return 1;
     }

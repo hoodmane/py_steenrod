@@ -211,7 +211,7 @@ function sseqClickHandler(){
     }
     c = sseq.display_class_to_real_class.get(c);
     worker.postMessage({
-        "cmd" : "get_cocyle",
+        "cmd" : 'get_cocycle',//"get_eta_map",
         "x" : c.x,
         "y" : c.y,
         "idx" : c.idx
@@ -261,7 +261,7 @@ message_handlers["serialized_matrices"] = function serialized_matrices(data){
     element.setAttribute('download', file_name);
     element.style.display = 'none';
     document.body.appendChild(element);
-    // element.click();
+    element.click();
     document.body.removeChild(element);
 }
 

@@ -24,7 +24,19 @@ void Module_actOnBasis_function(Module *this, Vector *result, uint coeff, int op
     Module_actOnBasis(this, result, coeff, op_degree, op_index, mod_degree, mod_index);
 }
 
-
+void Module_actOnElement(Module *this, Vector *result, uint coeff, int op_deg, uint op_idx, int module_degree, Vector *module_element){
+    assert(module_element->dimension == Module_getDimension(this, module_degree)); 
+    for(
+        VectorIterator it = Vector_getIterator(module_element);
+        it.has_more;
+        it = Vector_stepIterator(it)
+    ){
+        if(it.value != 0){
+            uint c = modPLookup(this->p, it.value*coeff);
+            Module_actOnBasis(this, result, c, op_deg, op_idx, module_degree, it.index);
+        }
+    }
+}
 
 /*
 #include "milnor.h"

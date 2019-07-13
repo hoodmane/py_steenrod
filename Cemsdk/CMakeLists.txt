@@ -15,11 +15,16 @@ SET(EXTRA_EXPORTED_RUNTIME_METHODS
 )
 SET(EXPORTED_FUNCTIONS "'_initializePrime'")
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
-    '_Vector_construct', '_Vector_pack', '_Vector_unpack', '_Vector_print', '_Vector_free'")
+    '_Vector_construct', '_Vector_pack', \
+    '_Vector_unpack', '_Vector_print', \
+    '_Vector_setEntry', '_Vector_getEntry', \
+    '_Vector_free'"
+)
 
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
     '_Algebra_computeBasis_function', '_Algebra_getDimension_function', \
-    '_Algebra_multiplyBasisElements_function', '_Algebra_basisElementToString_function'")
+    '_Algebra_multiplyBasisElements_function', '_Algebra_basisElementToString_function'"
+)
 
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
     '_MilnorAlgebra_construct', '_MilnorAlgebra_free', \
@@ -65,6 +70,13 @@ SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
     '_SerializedResolution_getBinarySize', '_SerializedResolution_getBinaryData'"
 )
 
+SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
+    '_ResolutionHomomorphism_construct', '_ResolutionHomomorphism_setBaseMap', \
+    '_ResolutionHomomorphism_baseMapReady', '_ResolutionHomomorphism_extend', \
+    '_ResolutionHomomorphism_getMap'"
+)
+
+
 SET(EMCC_EXPORT_FLAGS "-s EXTRA_EXPORTED_RUNTIME_METHODS=\"${EXTRA_EXPORTED_RUNTIME_METHODS}\"")
 SET(EMCC_EXPORT_FLAGS "${EMCC_EXPORT_FLAGS} -s EXPORTED_FUNCTIONS=\"[${EXPORTED_FUNCTIONS}]\"")
 SET(EMCC_EXPORT_FLAGS "${EMCC_EXPORT_FLAGS} -s RESERVED_FUNCTION_POINTERS=20")
@@ -98,8 +110,10 @@ add_executable(CSteenrod
         ../C/src/AdemAlgebra.h
         ../C/src/AdemAlgebra.c
         ../C/src/adem_io.c        
-        ../C/src/resolution.h
-        ../C/src/resolution.c
+        ../C/src/Resolution.h
+        ../C/src/Resolution.c
+        ../C/src/ResolutionHomomorphism.h
+        ../C/src/ResolutionHomomorphism.c        
     )
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")

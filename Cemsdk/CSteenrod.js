@@ -1096,11 +1096,11 @@ function updateGlobalBufferViews() {
 
 
 var STATIC_BASE = 1024,
-    STACK_BASE = 20384,
+    STACK_BASE = 21824,
     STACKTOP = STACK_BASE,
-    STACK_MAX = 5263264,
-    DYNAMIC_BASE = 5263264,
-    DYNAMICTOP_PTR = 20128;
+    STACK_MAX = 5264704,
+    DYNAMIC_BASE = 5264704,
+    DYNAMICTOP_PTR = 21568;
 
 
 
@@ -1486,7 +1486,7 @@ var ASM_CONSTS = [];
 
 
 
-// STATICTOP = STATIC_BASE + 19360;
+// STATICTOP = STATIC_BASE + 20800;
 /* global initializers */ /*__ATINIT__.push();*/
 
 
@@ -1497,7 +1497,7 @@ var ASM_CONSTS = [];
 
 
 /* no memory initializer */
-var tempDoublePtr = 20368
+var tempDoublePtr = 21808
 
 function copyTempFloat(ptr) { // functions, because inlining this code increases code size too much
   HEAP8[tempDoublePtr] = HEAP8[ptr];
@@ -1777,6 +1777,11 @@ var _Module_computeBasis_function = Module["_Module_computeBasis_function"] = fu
 var _Module_getDimension_function = Module["_Module_getDimension_function"] = function() {  return Module["asm"]["_Module_getDimension_function"].apply(null, arguments) };
 var _Profile_construct = Module["_Profile_construct"] = function() {  return Module["asm"]["_Profile_construct"].apply(null, arguments) };
 var _Profile_free = Module["_Profile_free"] = function() {  return Module["asm"]["_Profile_free"].apply(null, arguments) };
+var _ResolutionHomomorphism_baseMapReady = Module["_ResolutionHomomorphism_baseMapReady"] = function() {  return Module["asm"]["_ResolutionHomomorphism_baseMapReady"].apply(null, arguments) };
+var _ResolutionHomomorphism_construct = Module["_ResolutionHomomorphism_construct"] = function() {  return Module["asm"]["_ResolutionHomomorphism_construct"].apply(null, arguments) };
+var _ResolutionHomomorphism_extend = Module["_ResolutionHomomorphism_extend"] = function() {  return Module["asm"]["_ResolutionHomomorphism_extend"].apply(null, arguments) };
+var _ResolutionHomomorphism_getMap = Module["_ResolutionHomomorphism_getMap"] = function() {  return Module["asm"]["_ResolutionHomomorphism_getMap"].apply(null, arguments) };
+var _ResolutionHomomorphism_setBaseMap = Module["_ResolutionHomomorphism_setBaseMap"] = function() {  return Module["asm"]["_ResolutionHomomorphism_setBaseMap"].apply(null, arguments) };
 var _Resolution_construct = Module["_Resolution_construct"] = function() {  return Module["asm"]["_Resolution_construct"].apply(null, arguments) };
 var _Resolution_getDifferential = Module["_Resolution_getDifferential"] = function() {  return Module["asm"]["_Resolution_getDifferential"].apply(null, arguments) };
 var _Resolution_resolveThroughDegree = Module["_Resolution_resolveThroughDegree"] = function() {  return Module["asm"]["_Resolution_resolveThroughDegree"].apply(null, arguments) };
@@ -1787,8 +1792,10 @@ var _SerializedResolution_getJSONData = Module["_SerializedResolution_getJSONDat
 var _SerializedResolution_getJSONSize = Module["_SerializedResolution_getJSONSize"] = function() {  return Module["asm"]["_SerializedResolution_getJSONSize"].apply(null, arguments) };
 var _Vector_construct = Module["_Vector_construct"] = function() {  return Module["asm"]["_Vector_construct"].apply(null, arguments) };
 var _Vector_free = Module["_Vector_free"] = function() {  return Module["asm"]["_Vector_free"].apply(null, arguments) };
+var _Vector_getEntry = Module["_Vector_getEntry"] = function() {  return Module["asm"]["_Vector_getEntry"].apply(null, arguments) };
 var _Vector_pack = Module["_Vector_pack"] = function() {  return Module["asm"]["_Vector_pack"].apply(null, arguments) };
 var _Vector_print = Module["_Vector_print"] = function() {  return Module["asm"]["_Vector_print"].apply(null, arguments) };
+var _Vector_setEntry = Module["_Vector_setEntry"] = function() {  return Module["asm"]["_Vector_setEntry"].apply(null, arguments) };
 var _Vector_unpack = Module["_Vector_unpack"] = function() {  return Module["asm"]["_Vector_unpack"].apply(null, arguments) };
 var ___errno_location = Module["___errno_location"] = function() {  return Module["asm"]["___errno_location"].apply(null, arguments) };
 var _free = Module["_free"] = function() {  return Module["asm"]["_free"].apply(null, arguments) };

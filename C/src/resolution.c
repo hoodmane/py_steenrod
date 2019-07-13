@@ -16,6 +16,7 @@
 #include "MilnorAlgebra.h"
 #include "Module.h"
 #include "Resolution.h"
+#include "ResolutionHomomorphism.h"
 
 #define max(a,b) ((a) > (b) ? (a) : (b))
 void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uint homological_degree, int degree);
@@ -71,7 +72,7 @@ Resolution * Resolution_construct(
     res->min_degree = res->module->min_degree;
     res->max_degree = max_degree;
     res->modules[0] = (FreeModule*)module;
-    res->differentials[0] = FreeModuleHomomorphism_construct((FreeModule*)module, NULL, max_degree);
+    res->differentials[0] = FreeModuleHomomorphism_construct((FreeModule*)module, NULL, 0, max_degree);
     if(addClass == NULL){
         addClass = addClass_doNothing;
     }
@@ -140,6 +141,7 @@ void Resolution_step(Resolution *res, uint homological_degree, int degree){
             FreeModuleHomomorphism_construct(
                 res->modules[homological_degree + 1], 
                 (Module*)res->modules[homological_degree],
+                0,
                 res->max_degree
             );
     }
@@ -240,10 +242,11 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
 
     // Row reduce
     int column_to_pivot_row[matrix->columns];
-    // printf("\n%d\n",homological_degree);
-    // Matrix_printSlice(matrix, target_dimension, padded_target_dimension);
     rowReduce(matrix, column_to_pivot_row, 0, 0);//target_dimension, padded_target_dimension);
-    // Matrix_printSlice(matrix, target_dimension, padded_target_dimension);
+
+    uint permutation[matrix->rows];
+    Matrix_getRowPermutation(matrix, permutation);
+    Matrix_applyRowPermutation(full_matrix, permutation, matrix->rows);
 
     // Stage 1: Find kernel of current differential
     // Locate first kernel row
@@ -259,6 +262,7 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     Kernel *kernel = Kernel_construct(p, kernel_dimension, source_dimension);
     // Write pivots into kernel
     for(uint i = 0; i < source_dimension; i++){
+        // Turns -1 into some negative number... make sure to check <0 for no pivot in column...
         kernel->column_to_pivot_row[i] = column_to_pivot_row[i + padded_target_dimension] - first_kernel_row;
     }
 
@@ -302,8 +306,6 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
             homology_dimension++;
         }
     }
-    Kernel_free(previous_cycles); // This information can now be found in this differential's coimage_to_image_matrix.
-    previous_differential->kernel[shifted_degree] = NULL;
     source->number_of_generators_in_degree[shifted_degree] = homology_dimension;
     // Copy the outputs, currently stored in the coimage_to_image matrix, to the FreeModuleHomomorphism outputs field.
     FreeModuleHomomorphism_AllocateSpaceForNewGenerators(current_differential, degree, homology_dimension);
@@ -319,21 +321,24 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     // The part of the matrix that contains interesting information is current_target_row * (target_dimension + source_dimension + kernel_size).
     // Allocate a matrix coimage_to_image with these dimensions.
     uint coimage_to_image_rows = current_target_row;
-    uint coimage_to_image_columns = padded_target_dimension + source_dimension + homology_dimension;
+    uint coimage_to_image_column_start = padded_target_dimension;
+    uint coimage_to_image_columns = source_dimension + homology_dimension;
     Matrix *coimage_to_image = Matrix_construct(p, coimage_to_image_rows, coimage_to_image_columns);
     current_differential->coimage_to_image_isomorphism[shifted_degree] = coimage_to_image;
+
+    int useless_pivot_row_info[full_matrix->columns];
+    rowReduce(full_matrix, useless_pivot_row_info, 0, 0);
+
     // Copy matrix contents to coimage_to_image
     for(uint i = 0; i < coimage_to_image_rows; i++) {
         char slice_memory[Vector_getSize(p, 0, 0)]; 
         char *slice_ptr = slice_memory;
         Vector *slice = Vector_initialize(p, &slice_ptr, 0, 0);
-        Vector_slice(slice, full_matrix->matrix[i], 0, coimage_to_image_columns);
+        Vector_slice(slice, full_matrix->matrix[i], coimage_to_image_column_start, coimage_to_image_column_start + coimage_to_image_columns);
         Vector_assign(coimage_to_image->matrix[i], slice);
     }
-    int useless_pivot_row_info[coimage_to_image_columns];
-    rowReduce(coimage_to_image, useless_pivot_row_info, 0, 0);
-    
-    // printMatrixSlice(coimage_to_image, target_dimension, padded_target_dimension);
+
+
     // TODO: assertion about contents of useless_pivot_row_info?
     // Should contain [0,1,2,3,...,n,-1,-1,-1,..., -1].
     resolution->internal_degree_to_resolution_stage[shifted_degree] ++;
@@ -354,6 +359,26 @@ uint Resolution_gradedDimensionString(char *buffer, Resolution *resolution){
     len += sprintf(buffer + len, "\n]\n");
     return len;
 }
+
+bool Resolution_cycleQ(Resolution *res, uint homological_degree, int internal_degree, Vector *element){
+    if(homological_degree == 0){
+        return true;
+    }
+    char buffer[2000];
+    printf("hom_deg: %d, int_deg: %d\n", homological_degree, internal_degree);
+    FreeModule_element_toJSONString(buffer, res->modules[homological_degree+1], internal_degree, element);
+    printf("Element: %s\n", buffer);
+    uint p = res->algebra->p;
+    uint output_dimension = Module_getDimension((Module*)res->modules[homological_degree], internal_degree);
+    char memory[Vector_getSize(p, output_dimension, 0)];
+    char *memory_ptr = memory;
+    Vector *output = Vector_initialize(p, &memory_ptr, output_dimension, 0);
+    FreeModuleHomomorphism_apply(res->differentials[homological_degree+1], output, 1, internal_degree, element);
+    FreeModule_element_toJSONString(buffer, res->modules[homological_degree], internal_degree, output);
+    printf("Output: %s\n", buffer);
+    return Vector_zeroQ(output);
+}
+
 
 SerializedResolution *Resolution_serialize(Resolution *res){
     JSON_Value *root_value = json_value_init_object();
@@ -401,9 +426,11 @@ SerializedResolution *Resolution_serialize(Resolution *res){
             if(f->coimage_to_image_isomorphism[j] == NULL){
                 json_array_append_null(ds1_array);
             } else {
+                Kernel *ker = f->kernel[j];
                 Matrix *M = f->coimage_to_image_isomorphism[j];
                 JSON_Value *matrix_value = json_value_init_object();
                 JSON_Object *matrix_object = json_object(matrix_value);
+                
                 size_t vectors_size = 0;
                 for(uint k=0; k<f->source->number_of_generators_in_degree[j]; k++){
                     vectors_size += f->outputs[j][k]->size;
@@ -411,12 +438,21 @@ SerializedResolution *Resolution_serialize(Resolution *res){
                 json_object_set_number(matrix_object, "output_vectors_address", binary_size);                
                 json_object_set_number(matrix_object, "output_vectors_size", vectors_size);
                 binary_size += vectors_size;
-                json_object_set_number(matrix_object, "matrix_rows", M->rows);
-                json_object_set_number(matrix_object, "matrix_columns", M->rows);
+
+                size_t kernel_size = Kernel_getSize(ker->kernel->p, ker->kernel->rows, ker->kernel->columns);
+                json_object_set_number(matrix_object, "kernel_rows", ker->kernel->rows);
+                json_object_set_number(matrix_object, "kernel_columns", ker->kernel->columns);
+                json_object_set_number(matrix_object, "kernel_size", kernel_size);
+                json_object_set_number(matrix_object, "kernel_address", binary_size); 
+                binary_size += kernel_size;
+                
                 size_t matrix_size = Matrix_getSize(M->p, M->rows, M->columns);
-                json_object_set_number(matrix_object, "matrix_size", matrix_size);
-                json_object_set_number(matrix_object, "matrix_address", binary_size);
+                json_object_set_number(matrix_object, "preimage_rows", M->rows);
+                json_object_set_number(matrix_object, "preimage_columns", M->rows);
+                json_object_set_number(matrix_object, "preimage_size", matrix_size);
+                json_object_set_number(matrix_object, "preimage_address", binary_size);
                 binary_size += matrix_size;
+
                 json_array_append_value(ds1_array, matrix_value);
             }            
         }
@@ -439,6 +475,7 @@ SerializedResolution *Resolution_serialize(Resolution *res){
             for(uint k=0; k<f->source->number_of_generators_in_degree[j]; k++){
                   Vector_serialize(&binary_data, f->outputs[j][k]);
             }
+            Kernel_serialize(&binary_data, f->kernel[j]);
             Matrix_serialize(&binary_data, f->coimage_to_image_isomorphism[j]);
         }
     }
@@ -474,6 +511,7 @@ Resolution *Resolution_deserialize(
             FreeModuleHomomorphism_construct(
                 res->modules[homological_degree + 1], 
                 (Module*)res->modules[homological_degree],
+                0,
                 res->max_degree
             );
         res->differentials[homological_degree + 1] = f;
@@ -497,7 +535,8 @@ Resolution *Resolution_deserialize(
             }
             for(uint k=0; k<f->source->number_of_generators_in_degree[j]; k++){
                 f->outputs[j][k] = Vector_deserialize(res->algebra->p, &binary_data);
-            }            
+            }
+            f->kernel[j] = Kernel_deserialize(&binary_data);
             f->coimage_to_image_isomorphism[j] = Matrix_deserialize(&binary_data);
         }
     }
@@ -577,15 +616,42 @@ int main(int argc, char *argv[]){
     // degree--;
     Resolution *res = Resolution_construct(module, degree, NULL, NULL);
     Resolution_resolveThroughDegree(res, degree);
-    SerializedResolution *sres = Resolution_serialize(res);
-    Resolution *res2 = Resolution_deserialize(module, sres, NULL, NULL);
-    Matrix_printSlice(res->differentials[3]->coimage_to_image_isomorphism[8], 5,64);
-    Matrix_printSlice(res2->differentials[3]->coimage_to_image_isomorphism[8],5,64);
+    // SerializedResolution *sres = Resolution_serialize(res);
+    // Resolution *res2 = Resolution_deserialize(module, sres, NULL, NULL);
+    // Matrix_print(res->differentials[2]->coimage_to_image_isomorphism[9]);
+    // printf("source_dim: %d, columns: %d\n", 
+    //     Module_getDimension(&res->differentials[2]->source->module, 9), 
+    //     res->differentials[2]->coimage_to_image_isomorphism[9]->columns
+    // );
+
+    uint input_homological_degree = 2;
+    uint input_degree = 12;
+    ResolutionHomomorphism *f = ResolutionHomomorphism_construct(res, res, input_homological_degree, input_degree);
+    Vector *v = Vector_construct(p, 1, 0);
+    Vector_setEntry(v, 0, 1);
+    ResolutionHomomorphism_setBaseMap(f, input_degree, 0, v);
+    ResolutionHomomorphism_baseMapReady(f, 1000);
+
+    ResolutionHomomorphism_extend(f, 6, 15);
+
+    // uint idx = FreeModule_operationGeneratorToIndex(M, 0, 0, 12, 0);
+    int hom_deg = 2;
+    int gen_deg = 4;
+    int gen_idx = 0;
+    int out_deg = gen_deg - f->internal_degree_shift;
+    FreeModule *M = res->modules[hom_deg];
+    Vector *output = Vector_construct(p, Module_getDimension((Module*)M,  out_deg), 0);
+    // Vector_setEntry(output, idx, 1);
+    FreeModuleHomomorphism_applyToGenerator(f->maps[hom_deg - 1], output, 1, gen_deg, gen_idx);
+    char buffer[1000];
+    FreeModule_element_toJSONString(buffer, (FreeModule*)f->maps[hom_deg - 1]->target,out_deg, output);
+    printf("(%d, %d) ==> %s\n", hom_deg, gen_deg, buffer);
+    // Matrix_printSlice(res2->differentials[2]->coimage_to_image_isomorphism[8],15,64);
     
-    for(int i = degree - 1 - res->min_degree; i >= 0; i--){
-        printf("stage %*d: ", 2, i);
-        array_print("%s\n", &res->modules[i+1]->number_of_generators_in_degree[i], degree - i - res->min_degree);
-    }       
+    // for(int i = degree - 1 - res->min_degree; i >= 0; i--){
+    //     printf("stage %*d: ", 2, i);
+    //     array_print("%s\n", &res->modules[i+1]->number_of_generators_in_degree[i], degree - i - res->min_degree);
+    // }       
     // MilnorAlgebra_free((MilnorAlgebra*)res->algebra);
     Resolution_free(res);
     FiniteDimensionalModule_free(module);

@@ -46,6 +46,8 @@ void Resolution_free(Resolution *resolution);
 void Resolution_step(Resolution *resolution, uint homological_degree, int degree);
 void Resolution_resolveThroughDegree(Resolution *res, int degree);
 
+bool Resolution_cycleQ(Resolution *res, uint homological_degree, int degree, Vector *element);
+
 typedef struct {
     size_t json_size;
     char *json_data;

@@ -32,6 +32,8 @@ add_executable(csteen
         src/FreeModuleHomomorphism.c
         src/Resolution.h
         src/Resolution.c
+        src/ResolutionHomomorphism.h
+        src/ResolutionHomomorphism.c     
         src/MilnorAlgebra.h
         src/milnor_private.h
         src/MilnorAlgebra.c
@@ -61,6 +63,8 @@ add_library(CSteenrod SHARED
         src/FreeModuleHomomorphism.c
         src/Resolution.h
         src/Resolution.c
+        src/ResolutionHomomorphism.h
+        src/ResolutionHomomorphism.c
         src/MilnorAlgebra.h
         src/milnor_private.h
         src/MilnorAlgebra.c

@@ -29,6 +29,8 @@ typedef struct Module {
 #define Module_getDimension(module, degree) ((module)->getDimension)(module, degree)
 #define Module_actOnBasis(module, result, coeff, op_deg, op, r_deg, r) ((module)->actOnBasis)(module, result, coeff, op_deg, op, r_deg, r)
 
+void Module_actOnElement(Module *this, Vector *result, uint coeff, int op_deg, uint op_idx, int module_degree, Vector *module_element);
+
 // For javascript
 bool Module_computeBasis_function(Module *this, int degree);
 uint Module_getDimension_function(Module *this, int degree);

@@ -35,6 +35,36 @@ function cStringToJavascript(offset, length){
     return String.fromCharCode(...result);
 }
 
+function FreeModuleElement_to_display_string(free_module, degree, vector) {
+    let cResult_json_offset = Module._malloc(2000);
+    let len = cFreeModule_element_toJSONString(cResult_json_offset, free_module, degree, vector);
+    let s = "";
+    for (let i = 0; i < len; ++i){
+        s += String.fromCharCode(Module.HEAPU8[cResult_json_offset+i]);
+    } 
+    let result = FreeModuleElement_json_to_display_string(s);
+    Module._free(cResult_json_offset);
+    return result;
+}
+
+function FreeModuleElement_json_to_display_string(json){
+    let result = JSON.parse(json).map((entry) => {
+        let output = "";
+        if(entry.coeff != 1){
+            output = `${entry.coeff}*`;
+        }
+        let op_string = entry.op_deg > 0 ? `${entry.op_str}*`  : "";
+        output = `${output}${op_string}x_{${entry.gen_deg},${entry.gen_idx}}`
+        return output;
+    })
+    if(result.length == 0){
+        result = "0";
+    } else {
+        result = result.join(" + ");
+    }
+    return result;
+}
+
 const sizeof_uint = Uint32Array.BYTES_PER_ELEMENT;
 
 let t0 = performance.now();
@@ -213,10 +243,25 @@ message_handlers["resolve"] = function resolve(data){
     self.p = p;
     self.cResolution = cResolution_construct(module.cModule, max_degree, callbacks.addClassPtr, callbacks.addStructlinePtr);
     cResolution_resolveThroughDegree(self.cResolution, max_degree);
+    // let x_homological_degree = 1;
+    // let x_internal_degree = 2;   
+
+    /*
+    self.x_homological_degree = 1;
+    self.x_internal_degree = 5;       
+    self.x_idx = 0;
+    self.f = cResolutionHomomorphism_construct(self.cResolution, self.cResolution, x_homological_degree, x_internal_degree);
+    let v = cVector_construct(p, 1, 0);
+    cVector_setEntry(v, 0, 1);
+    cResolutionHomomorphism_setBaseMap(self.f, x_internal_degree, x_idx, v);
+    cResolutionHomomorphism_baseMapReady(self.f, 1000);
+    cResolutionHomomorphism_extend(f, max_degree - 2, max_degree - 2);
+    cVector_free(v); v = null;
     message_handlers["serialize"](0);
+    */
 };
 
-message_handlers["get_cocyle"] = function getCocycle(data){
+message_handlers["get_cocycle"] = function getCocycle(data){
     let homological_degree = data.y;
     let degree = data.x + data.y;
     let index = data.idx;
@@ -225,34 +270,32 @@ message_handlers["get_cocyle"] = function getCocycle(data){
     let dimension = cModule_getDimension(cTarget, degree);
     let cResult_vector = cVector_construct(self.p, dimension, 0);    
     cFreeModuleHomomorphism_applyToGenerator(cf, cResult_vector,  1, degree, index);
-    let cResult_json_offset = Module._malloc(2000);
-    javascriptStringToC(cResult_json_offset, "%s");
-    cVector_print(cResult_json_offset, cResult_vector);
-    let len = cFreeModule_element_toJSONString(cResult_json_offset, cTarget, degree, cResult_vector);
-    let s = "";
-    for (let i = 0; i < len; ++i){
-        s += String.fromCharCode(Module.HEAPU8[cResult_json_offset+i]);
-    } 
-    let result = JSON.parse(s);
-    Module._free(cResult_json_offset);
-    result = result.map((entry) => {
-        let output = "";
-        if(entry.coeff != 1){
-            output = `${entry.coeff}*`;
-        }
-        output = `${output}${entry.op_str}*x_{${entry.gen_deg},${entry.gen_idx}}`
-        return output;
-    })
-    if(result.length == 0){
-        result = "0";
-    } else {
-        result = result.join(" + ");
-    }
+    cVector_print("%s\n", cResult_vector);
+    let result = FreeModuleElement_to_display_string(cTarget, degree, cResult_vector)
     self.postMessage({
         "cmd" : "cocycle_result",
         "value" : result
     });
 };
+
+message_handlers["get_eta_map"] = function get_eta_map(data){
+    let homological_degree = data.y;
+    let degree = data.x + data.y;
+    let output_degree = degree - self.x_internal_degree;
+    let index = data.idx;
+    let cf = cResolutionHomomorphism_getMap(self.f, homological_degree);
+    let cTarget = cFreeModuleHomomorphism_getTarget(cf);
+    let dimension = cModule_getDimension(cTarget, output_degree);
+    let cResult_vector = cVector_construct(self.p, dimension, 0);    
+    cFreeModuleHomomorphism_applyToGenerator(cf, cResult_vector,  1, degree, index);
+    cVector_print("%s\n", cResult_vector);
+    let result = FreeModuleElement_to_display_string(cTarget, output_degree, cResult_vector)
+    self.postMessage({
+        "cmd" : "cocycle_result",
+        "value" : result
+    });
+};
+
 
 message_handlers["serialize"] = function serialize(data){
     let serialized_resolution = cResolution_serialize(self.cResolution);

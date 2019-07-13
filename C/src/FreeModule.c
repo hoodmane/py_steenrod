@@ -54,7 +54,9 @@ bool FreeModule_computeBasis(Module *this __attribute__((unused)), int degree __
 }
 
 uint FreeModule_getDimension(Module *this, int degree){
-    assert(degree >= this->min_degree);
+    if(degree < this->min_degree){
+        return 0;
+    }
     assert(degree < this->max_degree);
     FreeModule *module = (FreeModule*) this;
     uint result = 0;
@@ -193,7 +195,9 @@ uint FreeModule_element_toJSONString(char *result, FreeModule *this, int degree,
         len += Algebra_basisElementToString(this->module.algebra, result + len, opgen.operation_degree, opgen.operation_index);
         len += sprintf(result + len, "\"},");
     }
-    len --;
+    if(len > 1){ // Delete trailing comma if the entry wasn't just zero.
+        len --;
+    }
     len += sprintf(result + len, "]");
     return len;
 }

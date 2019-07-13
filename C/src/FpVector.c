@@ -258,6 +258,35 @@ void Vector_assign(Vector *target, Vector *source){
     memcpy(t->limbs, s->limbs, s->size - sizeof(VectorPrivate));
 }
 
+bool Vector_zeroQ(Vector *v){
+    Vector_print("zeroq(%s)\n", v);
+    for(
+        VectorIterator it = Vector_getIterator(v);
+        it.has_more;
+        it = Vector_stepIterator(it)
+    ){
+        if(it.value != 0){
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Vector_equalQ(Vector *v, Vector *w){
+    assert(v->dimension == w->dimension);
+    assert(v->offset == w->offset);
+    VectorIterator it1 = Vector_getIterator(v);
+    VectorIterator it2 = Vector_getIterator(w);
+    while(it1.has_more){
+        if(it1.value != it2.value){
+            return false;
+        }
+        it1 = Vector_stepIterator(it1);
+        it2 = Vector_stepIterator(it2);
+    }
+    return true;
+}
+
 /**
  * Unpacks the limb at index limb_idx into limb_array. limb_array should be of length 
  * entriesPer64Bits.
@@ -895,13 +924,30 @@ void Matrix_printSlice(Matrix *M, uint col_end, uint col_start){
     printf("\n");
 }
 
+void Matrix_getRowPermutation(Matrix *M, uint *result){
+    Vector *first_vector = (Vector*)(M->matrix + M->rows);
+    for(uint i=0; i < M->rows; i++){
+        uint j = ((uint64)M->matrix[i] - (uint64)first_vector)/sizeof(VectorPrivate); // why is this sizeof(VectorPrivate)??
+        result[i] = j;
+    }
+}
+
+void Matrix_applyRowPermutation(Matrix *M, uint *permutation, uint rows){
+    Vector *temp[rows];
+    for(uint i=0; i < rows; i++){
+        temp[i] = M->matrix[permutation[i]];
+    }
+    memcpy(M->matrix, temp, rows * sizeof(Vector*));
+}
+
 
 void rowReduce(Matrix *M, int *column_to_pivot_row, uint col_end, uint col_start){
     Vector **matrix = M->matrix;
     uint p = M->p;
     uint columns = M->columns;
     uint rows = M->rows;
-    memset(column_to_pivot_row, -1, columns * sizeof(int));
+    // Fill matrix with -1s = 0xFFFFFFFF
+    memset(column_to_pivot_row, 0xFF, columns * sizeof(int));
     if(rows == 0){
         return;
     }
@@ -996,14 +1042,26 @@ Kernel *Kernel_construct(uint p, uint rows, uint columns){
     return k;
 }
 
-// size_t Kernel_serialize(char *buffer, Kernel *kernel){
+void Kernel_serialize(char **buffer, Kernel *kernel){
+    memcpy(*buffer, kernel, sizeof(*kernel));
+    *buffer += sizeof(Kernel);
+    Matrix_serialize(buffer, kernel->kernel);    
+    memcpy(*buffer, kernel->column_to_pivot_row, kernel->kernel->columns * sizeof(int));
+    *buffer += kernel->kernel->columns * sizeof(int);
+}
 
-// }
+Kernel *Kernel_deserialize(char **buffer){
+    Kernel *result = (Kernel*) *buffer;
+    *buffer += sizeof(Kernel);
+    result->kernel = Matrix_deserialize(buffer);
+    result->column_to_pivot_row = (int*) *buffer;
+    *buffer += result->kernel->columns * sizeof(int);
+    return result;
+}
 
-// Kernel *Kernel_deserialize(){
-
-// }
-
+size_t Kernel_getSize(uint p, uint rows, uint columns){
+    return sizeof(Kernel) + columns * sizeof(int) + Matrix_getSize(p, rows, columns);
+}
 
 void Kernel_free(Kernel *k){
     free(k);

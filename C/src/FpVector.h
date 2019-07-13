@@ -89,6 +89,9 @@ Vector *Vector_construct(uint p, uint dimension, uint offset);
 
 void Vector_free(Vector *v); 
 
+bool Vector_zeroQ(Vector *v);
+bool Vector_equalQ(Vector *v, Vector *w);
+
 // Vector_assign and Vector_setToZero are unsuitable for use on a slice
 // unless that slice is a "block" -- that is, it should start in a position with offset = 0
 // and either go to the end of the source vector or the source vector should be padded
@@ -166,6 +169,9 @@ void Matrix_printSlice(Matrix *M, uint col_end, uint col_start);
 void Matrix_serialize(char **buffer, Matrix *v);
 Matrix *Matrix_deserialize(char **buffer);
 
+void Matrix_getRowPermutation(Matrix *M, uint *result);
+void Matrix_applyRowPermutation(Matrix *M, uint *permutation, uint rows);
+
 // Row reduce M. For each column i, column_to_pivot_row[i] is equal to: the row
 // with a pivot in column i or -1 if no such row exists.
 // When you delete the -1's from column_to_pivot_row, it looks like [0,1,2,...,rank(M)].
@@ -173,11 +179,17 @@ void rowReduce(Matrix *M, int *column_to_pivot_row, uint, uint);
 
 
 typedef struct {
-    int *column_to_pivot_row;
     Matrix *kernel;
+    int *column_to_pivot_row;
 } Kernel;
+
+size_t Kernel_getSize(uint p, uint rows, uint columns);
 
 Kernel *Kernel_construct(uint p, uint rows, uint columns);
 void Kernel_free(Kernel *k);
+
+void Kernel_serialize(char **buffer, Kernel *kernel);
+Kernel *Kernel_deserialize(char **buffer);
+
 
 #endif //C_FP_VECTOR_H

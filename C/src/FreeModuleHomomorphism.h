@@ -9,16 +9,18 @@ typedef struct {
     Vector ***outputs; // degree --> input_idx --> output
     int max_degree;
     int max_computed_degree;
+    int degree_shift;
     Matrix **coimage_to_image_isomorphism;
-    Kernel **kernel; // This is redundant with the next module's coimage_to_image_iso
+    Kernel **kernel;
 } FreeModuleHomomorphism;
 //void initializeFreeModuleHomomorphism(FreeModuleHomomorphism *f, )
 
-FreeModuleHomomorphism *FreeModuleHomomorphism_construct(FreeModule *source, Module *target, int max_degree);
+FreeModuleHomomorphism *FreeModuleHomomorphism_construct(FreeModule *source, Module *target, int degree_shift, int max_degree);
 void FreeModuleHomomorphism_free(FreeModuleHomomorphism *f);
 void FreeModuleHomomorphism_setOutput(FreeModuleHomomorphism *f, int gen_degree, uint gen_index, Vector *output);
 void FreeModuleHomomorphism_applyToGenerator(FreeModuleHomomorphism *f, Vector *result, uint coeff, int generator_degree, uint generator_index);
 void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism *f, Vector *result, uint coeff, int input_degree, uint input_index);
+void FreeModuleHomomorphism_apply(FreeModuleHomomorphism *f, Vector *result, uint coeff, int input_degree, Vector *input);
 
 void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism *f, int degree, uint num_gens);
 

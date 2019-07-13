@@ -17,7 +17,13 @@ let cVector_pack = cwrap("Vector_pack", 'void', ['pointer', 'pointer']);
 // void Vector_unpack(uint * target, Vector * source);
 let cVector_unpack = cwrap("Vector_unpack", 'void', ['pointer', 'pointer']);
 
-let cVector_print = cwrap("Vector_print", 'void', ['pointer', 'pointer']);
+// uint Vector_getEntry(Vector *v, uint index);
+let cVector_getEntry = cwrap("Vector_getEntry", "number", ['pointer', 'number']);
+
+// void Vector_setEntry(Vector *v, uint index, uint value);
+let cVector_setEntry = cwrap('Vector_setEntry', 'void', ['pointer', 'number', 'number']);
+
+let cVector_print = cwrap("Vector_print", 'void', ['string', 'pointer']);
 
 /**
  * algebra.h
@@ -161,3 +167,22 @@ let cSerializedResolution_getBinarySize = Module.cwrap("SerializedResolution_get
 
 // char *SerializedResolution_getBinaryData(SerializedResolution *sres);
 let cSerializedResolution_getBinaryData = Module.cwrap('SerializedResolution_getBinaryData', 'pointer', ['pointer']);
+
+
+// ResolutionHomomorphism *ResolutionHomomorphism_construct(
+//     Resolution *source, Resolution *target, 
+//     uint homological_degree_shift, int internal_degree_shift
+// );
+let cResolutionHomomorphism_construct = Module.cwrap('ResolutionHomomorphism_construct', 'pointer', ['pointer', 'pointer', 'number', 'number']);
+
+// void ResolutionHomomorphism_setBaseMap(ResolutionHomomorphism *f, int input_degree, int input_index, Vector *output);
+let cResolutionHomomorphism_setBaseMap = Module.cwrap('ResolutionHomomorphism_setBaseMap', 'void', ['pointer', 'number', 'number', 'pointer']);
+
+// void ResolutionHomomorphism_baseMapReady(ResolutionHomomorphism *f, int degree);
+let cResolutionHomomorphism_baseMapReady = Module.cwrap('ResolutionHomomorphism_baseMapReady', 'void', ['pointer', 'number']);
+
+// void ResolutionHomomorphism_extend(ResolutionHomomorphism *f, uint source_homological_degree, int source_degree);
+let cResolutionHomomorphism_extend = Module.cwrap('ResolutionHomomorphism_extend', 'void', ['pointer', 'number', 'number']);
+
+// FreeModuleHomomorphism *ResolutionHomomorphism_getMap(ResolutionHomomorphism *f, uint homological_degree)
+let cResolutionHomomorphism_getMap = Module.cwrap('ResolutionHomomorphism_getMap', 'pointer', ['pointer', 'number']);

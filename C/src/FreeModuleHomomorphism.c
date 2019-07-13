@@ -1,9 +1,10 @@
-#include "FreeModule.h"
-#include "FreeModuleHomomorphism.h"
 #include <assert.h>
 
+#include "FreeModule.h"
+#include "FreeModuleHomomorphism.h"
+
 // max_degree is one larger than the highest degree in which you are allowed to access this module.
-FreeModuleHomomorphism *FreeModuleHomomorphism_construct(FreeModule *source, Module *target, int max_degree){
+FreeModuleHomomorphism *FreeModuleHomomorphism_construct(FreeModule *source, Module *target, int degree_shift, int max_degree){
     uint num_degrees = max_degree - source->module.min_degree;
     FreeModuleHomomorphism *f = malloc(
         sizeof(FreeModuleHomomorphism) 
@@ -15,6 +16,7 @@ FreeModuleHomomorphism *FreeModuleHomomorphism_construct(FreeModule *source, Mod
     f->target = target;
     f->max_degree = max_degree;
     f->max_computed_degree = source->module.min_degree;
+    f->degree_shift = degree_shift;
     f->outputs = (Vector***)(f + 1);
     f->coimage_to_image_isomorphism = (Matrix**)(f->outputs + num_degrees);
     f->kernel = (Kernel**)(f->coimage_to_image_isomorphism + num_degrees);
@@ -43,7 +45,7 @@ void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism
     assert(shifted_degree >= 0);
     f->max_computed_degree = degree + 1;
     uint p = f->source->module.p;
-    uint dimension = Module_getDimension(f->target, degree);
+    uint dimension = Module_getDimension(f->target, degree + f->degree_shift);
     uint vector_size = Vector_getSize(p, dimension, 0);
     f->outputs[shifted_degree] = (Vector**)malloc(
         num_gens * sizeof(Vector*) 
@@ -57,24 +59,23 @@ void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism
     }
     assert(vector_ptr_ptr == f->outputs[shifted_degree] + num_gens);
     assert(vector_memory_ptr == (char*)(vector_ptr_ptr) + num_gens * vector_size);
-
 }
 
 Vector *FreeModuleHomomorphism_getOutput(FreeModuleHomomorphism *f, int generator_degree, uint generator_index){
     assert(generator_degree - f->source->module.min_degree >= 0);
     assert(generator_degree < f->max_computed_degree);
-    assert(generator_index < Module_getDimension((Module*)f->source, generator_degree));
+    assert(generator_index < f->source->number_of_generators_in_degree[generator_degree]);
     return f->outputs[generator_degree - f->source->module.min_degree][generator_index];
 }
 
 void FreeModuleHomomorphism_setOutput(FreeModuleHomomorphism *f, int generator_degree, uint generator_index, Vector *output){
-    assert(output->dimension == Module_getDimension(f->target, generator_degree));
+    assert(output->dimension == Module_getDimension(f->target, generator_degree + f->degree_shift));
     assert(output->offset == 0);
     assert(generator_index < FreeModule_getNumberOfGensInDegree(f->source, generator_degree));
     Vector_assign(f->outputs[generator_degree - f->source->module.min_degree][generator_index], output);
 }
 
-// Primarily for Javascript (so we can avoid actually indexing struct fields).
+// Primarily for Javascript (so we can avoid indexing struct fields).
 void FreeModuleHomomorphism_applyToGenerator(FreeModuleHomomorphism *f, Vector *result, uint coeff, int generator_degree, uint generator_index){
     Vector *output_on_generator = FreeModuleHomomorphism_getOutput(f, generator_degree, generator_index);
     Vector_add(result, output_on_generator, coeff);
@@ -86,7 +87,8 @@ void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism *f, Vecto
     assert(shifted_input_degree > 0);
     assert(input_degree < f->max_degree);
     // assert(((FreeModuleInternal*)f->source)->basis_element_to_opgen_table[shifted_input_degree] != NULL);
-    assert(input_index < FreeModule_getDimension((Module*)f->source, input_degree));
+    assert(input_index < Module_getDimension((Module*)f->source, input_degree));
+    assert(Module_getDimension(f->target, input_degree + f->degree_shift) == result->dimension);
     FreeModuleOperationGeneratorPair operation_generator = 
         FreeModule_indexToOpGen(f->source, input_degree, input_index);
     int operation_degree = operation_generator.operation_degree;
@@ -94,14 +96,18 @@ void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism *f, Vecto
     int generator_degree = operation_generator.generator_degree;
     uint generator_index = operation_generator.generator_index;
     Vector *output_on_generator = FreeModuleHomomorphism_getOutput(f, generator_degree, generator_index);
-    for(
-        VectorIterator it = Vector_getIterator(output_on_generator);
+    Module_actOnElement(f->target, result, coeff, operation_degree, operation_index, generator_degree + f->degree_shift, output_on_generator);
+}
+
+void FreeModuleHomomorphism_apply(FreeModuleHomomorphism *f, Vector *result, uint coeff, int input_degree, Vector *input){
+    assert(input->dimension == Module_getDimension((Module*)f->source, input_degree));
+    for(        
+        VectorIterator it = Vector_getIterator(input);
         it.has_more; 
         it = Vector_stepIterator(it)
     ){
-        if(it.value != 0){
-            uint c = modPLookup( f->source->module.p, it.value*coeff);
-            Module_actOnBasis(f->target, result, c, operation_degree, operation_index, generator_degree, it.index);
+        if(it.value!=0){
+            FreeModuleHomomorphism_applyToBasisElement(f, result, coeff*it.value, input_degree, it.index);
         }
     }
 }
@@ -112,7 +118,7 @@ void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism *f, Vecto
 void FreeModuleHomomorphism_getMatrix(FreeModuleHomomorphism *f, Matrix *result, int degree){
     assert(degree < f->max_degree);
     assert(Module_getDimension(&f->source->module, degree) <= result->rows);
-    assert(Module_getDimension(f->target, degree) <= result->columns);
+    assert(Module_getDimension(f->target, degree + f->degree_shift) <= result->columns);
     // The shorter implementation if we do FreeModuleConstructBlockOffsetTable first.
     // Maybe we ought to do that...
     // for(int i = 0; i < Module_getDimension(&f->source->module, degree); i++){
@@ -128,17 +134,8 @@ void FreeModuleHomomorphism_getMatrix(FreeModuleHomomorphism *f, Matrix *result,
         for(uint gen_idx = 0; gen_idx < FreeModule_getNumberOfGensInDegree(f->source, gen_deg); gen_idx++){
             for(uint op_idx = 0; op_idx < num_ops; op_idx++){
                 Vector *output_on_generator = FreeModuleHomomorphism_getOutput(f, gen_deg, gen_idx);
-                for(
-                    VectorIterator it = Vector_getIterator(output_on_generator);
-                    it.has_more; 
-                    it = Vector_stepIterator(it)
-                ){
-                    if(it.value != 0){
-                        // our element of our source is op * gen. It maps to op * (f(gen)).
-                        Module_actOnBasis(f->target, result->matrix[i], it.value, op_deg, op_idx, gen_deg, it.index);
-                    }
-                }
-                i++;                
+                Module_actOnElement(f->target, result->matrix[i], 1, op_deg, op_idx, gen_deg + f->degree_shift, output_on_generator);
+                i++;
             }
         }
     }
