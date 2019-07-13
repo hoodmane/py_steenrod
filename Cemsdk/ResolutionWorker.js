@@ -243,12 +243,9 @@ message_handlers["resolve"] = function resolve(data){
     self.p = p;
     self.cResolution = cResolution_construct(module.cModule, max_degree, callbacks.addClassPtr, callbacks.addStructlinePtr);
     cResolution_resolveThroughDegree(self.cResolution, max_degree);
-    // let x_homological_degree = 1;
-    // let x_internal_degree = 2;   
 
-    /*
     self.x_homological_degree = 1;
-    self.x_internal_degree = 5;       
+    self.x_internal_degree = 2;
     self.x_idx = 0;
     self.f = cResolutionHomomorphism_construct(self.cResolution, self.cResolution, x_homological_degree, x_internal_degree);
     let v = cVector_construct(p, 1, 0);
@@ -258,7 +255,7 @@ message_handlers["resolve"] = function resolve(data){
     cResolutionHomomorphism_extend(f, max_degree - 2, max_degree - 2);
     cVector_free(v); v = null;
     message_handlers["serialize"](0);
-    */
+   
 };
 
 message_handlers["get_cocycle"] = function getCocycle(data){

@@ -201,20 +201,19 @@ void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_d
 //      resolution->differentials[homological_degree]->kernel should contain the kernel of the previous differential
 //      if homological_degree == 0, the kernel should be everything in the module.
 void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uint homological_degree, int degree){
-    // printf("degree: %d, homological_degree: %d, resolution->min_degree: %d\n",degree, homological_degree, resolution->min_degree);
-    // printf("(%d, %d)\n", homological_degree, degree);
     assert(degree >= (int)homological_degree + resolution->min_degree);
     assert(degree < resolution->max_degree);
-    uint shifted_degree = degree - resolution->module->min_degree;
     uint p = resolution->algebra->p;
+    uint shifted_degree = degree - resolution->module->min_degree;
+    
+    resolution->internal_degree_to_resolution_stage[shifted_degree] ++;
+
     FreeModuleHomomorphism *current_differential  = resolution->differentials[homological_degree + 1];
-    FreeModuleHomomorphism *previous_differential = resolution->differentials[homological_degree];
     FreeModule *source = current_differential->source;
 
     uint source_dimension = Module_getDimension(&current_differential->source->module, degree);
     uint target_dimension = Module_getDimension(current_differential->target, degree);
     assert(current_differential->source->number_of_generators_in_degree[shifted_degree] == 0);
-
     // The Homomorphism matrix has size source_dimension x target_dimension, but we are going to augment it with an
     // identity matrix so that gives a matrix with dimensions source_dimension x (target_dimension + source_dimension).
     // Later we're going to write into this same matrix an isomorphism source/image + new vectors --> kernel
@@ -224,106 +223,56 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     // the image of the next step in the resolution.
 
     // Pad the target dimension so that it ends in an aligned position.
-    uint padded_target_dimension = Vector_getPaddedDimension(p, target_dimension, 0);
+    uint first_source_index = Vector_getPaddedDimension(p, target_dimension, 0);    
     uint rows = max(source_dimension, target_dimension);
-    uint columns = padded_target_dimension + source_dimension + rows;
+    uint columns = first_source_index + source_dimension + rows;
     char matrix_memory[Matrix_getSize(p, rows, columns)];
     Matrix *full_matrix = Matrix_initialize(matrix_memory, p, rows, columns);
     // For the first stage we just want the part of size source_dimension x (padded_target_dimension + source_dimension).
     // Slice matrix out of full_matrix.
     char slice_matrix_memory[Matrix_getSliceSize(p, source_dimension)];
-    Matrix *matrix = Matrix_slice(full_matrix, slice_matrix_memory, 0, source_dimension, 0, padded_target_dimension + source_dimension);
+    Matrix *matrix = Matrix_slice(full_matrix, slice_matrix_memory, 0, source_dimension, 0, first_source_index + source_dimension);
     FreeModuleHomomorphism_getMatrix(current_differential, matrix, degree);
 
     // Write the identity matrix into the right block
     for(uint i = 0; i < source_dimension; i++){
-        Vector_setEntry(matrix->vectors[i], padded_target_dimension + i, 1);
+        Vector_setEntry(matrix->vectors[i], first_source_index + i, 1);
     }
 
     // Row reduce
     int column_to_pivot_row[matrix->columns];
     rowReduce(matrix, column_to_pivot_row, 0, 0);//target_dimension, padded_target_dimension);
-
+    // Make sure to permute the rows of the full_matrix so they are consistent with the slice.
     uint permutation[matrix->rows];
     Matrix_getRowPermutation(matrix, permutation);
-    Matrix_applyRowPermutation(full_matrix, permutation, matrix->rows);
+    Matrix_applyRowPermutation(full_matrix, permutation, matrix->rows); 
 
-    // Stage 1: Find kernel of current differential
-    // Locate first kernel row
-    uint first_kernel_row = matrix->rows;
-    for(uint i = padded_target_dimension; i < matrix->columns; i ++){
-        if(column_to_pivot_row[i] != -1){
-            first_kernel_row = column_to_pivot_row[i];
-            break;
-        }
-    }
-    // Every row after the first kernel row is also a kernel row, so now we know how big it is and can allocate space.
-    uint kernel_dimension = matrix->rows - first_kernel_row;
-    Subspace *kernel = Subspace_construct(p, kernel_dimension, source_dimension);
-    // Write pivots into kernel
-    for(uint i = 0; i < source_dimension; i++){
-        // Turns -1 into some negative number... make sure to check <0 for no pivot in column...
-        kernel->column_to_pivot_row[i] = column_to_pivot_row[i + padded_target_dimension] - first_kernel_row;
-    }
-
-    // Copy kernel matrix into kernel
-    for(uint row = 0; row < kernel_dimension; row++){
-        char slice_memory[Vector_getSize(p, 0, 0)];
-        char *slice_ptr = slice_memory;
-        Vector *slice = Vector_initialize(p, &slice_ptr, 0, 0);
-        Vector_slice(slice, matrix->vectors[first_kernel_row + row], padded_target_dimension, padded_target_dimension + source_dimension);
-        Vector_assign(kernel->matrix->vectors[row], slice);
-    }
+    Subspace *kernel = Matrix_computeKernel(matrix, column_to_pivot_row, first_source_index);
     current_differential->kernel[shifted_degree] = kernel;
 
     // Stage 2: Hit kernel of previous differential. 
-    Subspace *previous_cycles = previous_differential->kernel[shifted_degree];
-    // uint previous_cycle_dimension = previous_cycles->kernel->rows;
-    // We no longer care about the kernel rows since we stored them somewhere else, 
-    // so we're going to write over them.
-    uint current_target_row = first_kernel_row;
-    // Find basis of quotient previous_kernel/image and add new free module generators to hit
-    uint homology_dimension = 0;
-    for(uint i = 0; i < previous_cycles->matrix->columns; i++){
-        if(column_to_pivot_row[i] < 0 && previous_cycles->column_to_pivot_row[i] >= 0){
-            // Look up the cycle that we're missing and add a generator hitting it.
-            int kernel_vector_row = previous_cycles->column_to_pivot_row[i];
-            // assert(kernel_vector_row < previous_kernel->kernel->rows);
-            Vector *new_image = previous_cycles->matrix->vectors[kernel_vector_row];
-            // Stack allocate slice
-            char slice_memory[Vector_getSize(p, 0, 0)];
-            char *slice_ptr = slice_memory;
-            Vector *slice = Vector_initialize(p, &slice_ptr, 0, 0);
-            // Write new image to full_matrix
-            Vector_slice(slice, full_matrix->vectors[current_target_row], 0, previous_cycles->matrix->columns);
-            Vector_assign(slice, new_image);
-            // Vector_print("    new_image: %s\n", slice);
-            // Write elementary basis vector into right block of full_matrix
-            Vector_slice(slice, full_matrix->vectors[current_target_row], padded_target_dimension, full_matrix->columns);
-            Vector_setToZero(slice);
-            Vector_setEntry(slice, source_dimension + homology_dimension, 1);
-            current_target_row++;
-            homology_dimension++;
-        }
-    }
-    source->number_of_generators_in_degree[shifted_degree] = homology_dimension;
-    // Copy the outputs, currently stored in the coimage_to_image matrix, to the FreeModuleHomomorphism outputs field.
-    FreeModuleHomomorphism_AllocateSpaceForNewGenerators(current_differential, degree, homology_dimension);
-    for(uint i = 0; i < homology_dimension; i++){
-        char slice_memory[Vector_getSize(p, 0, 0)]; 
-        char *slice_ptr = slice_memory;
-        Vector *slice = Vector_initialize(p, &slice_ptr, 0, 0);
-        Vector_slice(slice, full_matrix->vectors[first_kernel_row + i], 0, target_dimension);
+    Subspace *previous_cycles = resolution->differentials[homological_degree]->kernel[shifted_degree];
+    // We stored the kernel rows somewhere else so we're going to write over them.
+    // Add new free module generators to hit basis for previous kernel
+    uint first_new_row = matrix->rows - kernel->matrix->rows;
+    uint new_generators = Matrix_extendImage(full_matrix, first_source_index, source_dimension, first_new_row, column_to_pivot_row, previous_cycles);
+    source->number_of_generators_in_degree[shifted_degree] = new_generators;
+    // Copy the outputs, currently stored in full_matrix, to the FreeModuleHomomorphism outputs field.
+    FreeModuleHomomorphism_AllocateSpaceForNewGenerators(current_differential, degree, new_generators);
+    char slice_memory[Vector_getSize(p, 0, 0)]; 
+    char *slice_ptr = slice_memory;
+    Vector *slice = Vector_initialize(p, &slice_ptr, 0, 0);
+    for(uint i = 0; i < new_generators; i++){
+        Vector_slice(slice, full_matrix->vectors[first_new_row + i], 0, target_dimension);
         FreeModuleHomomorphism_setOutput(current_differential, degree, i, slice);
     }
     FreeModule_ConstructBlockOffsetTable(source, degree);
 
-    // The part of the matrix that contains interesting information is current_target_row * (target_dimension + source_dimension + kernel_size).
+    // The part of the matrix that contains interesting information is occupied_rows x (target_dimension + source_dimension + kernel_size).
     // Allocate a matrix coimage_to_image with these dimensions.
-    uint coimage_to_image_rows = current_target_row;
-    uint coimage_to_image_column_start = padded_target_dimension;
-    uint coimage_to_image_columns = source_dimension + homology_dimension;
-    Matrix *coimage_to_image = Matrix_construct(p, coimage_to_image_rows, coimage_to_image_columns);
+    uint coimage_to_image_rows = first_new_row + new_generators;
+    source_dimension += new_generators;
+    Matrix *coimage_to_image = Matrix_construct(p, coimage_to_image_rows, source_dimension);
     current_differential->coimage_to_image_isomorphism[shifted_degree] = coimage_to_image;
 
     int useless_pivot_row_info[full_matrix->columns];
@@ -331,17 +280,9 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
 
     // Copy matrix contents to coimage_to_image
     for(uint i = 0; i < coimage_to_image_rows; i++) {
-        char slice_memory[Vector_getSize(p, 0, 0)]; 
-        char *slice_ptr = slice_memory;
-        Vector *slice = Vector_initialize(p, &slice_ptr, 0, 0);
-        Vector_slice(slice, full_matrix->vectors[i], coimage_to_image_column_start, coimage_to_image_column_start + coimage_to_image_columns);
+        Vector_slice(slice, full_matrix->vectors[i], first_source_index, first_source_index + source_dimension);
         Vector_assign(coimage_to_image->vectors[i], slice);
     }
-
-
-    // TODO: assertion about contents of useless_pivot_row_info?
-    // Should contain [0,1,2,3,...,n,-1,-1,-1,..., -1].
-    resolution->internal_degree_to_resolution_stage[shifted_degree] ++;
 }
 
 uint Resolution_gradedDimensionString(char *buffer, Resolution *resolution){
@@ -624,29 +565,27 @@ int main(int argc, char *argv[]){
     //     res->differentials[2]->coimage_to_image_isomorphism[9]->columns
     // );
 
-    // uint input_homological_degree = 2;
-    // uint input_degree = 12;
-    // ResolutionHomomorphism *f = ResolutionHomomorphism_construct(res, res, input_homological_degree, input_degree);
-    // Vector *v = Vector_construct(p, 1, 0);
-    // Vector_setEntry(v, 0, 1);
-    // ResolutionHomomorphism_setBaseMap(f, input_degree, 0, v);
-    // ResolutionHomomorphism_baseMapReady(f, 1000);
+    uint input_homological_degree = 1;
+    uint input_degree = 2;
+    ResolutionHomomorphism *f = ResolutionHomomorphism_construct(res, res, input_homological_degree, input_degree);
+    Vector *v = Vector_construct(p, 1, 0);
+    Vector_setEntry(v, 0, 1);
+    ResolutionHomomorphism_setBaseMap(f, input_degree, 0, v);
+    ResolutionHomomorphism_baseMapReady(f, 1000);
 
-    // ResolutionHomomorphism_extend(f, 6, 15);
+    ResolutionHomomorphism_extend(f, 6, 15);
 
-    // uint idx = FreeModule_operationGeneratorToIndex(M, 0, 0, 12, 0);
-    // int hom_deg = 2;
-    // int gen_deg = 4;
-    // int gen_idx = 0;
-    // int out_deg = gen_deg - f->internal_degree_shift;
-    // FreeModule *M = res->modules[hom_deg];
-    // Vector *output = Vector_construct(p, Module_getDimension((Module*)M,  out_deg), 0);
-    // // Vector_setEntry(output, idx, 1);
-    // FreeModuleHomomorphism_applyToGenerator(f->maps[hom_deg - 1], output, 1, gen_deg, gen_idx);
-    // char buffer[1000];
-    // FreeModule_element_toJSONString(buffer, (FreeModule*)f->maps[hom_deg - 1]->target,out_deg, output);
-    // printf("(%d, %d) ==> %s\n", hom_deg, gen_deg, buffer);
-    // Matrix_printSlice(res2->differentials[2]->coimage_to_image_isomorphism[8],15,64);
+    int hom_deg = 2;
+    int gen_deg = 10;
+    int gen_idx = 0;
+    int out_deg = gen_deg - f->internal_degree_shift;
+    FreeModule *M = res->modules[hom_deg];
+    Vector *output = Vector_construct(p, Module_getDimension((Module*)M,  out_deg), 0);
+    // Vector_setEntry(output, idx, 1);
+    FreeModuleHomomorphism_applyToGenerator(f->maps[hom_deg - 1], output, 1, gen_deg, gen_idx);
+    char buffer[1000];
+    FreeModule_element_toJSONString(buffer, (FreeModule*)f->maps[hom_deg - 1]->target,out_deg, output);
+    printf("(%d, %d) ==> %s\n", hom_deg, gen_deg, buffer);
     
     // for(int i = degree - 1 - res->min_degree; i >= 0; i--){
     //     printf("stage %*d: ", 2, i);
