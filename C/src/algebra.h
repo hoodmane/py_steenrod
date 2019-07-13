@@ -6,7 +6,7 @@
 #define CSTEENROD_ALGEBRA_H
 #include <stdbool.h>
 
-#include "FpVector.h"
+#include "Matrix.h"
 
 // List of structlines to indicate.
 // TODO: generalize to higher filtration elements?

@@ -93,6 +93,8 @@ add_executable(CSteenrod
         ../C/src/combinatorics.c
         ../C/src/FpVector.h
         ../C/src/FpVector.c
+        ../C/src/Matrix.h
+        ../C/src/Matrix.c  
         ../C/src/Algebra.h
         ../C/src/Algebra.c
         ../C/src/Module.h

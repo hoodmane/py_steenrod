@@ -11,7 +11,7 @@ typedef struct {
     int max_computed_degree;
     int degree_shift;
     Matrix **coimage_to_image_isomorphism;
-    Kernel **kernel;
+    Subspace **kernel;
 } FreeModuleHomomorphism;
 //void initializeFreeModuleHomomorphism(FreeModuleHomomorphism *f, )
 

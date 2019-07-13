@@ -37,6 +37,8 @@ typedef unsigned long long uint64;
 typedef long long int64;
 typedef unsigned int uint;
 
+extern size_t VECTOR_CONTAINER_SIZE;
+
 // Write a string representation of the array A of length length into buffer.
 int array_toString(char *buffer, uint *A, uint length);
 
@@ -148,48 +150,6 @@ void Vector_print(char *fmt_string, Vector *v);
 void Vector_serialize(char **buffer, Vector *v);
 Vector *Vector_deserialize(uint p, char **buffer);
 
-typedef struct {
-    uint p;
-    uint rows;
-    uint columns;
-    Vector **matrix;
-} Matrix;
-
-uint Matrix_getSize(uint p, uint rows, uint cols);
-Matrix *Matrix_initialize(char *memory, uint p, uint rows, uint cols);
-Matrix *Matrix_construct(uint p, uint rows, uint cols);
-void Matrix_free(Matrix *M);
-
-uint Matrix_toString(char *buffer, Matrix *M);
-void Matrix_print(Matrix *matrix);
-uint Matrix_getSliceSize(uint p, uint rows);
-Matrix *Matrix_slice(Matrix *M, char *memory, uint row_min, uint row_max, uint column_min, uint column_max);
-void Matrix_printSlice(Matrix *M, uint col_end, uint col_start);
-
-void Matrix_serialize(char **buffer, Matrix *v);
-Matrix *Matrix_deserialize(char **buffer);
-
-void Matrix_getRowPermutation(Matrix *M, uint *result);
-void Matrix_applyRowPermutation(Matrix *M, uint *permutation, uint rows);
-
-// Row reduce M. For each column i, column_to_pivot_row[i] is equal to: the row
-// with a pivot in column i or -1 if no such row exists.
-// When you delete the -1's from column_to_pivot_row, it looks like [0,1,2,...,rank(M)].
-void rowReduce(Matrix *M, int *column_to_pivot_row, uint, uint);
-
-
-typedef struct {
-    Matrix *kernel;
-    int *column_to_pivot_row;
-} Kernel;
-
-size_t Kernel_getSize(uint p, uint rows, uint columns);
-
-Kernel *Kernel_construct(uint p, uint rows, uint columns);
-void Kernel_free(Kernel *k);
-
-void Kernel_serialize(char **buffer, Kernel *kernel);
-Kernel *Kernel_deserialize(char **buffer);
 
 
 #endif //C_FP_VECTOR_H

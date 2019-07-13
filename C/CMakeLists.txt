@@ -20,6 +20,8 @@ add_executable(csteen
         src/combinatorics.c
         src/FpVector.h
         src/FpVector.c
+        src/Matrix.h
+        src/Matrix.c
         src/Algebra.h
         src/Algebra.c
         src/Module.h
@@ -51,6 +53,8 @@ add_library(CSteenrod SHARED
         src/combinatorics.c
         src/FpVector.h
         src/FpVector.c
+        src/Matrix.h
+        src/Matrix.c
         src/Algebra.h
         src/Algebra.c
         src/Module.h

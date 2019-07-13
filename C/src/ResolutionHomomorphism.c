@@ -95,7 +95,7 @@ void ResolutionHomomorphism_extend_step(ResolutionHomomorphism *f, uint input_ho
     if(Module_getDimension((Module*)f->target->modules[output_homological_degree + 1], output_internal_degree) == 0){
         return; // nothing to do -- target is empty
     }
-    Kernel *d_target_image = f->target->differentials[output_homological_degree]->kernel[output_internal_degree];
+    Subspace *d_target_image = f->target->differentials[output_homological_degree]->kernel[output_internal_degree];
     Matrix *d_quasi_inverse = d_target->coimage_to_image_isomorphism[output_internal_degree];
     assert(d_quasi_inverse != NULL);
     uint dx_dimension = Module_getDimension((Module*)f_prev->source, input_internal_degree);
@@ -115,12 +115,12 @@ void ResolutionHomomorphism_extend_step(ResolutionHomomorphism *f, uint input_ho
         FreeModuleHomomorphism_applyToGenerator(d_source, dx_vector, 1, input_internal_degree, k);
         FreeModuleHomomorphism_apply(f_prev, fdx_vector, 1, input_internal_degree, dx_vector);
         uint row = 0;
-        for(uint i = 0; i < d_target_image->kernel->columns; i++){
+        for(uint i = 0; i < d_target_image->matrix->columns; i++){
             if(d_target_image->column_to_pivot_row[i] < 0){
                 continue;
             }
             uint coeff = Vector_getEntry(fdx_vector, i);
-            Vector_add(fx_vector, d_quasi_inverse->matrix[row], coeff);
+            Vector_add(fx_vector, d_quasi_inverse->vectors[row], coeff);
             row ++;
         }
         FreeModuleHomomorphism_setOutput(f_cur, input_internal_degree, k, fx_vector);
@@ -135,7 +135,7 @@ void ResolutionHomomorphism_extend_step(ResolutionHomomorphism *f, uint input_ho
             Vector_print("fx_vector: %s\n", fx_vector);
             FreeModule_element_toJSONString(buffer, (FreeModule*)f_prev->source, output_internal_degree, fx_vector);
             printf("fx json: %s\n\n", buffer);
-            Matrix_print(d_target_image->kernel);
+            Matrix_print(d_target_image->matrix);
             Matrix_print(d_quasi_inverse);
         }        
         Vector_setToZero(dx_vector);

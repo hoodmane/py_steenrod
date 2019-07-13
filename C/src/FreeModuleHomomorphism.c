@@ -10,7 +10,7 @@ FreeModuleHomomorphism *FreeModuleHomomorphism_construct(FreeModule *source, Mod
         sizeof(FreeModuleHomomorphism) 
         + num_degrees * sizeof(Vector**) // outputs
         + num_degrees * sizeof(Matrix*)  // coimage_to_image_iso
-        + num_degrees * sizeof(Kernel*)  // kernel
+        + num_degrees * sizeof(Subspace*)  // kernel
     );
     f->source = source;
     f->target = target;
@@ -19,8 +19,8 @@ FreeModuleHomomorphism *FreeModuleHomomorphism_construct(FreeModule *source, Mod
     f->degree_shift = degree_shift;
     f->outputs = (Vector***)(f + 1);
     f->coimage_to_image_isomorphism = (Matrix**)(f->outputs + num_degrees);
-    f->kernel = (Kernel**)(f->coimage_to_image_isomorphism + num_degrees);
-    memset(f+1, 0, num_degrees * (sizeof(Vector**) + sizeof(Matrix*) + sizeof(Kernel*)));
+    f->kernel = (Subspace**)(f->coimage_to_image_isomorphism + num_degrees);
+    memset(f+1, 0, num_degrees * (sizeof(Vector**) + sizeof(Matrix*) + sizeof(Subspace*)));
     assert(f->coimage_to_image_isomorphism[0] == NULL);
     assert(f->kernel[0] == NULL);
     return f;
@@ -32,7 +32,7 @@ void FreeModuleHomomorphism_free(FreeModuleHomomorphism *f){
     }
     for(int i = 0; i < f->max_degree - f->source->module.min_degree; i++){
         Matrix_free(f->coimage_to_image_isomorphism[i]);
-        Kernel_free(f->kernel[i]);
+        Subspace_free(f->kernel[i]);
         free(f->outputs[i]);
     }
     free(f);
@@ -134,7 +134,7 @@ void FreeModuleHomomorphism_getMatrix(FreeModuleHomomorphism *f, Matrix *result,
         for(uint gen_idx = 0; gen_idx < FreeModule_getNumberOfGensInDegree(f->source, gen_deg); gen_idx++){
             for(uint op_idx = 0; op_idx < num_ops; op_idx++){
                 Vector *output_on_generator = FreeModuleHomomorphism_getOutput(f, gen_deg, gen_idx);
-                Module_actOnElement(f->target, result->matrix[i], 1, op_deg, op_idx, gen_deg + f->degree_shift, output_on_generator);
+                Module_actOnElement(f->target, result->vectors[i], 1, op_deg, op_idx, gen_deg + f->degree_shift, output_on_generator);
                 i++;
             }
         }
