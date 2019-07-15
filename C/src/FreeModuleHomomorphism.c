@@ -75,6 +75,19 @@ void FreeModuleHomomorphism_setOutput(FreeModuleHomomorphism *f, int generator_d
     Vector_assign(f->outputs[generator_degree - f->source->module.min_degree][generator_index], output);
 }
 
+void FreeModuleHomomorphism_addGeneratorsFromMatrixRows(FreeModuleHomomorphism *f, uint degree, Matrix* matrix, uint first_new_row, uint new_generators){
+    uint p = matrix->p;
+    uint dimension = Module_getDimension(f->target, degree);
+    FreeModuleHomomorphism_AllocateSpaceForNewGenerators(f, degree, new_generators);
+    char slice_memory[Vector_getSize(p, 0, 0)]; 
+    char *slice_ptr = slice_memory;
+    Vector *slice = Vector_initialize(p, &slice_ptr, 0, 0);
+    for(uint i = 0; i < new_generators; i++){
+        Vector_slice(slice, matrix->vectors[first_new_row + i], 0, dimension);
+        FreeModuleHomomorphism_setOutput(f, degree, i, slice);
+    }
+}
+
 // Primarily for Javascript (so we can avoid indexing struct fields).
 void FreeModuleHomomorphism_applyToGenerator(FreeModuleHomomorphism *f, Vector *result, uint coeff, int generator_degree, uint generator_index){
     Vector *output_on_generator = FreeModuleHomomorphism_getOutput(f, generator_degree, generator_index);
@@ -140,6 +153,34 @@ void FreeModuleHomomorphism_getMatrix(FreeModuleHomomorphism *f, Matrix *result,
         }
     }
 }
+
+void FreeModuleHomomorphism_computeKernel(FreeModuleHomomorphism *f, Matrix *full_matrix, int *pivots, uint degree){
+    uint p = full_matrix->p;
+    uint source_dimension = Module_getDimension((Module*)f->source, degree);
+    uint target_dimension = Module_getDimension(f->target, degree);
+    uint first_source_index = Vector_getPaddedDimension(p, target_dimension, 0);        
+    // For the first stage we just want the part of size source_dimension x (padded_target_dimension + source_dimension).
+    // Slice matrix out of full_matrix.
+    char slice_matrix_memory[Matrix_getSliceSize(full_matrix->p, source_dimension)];
+    Matrix *matrix = Matrix_slice(full_matrix, slice_matrix_memory, 0, source_dimension, 0, first_source_index + source_dimension);
+    FreeModuleHomomorphism_getMatrix(f, matrix, degree);
+
+    // Write the identity matrix into the right block
+    for(uint i = 0; i < source_dimension; i++){
+        Vector_setEntry(matrix->vectors[i], first_source_index + i, 1);
+    }
+
+    // Row reduce
+    rowReduce(matrix, pivots, 0, 0);//target_dimension, padded_target_dimension);
+    // Make sure to permute the rows of the full_matrix so they are consistent with the slice.
+    uint permutation[matrix->rows];
+    Matrix_getRowPermutation(matrix, permutation);
+    Matrix_applyRowPermutation(full_matrix, permutation, matrix->rows); 
+
+    Subspace *kernel = Matrix_computeKernel(matrix, pivots, first_source_index);
+    f->kernel[degree - f->target->min_degree] = kernel;
+}
+
 
 FreeModule *FreeModuleHomomorphism_getSource(FreeModuleHomomorphism *f){
     return f->source;

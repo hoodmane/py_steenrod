@@ -23,9 +23,10 @@ void FreeModuleHomomorphism_applyToBasisElement(FreeModuleHomomorphism *f, Vecto
 void FreeModuleHomomorphism_apply(FreeModuleHomomorphism *f, Vector *result, uint coeff, int input_degree, Vector *input);
 
 void FreeModuleHomomorphism_AllocateSpaceForNewGenerators(FreeModuleHomomorphism *f, int degree, uint num_gens);
+void FreeModuleHomomorphism_addGeneratorsFromMatrixRows(FreeModuleHomomorphism *f, uint degree, Matrix* matrix, uint first_new_row, uint new_generators);
 
 void FreeModuleHomomorphism_getMatrix(FreeModuleHomomorphism *f, Matrix *result, int degree);
-
+void FreeModuleHomomorphism_computeKernel(FreeModuleHomomorphism *f, Matrix *full_matrix, int *pivots, uint degree);
 
 // For Javascript:
 FreeModule *FreeModuleHomomorphism_getSource(FreeModuleHomomorphism *f);

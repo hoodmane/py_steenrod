@@ -60,7 +60,7 @@ SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
 )
 
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
-    '_Resolution_construct', '_Resolution_resolveThroughDegree', \
+    '_Resolution_construct', '_resolveThroughDegree', \
     '_Resolution_getDifferential'"
 )
 
@@ -111,11 +111,13 @@ add_executable(CSteenrod
         ../C/src/milnor_io.c
         ../C/src/AdemAlgebra.h
         ../C/src/AdemAlgebra.c
-        ../C/src/adem_io.c        
+        ../C/src/adem_io.c
         ../C/src/Resolution.h
         ../C/src/Resolution.c
         ../C/src/ResolutionHomomorphism.h
-        ../C/src/ResolutionHomomorphism.c        
+        ../C/src/ResolutionHomomorphism.c
+        ../C/src/main.h
+        ../C/src/main.c
     )
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")

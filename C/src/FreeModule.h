@@ -24,6 +24,7 @@ void FreeModule_actOnBasis(Module *this, Vector *result, uint coeff,
     int op_degree, uint op_index, int mod_degree, uint mod_idx);
 
 void FreeModule_ConstructBlockOffsetTable(FreeModule *M, int degree);
+void FreeModule_addGenerators(FreeModule *this, int degree, uint new_generators);
 uint FreeModule_operationGeneratorToIndex(FreeModule *this, int op_deg, uint op_idx, int gen_deg, uint gen_idx);
 FreeModuleOperationGeneratorPair FreeModule_indexToOpGen(FreeModule *this, int degree, uint index);
 

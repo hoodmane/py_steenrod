@@ -13,9 +13,9 @@ ResolutionHomomorphism *ResolutionHomomorphism_construct(
     if(max_hom_deg > target->max_homological_degree){
         max_hom_deg = target->max_homological_degree;
     }
-    int max_degree = source->max_degree;
-    if(target->max_degree < max_degree){
-        max_degree = target->max_degree;
+    int max_degree = source->max_internal_degree;
+    if(target->max_internal_degree < max_degree){
+        max_degree = target->max_internal_degree;
     }
     ResolutionHomomorphism *result = malloc(
         sizeof(ResolutionHomomorphism)
@@ -31,12 +31,12 @@ ResolutionHomomorphism *ResolutionHomomorphism_construct(
     result->max_degree = max_degree;
     result->max_homological_degree = max_hom_deg;
     for(uint i = 0; i < max_hom_deg; i++){
-        result->computed_degree[i] = result->source->min_degree;   
+        result->computed_degree[i] = result->source->min_internal_degree;   
     }
     result->maps[0] = FreeModuleHomomorphism_construct(
         source->modules[homological_degree_shift + 1], (Module*)target->modules[1], -internal_degree_shift, max_degree
     );
-    for(int i = result->source->min_degree; i < result->source->max_degree; i++){
+    for(int i = result->source->min_internal_degree; i < result->source->max_internal_degree; i++){
         uint num_gens = FreeModule_getNumberOfGensInDegree(result->source->modules[homological_degree_shift + 1], i);
         FreeModuleHomomorphism_AllocateSpaceForNewGenerators(result->maps[0], i, num_gens);
     }
@@ -45,7 +45,7 @@ ResolutionHomomorphism *ResolutionHomomorphism_construct(
 
 void ResolutionHomomorphism_setBaseMap(ResolutionHomomorphism *f, int gen_degree, int gen_index, Vector *output){
     assert(f->computed_degree[0] <= gen_degree);
-    assert(gen_degree - f->internal_degree_shift >= f->target->min_degree);
+    assert(gen_degree - f->internal_degree_shift >= f->target->min_internal_degree);
     // assert(gen_degree - f->internal_degree_shift >= f->target->min_degree );
     // assert(Resolution_cycleQ(f->target, 0, gen_degree - f->internal_degree_shift, output));
     FreeModuleHomomorphism_setOutput(f->maps[0], gen_degree, gen_index, output);
@@ -61,7 +61,7 @@ void ResolutionHomomorphism_extend(ResolutionHomomorphism *f, uint source_homolo
     assert(source_homological_degree >= f->homological_degree_shift);
     for(uint i = 1; i < source_homological_degree - f->homological_degree_shift; i++){
         if(f->computed_degree[i] <= source_degree){
-            if(f->computed_degree[i] == f->source->min_degree){
+            if(f->computed_degree[i] == f->source->min_internal_degree){
                 f->maps[i] = FreeModuleHomomorphism_construct(
                     f->source->modules[i + f->homological_degree_shift + 1], 
                     (Module*)f->target->modules[i + 1],
@@ -114,30 +114,8 @@ void ResolutionHomomorphism_extend_step(ResolutionHomomorphism *f, uint input_ho
     for(uint k = 0; k < num_gens; k++){
         FreeModuleHomomorphism_applyToGenerator(d_source, dx_vector, 1, input_internal_degree, k);
         FreeModuleHomomorphism_apply(f_prev, fdx_vector, 1, input_internal_degree, dx_vector);
-        uint row = 0;
-        for(uint i = 0; i < d_target_image->matrix->columns; i++){
-            if(d_target_image->column_to_pivot_row[i] < 0){
-                continue;
-            }
-            uint coeff = Vector_getEntry(fdx_vector, i);
-            Vector_add(fx_vector, d_quasi_inverse->vectors[row], coeff);
-            row ++;
-        }
+        Matrix_quasiInverse_apply(fx_vector, d_target_image, d_quasi_inverse, fdx_vector);
         FreeModuleHomomorphism_setOutput(f_cur, input_internal_degree, k, fx_vector);
-        if(input_homological_degree == 3 && input_internal_degree == 6){
-            char buffer[2000];
-            Vector_print("dx_vector: %s\n", dx_vector);
-            FreeModule_element_toJSONString(buffer, f_prev->source, input_internal_degree, dx_vector);
-            printf("dx json: %s\n\n", buffer);
-            Vector_print("fdx_vector: %s\n", fdx_vector);
-            FreeModule_element_toJSONString(buffer, (FreeModule*)f_prev->target, output_internal_degree, fdx_vector);
-            printf("fdx json: %s\n\n", buffer);
-            Vector_print("fx_vector: %s\n", fx_vector);
-            FreeModule_element_toJSONString(buffer, (FreeModule*)f_prev->source, output_internal_degree, fx_vector);
-            printf("fx json: %s\n\n", buffer);
-            Matrix_print(d_target_image->matrix);
-            Matrix_print(d_quasi_inverse);
-        }        
         Vector_setToZero(dx_vector);
         Vector_setToZero(fdx_vector);
         Vector_setToZero(fx_vector);
@@ -146,4 +124,41 @@ void ResolutionHomomorphism_extend_step(ResolutionHomomorphism *f, uint input_ho
 
 FreeModuleHomomorphism *ResolutionHomomorphism_getMap(ResolutionHomomorphism *f, uint homological_degree){
     return f->maps[homological_degree - f->homological_degree_shift];
+}
+
+ResolutionWithMapsToUnitResolution *ResolutionWithMapsToUnitResolution_construct(Resolution *res, Resolution *unit_res, uint max_homological_degree){
+    size_t size = sizeof(ResolutionWithMapsToUnitResolution);
+    size += sizeof(ResolutionHomomorphism***) * res->max_homological_degree;
+    size += sizeof(ResolutionHomomorphism**) * (res->max_internal_degree - res->min_internal_degree);
+    char *memory = malloc(size);
+    ResolutionWithMapsToUnitResolution *result = (ResolutionWithMapsToUnitResolution *)memory;
+    memory += sizeof(ResolutionWithMapsToUnitResolution);
+    result->resolution = res;
+    result->max_product_homological_degree = max_homological_degree;
+    result->unit_resolution = unit_res;
+    result->chain_maps_to_trivial_module_resolution = (ResolutionHomomorphism****)memory;
+    memory += sizeof(ResolutionHomomorphism***) * res->max_homological_degree;
+    for(uint i=0; i<res->max_homological_degree; i++){
+        result->chain_maps_to_trivial_module_resolution[i] = (ResolutionHomomorphism***)memory;
+        memory += sizeof(ResolutionHomomorphism**);
+    }
+    return result;
+}
+
+void ResolutionWithMapsToUnitResolution_extendMaps(ResolutionWithMapsToUnitResolution *res, uint homological_degree, int internal_degree){
+    uint max_hom_deg = homological_degree;
+    uint shifted_degree = internal_degree - res->resolution->min_internal_degree;
+    if(res->max_product_homological_degree < max_hom_deg){
+        max_hom_deg = res->max_product_homological_degree;
+    }
+    for(uint i = 0; i < max_hom_deg; i++){
+        uint hom_deg = homological_degree - i;
+        uint num_gens = res->resolution->modules[hom_deg + 1]->number_of_generators_in_degree[shifted_degree];
+        for(uint j = 0; j < num_gens; j++){
+            ResolutionHomomorphism_extend_step(
+                res->chain_maps_to_trivial_module_resolution[hom_deg][shifted_degree][j],
+                i, internal_degree
+            );
+        }
+    }
 }

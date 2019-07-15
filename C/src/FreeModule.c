@@ -100,9 +100,7 @@ void FreeModule_ConstructBlockOffsetTable(FreeModule *M, int degree){
     assert(degree < M->module.max_degree);
     int shifted_degree = degree - M->module.min_degree;
     FreeModuleInternal *module = (FreeModuleInternal *) M;
-    if(module->generator_to_index_table[shifted_degree] != NULL){
-        return;
-    }
+    assert(module->generator_to_index_table[shifted_degree] == NULL);
     // gen_to_idx goes gen_degree => gen_idx => start of block.
     // so gen_to_idx_size should be (number of possible degrees + 1) * sizeof(uint*) + number of gens * sizeof(uint).
     // The other part of the table goes idx => opgen
@@ -151,6 +149,13 @@ void FreeModule_ConstructBlockOffsetTable(FreeModule *M, int degree){
     assert((char*)basis_element_to_opgen_table == memory + total_size);
 }
 
+void FreeModule_addGenerators(FreeModule *this, int degree, uint new_generators){
+    assert(degree >= this->module.min_degree);
+    uint shifted_degree = degree - this->module.min_degree;
+    assert(((FreeModuleInternal*)this)->generator_to_index_table[shifted_degree] == NULL);
+    this->number_of_generators_in_degree[shifted_degree] = new_generators;
+    FreeModule_ConstructBlockOffsetTable(this, degree);
+}
 
 
 uint FreeModule_getNumberOfGensInDegree(FreeModule *this, int degree){

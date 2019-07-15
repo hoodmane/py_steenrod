@@ -1096,11 +1096,11 @@ function updateGlobalBufferViews() {
 
 
 var STATIC_BASE = 1024,
-    STACK_BASE = 21968,
+    STACK_BASE = 22064,
     STACKTOP = STACK_BASE,
-    STACK_MAX = 5264848,
-    DYNAMIC_BASE = 5264848,
-    DYNAMICTOP_PTR = 21712;
+    STACK_MAX = 5264944,
+    DYNAMIC_BASE = 5264944,
+    DYNAMICTOP_PTR = 21808;
 
 
 
@@ -1486,7 +1486,7 @@ var ASM_CONSTS = [];
 
 
 
-// STATICTOP = STATIC_BASE + 20944;
+// STATICTOP = STATIC_BASE + 21040;
 /* global initializers */ /*__ATINIT__.push();*/
 
 
@@ -1497,7 +1497,7 @@ var ASM_CONSTS = [];
 
 
 /* no memory initializer */
-var tempDoublePtr = 21952
+var tempDoublePtr = 22048
 
 function copyTempFloat(ptr) { // functions, because inlining this code increases code size too much
   HEAP8[tempDoublePtr] = HEAP8[ptr];
@@ -1784,7 +1784,6 @@ var _ResolutionHomomorphism_getMap = Module["_ResolutionHomomorphism_getMap"] = 
 var _ResolutionHomomorphism_setBaseMap = Module["_ResolutionHomomorphism_setBaseMap"] = function() {  return Module["asm"]["_ResolutionHomomorphism_setBaseMap"].apply(null, arguments) };
 var _Resolution_construct = Module["_Resolution_construct"] = function() {  return Module["asm"]["_Resolution_construct"].apply(null, arguments) };
 var _Resolution_getDifferential = Module["_Resolution_getDifferential"] = function() {  return Module["asm"]["_Resolution_getDifferential"].apply(null, arguments) };
-var _Resolution_resolveThroughDegree = Module["_Resolution_resolveThroughDegree"] = function() {  return Module["asm"]["_Resolution_resolveThroughDegree"].apply(null, arguments) };
 var _Resolution_serialize = Module["_Resolution_serialize"] = function() {  return Module["asm"]["_Resolution_serialize"].apply(null, arguments) };
 var _SerializedResolution_getBinaryData = Module["_SerializedResolution_getBinaryData"] = function() {  return Module["asm"]["_SerializedResolution_getBinaryData"].apply(null, arguments) };
 var _SerializedResolution_getBinarySize = Module["_SerializedResolution_getBinarySize"] = function() {  return Module["asm"]["_SerializedResolution_getBinarySize"].apply(null, arguments) };
@@ -1803,6 +1802,7 @@ var _initializePrime = Module["_initializePrime"] = function() {  return Module[
 var _malloc = Module["_malloc"] = function() {  return Module["asm"]["_malloc"].apply(null, arguments) };
 var _memcpy = Module["_memcpy"] = function() {  return Module["asm"]["_memcpy"].apply(null, arguments) };
 var _memset = Module["_memset"] = function() {  return Module["asm"]["_memset"].apply(null, arguments) };
+var _resolveThroughDegree = Module["_resolveThroughDegree"] = function() {  return Module["asm"]["_resolveThroughDegree"].apply(null, arguments) };
 var _sbrk = Module["_sbrk"] = function() {  return Module["asm"]["_sbrk"].apply(null, arguments) };
 var establishStackSpace = Module["establishStackSpace"] = function() {  return Module["asm"]["establishStackSpace"].apply(null, arguments) };
 var stackAlloc = Module["stackAlloc"] = function() {  return Module["asm"]["stackAlloc"].apply(null, arguments) };

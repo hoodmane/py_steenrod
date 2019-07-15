@@ -242,7 +242,7 @@ message_handlers["resolve"] = function resolve(data){
     t0 = performance.now();
     self.p = p;
     self.cResolution = cResolution_construct(module.cModule, max_degree, callbacks.addClassPtr, callbacks.addStructlinePtr);
-    cResolution_resolveThroughDegree(self.cResolution, max_degree);
+    cresolveThroughDegree(self.cResolution, max_degree);
 
     self.x_homological_degree = 1;
     self.x_internal_degree = 2;
@@ -254,8 +254,7 @@ message_handlers["resolve"] = function resolve(data){
     cResolutionHomomorphism_baseMapReady(self.f, 1000);
     cResolutionHomomorphism_extend(f, max_degree - 2, max_degree - 2);
     cVector_free(v); v = null;
-    message_handlers["serialize"](0);
-   
+    // message_handlers["serialize"](0);
 };
 
 message_handlers["get_cocycle"] = function getCocycle(data){

@@ -150,8 +150,8 @@ let cResolution_free = Module.cwrap("Resolution_free", 'void', ['pointer']);
 // FreeModuleHomomorphism *Resolution_getDifferential(Resolution *resolution, uint homological_degree);
 let cResolution_getDifferential = Module.cwrap("Resolution_getDifferential", 'pointer', ['pointer', 'number']);
 
-// void Resolution_resolveThroughDegree(Resolution *res, uint degree);
-let cResolution_resolveThroughDegree = Module.cwrap("Resolution_resolveThroughDegree", 'void', ['pointer', 'number']);
+// void resolveThroughDegree(Resolution *res, uint degree);
+let cresolveThroughDegree = Module.cwrap("resolveThroughDegree", 'void', ['pointer', 'number']);
 
 // SerializedResolution *Resolution_serialize(Resolution *res);
 let cResolution_serialize = Module.cwrap("Resolution_serialize", "pointer", ["pointer"]);
