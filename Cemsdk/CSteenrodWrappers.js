@@ -186,3 +186,6 @@ let cResolutionHomomorphism_extend = Module.cwrap('ResolutionHomomorphism_extend
 
 // FreeModuleHomomorphism *ResolutionHomomorphism_getMap(ResolutionHomomorphism *f, uint homological_degree)
 let cResolutionHomomorphism_getMap = Module.cwrap('ResolutionHomomorphism_getMap', 'pointer', ['pointer', 'number']);
+
+// ResolutionWithMapsToUnitResolution *ResolutionWithMapsToUnitResolution_construct(Resolution *res, Resolution *unit_res, uint max_homological_degree);
+let cResolutionWithMapsToUnitResolution_construct = Module.cwrap('ResolutionWithMapsToUnitResolution_construct', 'pointer', ['pointer', 'pointer', 'number']);

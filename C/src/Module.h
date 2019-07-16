@@ -18,7 +18,8 @@ typedef struct Module {
     char *name;
     uint type;
     int min_degree;
-    int max_degree;        
+    int max_degree; // Rename to max_allocated_degree?
+    int max_computed_degree;
 // Methods:
     bool (*computeBasis)(struct Module *this, int degree);
     uint (*getDimension)(struct Module *this, int degree);

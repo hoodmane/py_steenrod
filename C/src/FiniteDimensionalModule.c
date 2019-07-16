@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <limits.h>
 
 #include "FiniteDimensionalModule.h"
 
@@ -15,7 +16,8 @@ FiniteDimensionalModule *FiniteDimensionalModule_construct(Algebra *algebra, cha
     result->module.getDimension = FiniteDimensionalModule_getDimension;
     result->module.actOnBasis = FiniteDimensionalModule_actOnBasis;
     result->module.min_degree = min_degree;
-    result->module.max_degree = -1; // There is no "max degree" for a finite module -- we've computed it through an infinite range.
+    result->module.max_degree = INT_MAX; // There is no "max degree" for a finite module -- we've computed it through an infinite range.
+    result->module.max_computed_degree = INT_MAX;
     result->max_basis_degree = max_basis_degree;
     memcpy(result->graded_dimension, graded_dimension, (max_basis_degree - min_degree) * sizeof(uint));
     return result;

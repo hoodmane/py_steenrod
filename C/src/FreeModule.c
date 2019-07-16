@@ -7,7 +7,6 @@ typedef struct {
     Module module;
     uint *number_of_generators_in_degree;
     // private fields
-    uint computed_degree;
     FreeModuleOperationGeneratorPair **basis_element_to_opgen_table;
     uint ***generator_to_index_table;
 } FreeModuleInternal;
@@ -28,7 +27,7 @@ FreeModule *FreeModule_construct(Algebra *algebra, int min_degree, int max_degre
     module->module.actOnBasis = FreeModule_actOnBasis;
     module->module.max_degree = max_degree;
     module->module.min_degree = min_degree;
-    module->computed_degree = 0;
+    module->module.max_computed_degree = min_degree;
     module->number_of_generators_in_degree = (uint *)(module + 1);
     module->basis_element_to_opgen_table = (FreeModuleOperationGeneratorPair**)(
         module->number_of_generators_in_degree + num_degrees
@@ -98,6 +97,8 @@ void FreeModule_actOnBasis(Module *this, Vector *result, uint coeff, int op_deg,
 void FreeModule_ConstructBlockOffsetTable(FreeModule *M, int degree){
     assert(degree>=M->module.min_degree);
     assert(degree < M->module.max_degree);
+    assert(degree >= M->module.max_computed_degree);
+    M->module.max_computed_degree = degree;
     int shifted_degree = degree - M->module.min_degree;
     FreeModuleInternal *module = (FreeModuleInternal *) M;
     assert(module->generator_to_index_table[shifted_degree] == NULL);

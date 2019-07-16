@@ -19,8 +19,7 @@ typedef struct Resolution_s {
     FreeModuleHomomorphism **differentials;// Each differential has source the module with the same index in resolution_modules
     int *internal_degree_to_resolution_stage;       // Records how far we've resolved in each degree (homological_degree + 1)
     uint max_homological_degree;
-    int min_internal_degree;
-    int max_internal_degree;
+    uint computed_homological_degree;
 
     void (*addClass)(uint hom_deg, int int_deg, char *cocycle_name);
     void (*addStructline)(
@@ -35,7 +34,7 @@ FreeModuleHomomorphism *Resolution_getDifferential(Resolution *resolution, uint 
 
 Resolution *Resolution_construct(
     FiniteDimensionalModule *module,
-    int max_degree,
+    uint max_homological_degree,
     void (*addClass)(uint hom_deg, int int_deg, char *cocycle_name),
     void (*addStructline)(
         uint source_hom_deg, int source_int_deg, uint source_idx, 
@@ -47,6 +46,7 @@ void Resolution_free(Resolution *resolution);
 void Resolution_step(Resolution *resolution, uint homological_degree, int degree);
 void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_degree, int degree, uint source_idx);
 bool Resolution_cycleQ(Resolution *res, uint homological_degree, int degree, Vector *element);
+uint Resolution_numberOfGensInDegree(Resolution *res, uint homological_degree, int internal_degree);
 
 typedef struct {
     size_t json_size;

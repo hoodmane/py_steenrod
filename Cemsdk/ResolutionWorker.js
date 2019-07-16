@@ -242,18 +242,19 @@ message_handlers["resolve"] = function resolve(data){
     t0 = performance.now();
     self.p = p;
     self.cResolution = cResolution_construct(module.cModule, max_degree, callbacks.addClassPtr, callbacks.addStructlinePtr);
-    cresolveThroughDegree(self.cResolution, max_degree);
+    self.cResWithMaps = cResolutionWithMapsToUnitResolution_construct(self.cResolution, self.cResolution, 2);
+    cresolveThroughDegree(self.cResWithMaps, max_degree);
 
-    self.x_homological_degree = 1;
-    self.x_internal_degree = 2;
-    self.x_idx = 0;
-    self.f = cResolutionHomomorphism_construct(self.cResolution, self.cResolution, x_homological_degree, x_internal_degree);
-    let v = cVector_construct(p, 1, 0);
-    cVector_setEntry(v, 0, 1);
-    cResolutionHomomorphism_setBaseMap(self.f, x_internal_degree, x_idx, v);
-    cResolutionHomomorphism_baseMapReady(self.f, 1000);
-    cResolutionHomomorphism_extend(f, max_degree - 2, max_degree - 2);
-    cVector_free(v); v = null;
+    // self.x_homological_degree = 1;
+    // self.x_internal_degree = 2;
+    // self.x_idx = 0;
+    // self.f = cResolutionHomomorphism_construct(self.cResolution, self.cResolution, x_homological_degree, x_internal_degree);
+    // let v = cVector_construct(p, 1, 0);
+    // cVector_setEntry(v, 0, 1);
+    // cResolutionHomomorphism_setBaseMap(self.f, x_internal_degree, x_idx, v);
+    // cResolutionHomomorphism_baseMapReady(self.f, 1000);
+    // cResolutionHomomorphism_extend(f, max_degree - 2, max_degree - 2);
+    // cVector_free(v); v = null;
     // message_handlers["serialize"](0);
 };
 

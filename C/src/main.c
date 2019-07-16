@@ -1,3 +1,6 @@
+#ifndef CSTEENROD_MAIN_H
+#define CSTEENROD_MAIN_H
+
 #include <stdio.h>
 
 #include "main.h"
@@ -6,26 +9,26 @@
 #include "AdemAlgebra.h"
 #include "MilnorAlgebra.h"
 #include "ResolutionHomomorphism.h"
-#include "Resolution.h"
 
 
-void resolveThroughDegree(Resolution *res, int degree){
-    for(int int_deg = res->min_internal_degree; int_deg < degree; int_deg ++){
-        for(int hom_deg = 0; hom_deg <= int_deg - res->min_internal_degree; hom_deg++){           
+void resolveThroughDegree(ResolutionWithMapsToUnitResolution *res_with_maps, int degree){
+    for(int int_deg = res_with_maps->resolution->module->min_degree; int_deg < degree; int_deg ++){
+        for(int hom_deg = 0; hom_deg <= int_deg - res_with_maps->resolution->module->min_degree; hom_deg++){           
             // printf("(%d, %d)\n", hom_deg, int_deg);
-            stepResolution(res, hom_deg, int_deg);
+            stepResolution(res_with_maps, hom_deg, int_deg);
         }
     }
 }
 
-void stepResolution(Resolution *res, uint homological_degree, int degree){
+void stepResolution(ResolutionWithMapsToUnitResolution *res_with_maps, uint homological_degree, int degree){
+    Resolution *res = res_with_maps->resolution;
     // printf("degree: %d, homological_degree: %d\n", degree, homological_degree);
     // Construct kernel -- say that it's everything.
     // We put the module itself in degree zero and we'll want to hit the whole thing.
     Resolution_step(res, homological_degree, degree);
     // Report the answers.
     // Classes:
-    uint num_gens = res->modules[homological_degree + 1]->number_of_generators_in_degree[degree-res->min_internal_degree];
+    uint num_gens = FreeModule_getNumberOfGensInDegree(res->modules[homological_degree + 1], degree);
     for(uint i=0; i < num_gens; i++){
         // printf("addClass(%d, %d)\n", homological_degree, degree);
         res->addClass(homological_degree, degree, "");
@@ -33,7 +36,28 @@ void stepResolution(Resolution *res, uint homological_degree, int degree){
             Resolution_computeFiltrationOneProducts(res, homological_degree, degree, i);
         }
     }
-
+    // printf("extend-maps %d, %d", homological_degree, degree)
+    ResolutionWithMapsToUnitResolution_extendMaps(res_with_maps, homological_degree, degree);    
+    uint beta_homological_degree = 2;
+    int beta_degree = 12;
+    if(homological_degree >= beta_homological_degree && degree >= beta_degree){
+        uint source_homological_degree = homological_degree - beta_homological_degree;
+        int source_degree = degree - beta_degree;
+        for(uint k = 0; k < Resolution_numberOfGensInDegree(res, source_homological_degree, source_degree); k++){
+            ResolutionHomomorphism *f = res_with_maps->chain_maps_to_trivial_module_resolution[source_homological_degree][source_degree][k];
+            FreeModule *output_module = res->modules[beta_homological_degree + 1];
+            Vector *output = Vector_construct(res->algebra->p, Module_getDimension((Module*)output_module,  beta_degree), 0);
+            for(uint l = 0; l < Resolution_numberOfGensInDegree(res, homological_degree, degree); l++){
+                FreeModuleHomomorphism_applyToGenerator(f->maps[beta_homological_degree], output, 1, degree, l);
+                if(Vector_getEntry(output, output->dimension - 1) != 0){
+                    res->addStructline(
+                        source_homological_degree, source_degree, k, 
+                        homological_degree, degree, l
+                    );
+                }
+            }
+        }
+    }
 }
 
 
@@ -93,7 +117,9 @@ int main(int argc, char *argv[]){
     // FiniteDimensionalModule_setAction(module, 1, 0, min_degree, 1, output);
     // degree--;
     Resolution *res = Resolution_construct(module, degree, NULL, NULL);
-    resolveThroughDegree(res, degree);
+    ResolutionWithMapsToUnitResolution *res_with_maps = ResolutionWithMapsToUnitResolution_construct(res, res, 2);
+    resolveThroughDegree(res_with_maps, degree);
+
     // SerializedResolution *sres = Resolution_serialize(res);
     // Resolution *res2 = Resolution_deserialize(module, sres, NULL, NULL);
     // Matrix_print(res->differentials[2]->coimage_to_image_isomorphism[9]);
@@ -102,27 +128,27 @@ int main(int argc, char *argv[]){
     //     res->differentials[2]->coimage_to_image_isomorphism[9]->columns
     // );
 
-    uint input_homological_degree = 1;
-    uint input_degree = 2;
-    ResolutionHomomorphism *f = ResolutionHomomorphism_construct(res, res, input_homological_degree, input_degree);
-    Vector *v = Vector_construct(p, 1, 0);
-    Vector_setEntry(v, 0, 1);
-    ResolutionHomomorphism_setBaseMap(f, input_degree, 0, v);
-    ResolutionHomomorphism_baseMapReady(f, 1000);
+    // uint input_homological_degree = 1;
+    // uint input_degree = 1;
+    // ResolutionHomomorphism *f = ResolutionHomomorphism_construct(res, res, input_homological_degree, input_degree);
+    // Vector *v = Vector_construct(p, 1, 0);
+    // Vector_setEntry(v, 0, 1);
+    // ResolutionHomomorphism_setBaseMap(f, input_degree, 0, v);
+    // ResolutionHomomorphism_baseMapReady(f, 1000);
 
-    ResolutionHomomorphism_extend(f, 6, 15);
+    // ResolutionHomomorphism_extend(f, 6, 15);
 
-    int hom_deg = 2;
-    int gen_deg = 10;
-    int gen_idx = 0;
-    int out_deg = gen_deg - f->internal_degree_shift;
-    FreeModule *M = res->modules[hom_deg];
-    Vector *output = Vector_construct(p, Module_getDimension((Module*)M,  out_deg), 0);
-    // Vector_setEntry(output, idx, 1);
-    FreeModuleHomomorphism_applyToGenerator(f->maps[hom_deg - 1], output, 1, gen_deg, gen_idx);
-    char buffer[1000];
-    FreeModule_element_toJSONString(buffer, (FreeModule*)f->maps[hom_deg - 1]->target,out_deg, output);
-    printf("(%d, %d) ==> %s\n", hom_deg, gen_deg, buffer);
+    // int hom_deg = 2;
+    // int gen_deg = 10;
+    // int gen_idx = 0;
+    // int out_deg = gen_deg - f->internal_degree_shift;
+    // FreeModule *M = res->modules[hom_deg];
+    // Vector *output = Vector_construct(p, Module_getDimension((Module*)M,  out_deg), 0);
+    // // Vector_setEntry(output, idx, 1);
+    // FreeModuleHomomorphism_applyToGenerator(f->maps[hom_deg - 1], output, 1, gen_deg, gen_idx);
+    // char buffer[1000];
+    // FreeModule_element_toJSONString(buffer, (FreeModule*)f->maps[hom_deg - 1]->target,out_deg, output);
+    // printf("(%d, %d) ==> %s\n", hom_deg, gen_deg, buffer);
     
     // for(int i = degree - 1 - res->min_degree; i >= 0; i--){
     //     printf("stage %*d: ", 2, i);
@@ -135,3 +161,5 @@ int main(int argc, char *argv[]){
 }
 //*/
 
+
+#endif // CSTEENROD_MAIN_H

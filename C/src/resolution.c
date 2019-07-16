@@ -36,7 +36,7 @@ FreeModuleHomomorphism *Resolution_getDifferential(Resolution *resolution, uint 
 
 Resolution * Resolution_construct(
     FiniteDimensionalModule *module, 
-    int max_degree,
+    uint max_homological_degree,
     void (*addClass)(uint hom_deg, int int_deg, char *cocycle_name),
     void (*addStructline)(
         uint source_hom_deg, int source_int_deg, uint source_idx, 
@@ -45,29 +45,27 @@ Resolution * Resolution_construct(
 ){
     printf("Module name: %s\n", module->module.name);
     int min_degree = module->module.min_degree;
-    uint num_degrees = max_degree - min_degree;
     // The 0th index in "modules" and "differentials" is the module we're resolving.
     // We're constructing an augmented resolution. In math this first module would be placed in index -1.
     // Anyways, we are working with the range -1 to max_degree which has max degree - (-1) + 1 = max_degree + 2 entries.
     Resolution *res = malloc(
         sizeof(Resolution)
-        + (num_degrees + 1) * sizeof(FreeModule*)             // modules  
-        + (num_degrees + 1) * sizeof(FreeModuleHomomorphism*) // differentials
-        + (num_degrees + 1) * sizeof(int) // internal_degree_to_resolution_stage
+        + (max_homological_degree + 1) * sizeof(FreeModule*)             // modules  
+        + (max_homological_degree + 1) * sizeof(FreeModuleHomomorphism*) // differentials
+        + (max_homological_degree + 1) * sizeof(int) // internal_degree_to_resolution_stage
     );
     res->modules = (FreeModule**)(res + 1);
     res->differentials = 
-        (FreeModuleHomomorphism**)(res->modules + (num_degrees + 1));
-    res->internal_degree_to_resolution_stage = (int*)(res->differentials + num_degrees + 1);
-    memset(res->internal_degree_to_resolution_stage, 0, (num_degrees + 1)*sizeof(int));
+        (FreeModuleHomomorphism**)(res->modules + (max_homological_degree + 1));
+    res->internal_degree_to_resolution_stage = (int*)(res->differentials + max_homological_degree + 1);
+    memset(res->internal_degree_to_resolution_stage, 0, (max_homological_degree + 1)*sizeof(int));
     
     res->module = (Module*)module;
     res->algebra= module->module.algebra;
-    res->max_homological_degree = 0;
-    res->min_internal_degree = res->module->min_degree;
-    res->max_internal_degree = max_degree;
+    res->computed_homological_degree = 0;
+    res->max_homological_degree = max_homological_degree;
     res->modules[0] = (FreeModule*)module;
-    res->differentials[0] = FreeModuleHomomorphism_construct((FreeModule*)module, NULL, 0, max_degree);
+    res->differentials[0] = FreeModuleHomomorphism_construct((FreeModule*)module, NULL, 0, max_homological_degree);
     if(addClass == NULL){
         addClass = addClass_doNothing;
     }
@@ -84,7 +82,7 @@ void Resolution_free(Resolution *res){
         return;
     }
     FreeModuleHomomorphism_free(res->differentials[0]);
-    for(int i = 0; i < res->max_internal_degree - res->min_internal_degree; i++){
+    for(uint i = 0; i < res->max_homological_degree; i++){
         FreeModuleHomomorphism_free(res->differentials[i + 1]);
         FreeModule_free(res->modules[i + 1]);
     }
@@ -92,7 +90,7 @@ void Resolution_free(Resolution *res){
 }
 
 void Resolution_step(Resolution *res, uint homological_degree, int degree){
-    uint shifted_degree = degree - res->min_internal_degree;
+    uint shifted_degree = degree - res->module->min_degree;
     if(homological_degree == 0){
         FreeModuleHomomorphism *dminus1 = res->differentials[0];
         uint module_dim = Module_getDimension(res->module, degree);
@@ -103,16 +101,17 @@ void Resolution_step(Resolution *res, uint homological_degree, int degree){
         }
     }
     // Construct new FreeModule.
-    if(homological_degree >= res->max_homological_degree){
-        res->max_homological_degree ++;
+    if(homological_degree >= res->computed_homological_degree){
+        uint max_internal_degree = res->module->min_degree + res->max_homological_degree;
+        res->computed_homological_degree ++;
         res->modules[homological_degree + 1] = 
-            FreeModule_construct(res->algebra, res->min_internal_degree, res->max_internal_degree);
+            FreeModule_construct(res->algebra, res->module->min_degree, max_internal_degree);
         res->differentials[homological_degree + 1] =
             FreeModuleHomomorphism_construct(
                 res->modules[homological_degree + 1], 
                 (Module*)res->modules[homological_degree],
                 0,
-                res->max_internal_degree
+                max_internal_degree
             );
     }
     // Do the work
@@ -123,18 +122,18 @@ void Resolution_step(Resolution *res, uint homological_degree, int degree){
 void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_degree, int degree, uint source_idx){
     FreeModuleHomomorphism *d = res->differentials[homological_degree + 1];
     FreeModule *T = (FreeModule*)d->target;        
-    Vector *dx = d->outputs[degree - res->min_internal_degree][source_idx];
+    Vector *dx = d->outputs[degree - res->module->min_degree][source_idx];
     FiltrationOneProductList *product_list = res->algebra->product_list; 
     for(uint j = 0; j < product_list->length; j++){
         uint op_degree = product_list->degrees[j];
         uint op_index = product_list->indices[j];
         int gen_degree = degree - op_degree;
 
-        if(gen_degree < res->min_internal_degree){
+        if(gen_degree < res->module->min_degree){
             break;
         }
 
-        uint num_target_generators = T->number_of_generators_in_degree[gen_degree - res->min_internal_degree];
+        uint num_target_generators = T->number_of_generators_in_degree[gen_degree - res->module->min_degree];
         for(uint target = 0; target < num_target_generators; target++){
             uint vector_idx = FreeModule_operationGeneratorToIndex(res->modules[homological_degree], op_degree, op_index, gen_degree, target);
             if(vector_idx >= dx->dimension){
@@ -158,10 +157,10 @@ void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_d
 //      resolution->differentials[homological_degree]->kernel should contain the kernel of the previous differential
 //      if homological_degree == 0, the kernel should be everything in the module.
 void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uint homological_degree, int degree){
-    assert(degree >= (int)homological_degree + resolution->min_internal_degree);
-    assert(degree < resolution->max_internal_degree);
-    uint p = resolution->algebra->p;
+    assert(degree >= (int)homological_degree + resolution->module->min_degree);
     uint shifted_degree = degree - resolution->module->min_degree;
+    assert(shifted_degree < resolution->max_homological_degree);
+    uint p = resolution->algebra->p;
     resolution->internal_degree_to_resolution_stage[shifted_degree] ++;
     FreeModuleHomomorphism *current_differential  = resolution->differentials[homological_degree + 1];
     uint source_dimension = Module_getDimension((Module*)current_differential->source, degree);
@@ -206,7 +205,7 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
     // Copy matrix contents to coimage_to_image
     char slice_memory[Vector_getSize(p, 0, 0)]; 
     char *slice_ptr = slice_memory;
-    Vector *slice = Vector_initialize(p, &slice_ptr, 0, 0);    
+    Vector *slice = Vector_initialize(p, &slice_ptr, 0, 0);
     for(uint i = 0; i < coimage_to_image_rows; i++) {
         Vector_slice(slice, matrix->vectors[i], first_source_index, first_source_index + source_dimension);
         Vector_assign(coimage_to_image->vectors[i], slice);
@@ -216,17 +215,21 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
 uint Resolution_gradedDimensionString(char *buffer, Resolution *resolution){
     uint len = 0;
     len += sprintf(buffer + len, "[\n");
-    for(int i = 0; i < resolution->max_internal_degree - resolution->min_internal_degree; i++){
+    for(uint i = 0; i < resolution->max_homological_degree; i++){
         len += sprintf(buffer + len, "  ");
         len += array_toString(buffer + len, 
                     &resolution->modules[i+1]->number_of_generators_in_degree[i], 
-                    resolution->max_internal_degree - i
+                    resolution->max_homological_degree - i
                 );
         len += sprintf(buffer + len, ",\n");
     }
     len -= 2;
     len += sprintf(buffer + len, "\n]\n");
     return len;
+}
+
+uint Resolution_numberOfGensInDegree(Resolution *res, uint homological_degree, int internal_degree){
+    return FreeModule_getNumberOfGensInDegree(res->modules[homological_degree + 1], internal_degree);
 }
 
 bool Resolution_cycleQ(Resolution *res, uint homological_degree, int internal_degree, Vector *element){
@@ -255,13 +258,13 @@ SerializedResolution *Resolution_serialize(Resolution *res){
     json_object_set_number(root_object, "p", res->algebra->p);
     json_object_set_string(root_object, "algebra", res->algebra->name);
     json_object_set_string(root_object, "module", res->module->name);
-    json_object_set_number(root_object, "max_homological_degree", res->max_homological_degree);
+    json_object_set_number(root_object, "max_homological_degree", res->computed_homological_degree);
 
 
     // Max computed degree
     JSON_Value *max_computed_degree_value = json_value_init_array();
     JSON_Array *max_computed_degree_array = json_array(max_computed_degree_value);
-    for(uint i = 0; i < res->max_homological_degree; i++){
+    for(uint i = 0; i < res->computed_homological_degree; i++){
         json_array_append_number(max_computed_degree_array, res->differentials[i+1]->max_computed_degree);
     }
     json_object_set_value(root_object, "max_computed_degrees", max_computed_degree_value);
@@ -269,7 +272,7 @@ SerializedResolution *Resolution_serialize(Resolution *res){
     // Number of generators of each free module
     JSON_Value *dimensions_value = json_value_init_array();
     JSON_Array *dimensions_array = json_array(dimensions_value);
-    for(uint i = 0; i < res->max_homological_degree; i++){
+    for(uint i = 0; i < res->computed_homological_degree; i++){
         FreeModule *M = res->modules[i+1];
         FreeModuleHomomorphism *f = res->differentials[i+1];
         JSON_Value *current_module_dimensions_value = json_value_init_array();
@@ -287,7 +290,7 @@ SerializedResolution *Resolution_serialize(Resolution *res){
     JSON_Value *differentials_value = json_value_init_array();
     JSON_Array *differentials_array = json_array(differentials_value);
     size_t binary_size = 0;
-    for(uint i=0; i<res->max_homological_degree; i++){
+    for(uint i=0; i<res->computed_homological_degree; i++){
         JSON_Value *ds1_value = json_value_init_array();
         JSON_Array *ds1_array = json_array(ds1_value);
         FreeModuleHomomorphism *f = res->differentials[i+1];
@@ -335,7 +338,7 @@ SerializedResolution *Resolution_serialize(Resolution *res){
     result->binary_size = binary_size;   
     result->binary_data = binary_data;
 
-    for(uint i=0; i<res->max_homological_degree; i++){
+    for(uint i=0; i<res->computed_homological_degree; i++){
         FreeModuleHomomorphism *f = res->differentials[i+1];
         for(int j=0; j < f->max_computed_degree; j++){
             if(f->coimage_to_image_isomorphism[j] == NULL){
@@ -367,9 +370,9 @@ Resolution *Resolution_deserialize(
     Resolution *res = Resolution_construct(module, max_homological_degree, addClass, addStructline);
     // Construct new FreeModule.
     for(uint homological_degree = 0; homological_degree < max_homological_degree; homological_degree++){
-        res->max_homological_degree ++;
+        res->computed_homological_degree ++;
         FreeModule *F = 
-            FreeModule_construct(res->algebra, res->min_internal_degree, res->max_internal_degree);
+            FreeModule_construct(res->algebra, res->module->min_degree, res->module->min_degree + res->max_homological_degree);
         res->modules[homological_degree + 1] = F;
         JSON_Array *cur_dimensions = json_array_get_array(dimensions, homological_degree);
         for(uint i = 0; i < json_array_get_count(cur_dimensions); i++){
@@ -381,7 +384,7 @@ Resolution *Resolution_deserialize(
                 res->modules[homological_degree + 1], 
                 (Module*)res->modules[homological_degree],
                 0,
-                res->max_internal_degree
+                res->max_homological_degree + res->module->min_degree
             );
         res->differentials[homological_degree + 1] = f;
         int max_computed_degree = json_array_get_number(max_computed_degrees, homological_degree); 
@@ -394,7 +397,7 @@ Resolution *Resolution_deserialize(
     // }
     JSON_Array *matrices_outer_array = json_object_get_array(root_object, "differential_data");
     char *binary_data = sres->binary_data;
-    for(uint i=0; i<res->max_homological_degree; i++){
+    for(uint i=0; i<res->computed_homological_degree; i++){
         JSON_Array *matrices_inner_array = json_array_get_array(matrices_outer_array, i);        
         FreeModuleHomomorphism *f = res->differentials[i+1];
         for(int j=0; j < f->max_computed_degree; j++){

@@ -1,5 +1,4 @@
-#include "Resolution.h"
+#include "ResolutionHomomorphism.h"
 
-void resolveThroughDegree(Resolution *res, int degree);
-
-void stepResolution(Resolution *res, uint homological_degree, int degree);
+void resolveThroughDegree(ResolutionWithMapsToUnitResolution *res, int degree);
+void stepResolution(ResolutionWithMapsToUnitResolution *res_with_maps, uint homological_degree, int degree);

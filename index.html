@@ -211,7 +211,7 @@ function sseqClickHandler(){
     }
     c = sseq.display_class_to_real_class.get(c);
     worker.postMessage({
-        "cmd" : "get_eta_map",//'get_eta_map',//"get_eta_map",
+        "cmd" : "get_cocycle",//'get_eta_map',//"get_eta_map",
         "x" : c.x,
         "y" : c.y,
         "idx" : c.idx
