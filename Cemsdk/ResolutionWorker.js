@@ -242,7 +242,8 @@ message_handlers["resolve"] = function resolve(data){
     t0 = performance.now();
     self.p = p;
     self.cResolution = cResolution_construct(module.cModule, max_degree, callbacks.addClassPtr, callbacks.addStructlinePtr);
-    self.cResWithMaps = cResolutionWithMapsToUnitResolution_construct(self.cResolution, self.cResolution, 2);
+    self.cResWithMaps = cResolutionWithChainMaps_construct(self.cResolution, self.cResolution, 1);
+    cResolutionWithChainMaps_addProduct(self.cResWithMaps, 2, 12);
     cresolveThroughDegree(self.cResWithMaps, max_degree);
 
     // self.x_homological_degree = 1;

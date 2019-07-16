@@ -77,7 +77,7 @@ SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
 )
 
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
-    '_ResolutionWithMapsToUnitResolution_construct'"
+    '_ResolutionWithChainMaps_construct', '_ResolutionWithChainMaps_addProduct'"
 )
 
 

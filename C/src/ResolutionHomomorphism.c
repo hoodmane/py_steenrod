@@ -136,16 +136,21 @@ FreeModuleHomomorphism *ResolutionHomomorphism_getMap(ResolutionHomomorphism *f,
     return f->maps[homological_degree - f->homological_degree_shift];
 }
 
-ResolutionWithMapsToUnitResolution *ResolutionWithMapsToUnitResolution_construct(Resolution *res, Resolution *unit_res, uint max_homological_degree){
-    size_t size = sizeof(ResolutionWithMapsToUnitResolution);
+ResolutionWithChainMaps *ResolutionWithChainMaps_construct(Resolution *res, Resolution *unit_res, uint number_of_products){
+    size_t size = sizeof(ResolutionWithChainMaps);
+    size += sizeof(Cocycle) * number_of_products;
     size += sizeof(ResolutionHomomorphism***) * res->max_homological_degree;
     size += sizeof(ResolutionHomomorphism**) * res->max_homological_degree * res->max_homological_degree;
     char *memory = malloc(size);
-    ResolutionWithMapsToUnitResolution *result = (ResolutionWithMapsToUnitResolution *)memory;
-    memory += sizeof(ResolutionWithMapsToUnitResolution);
+    ResolutionWithChainMaps *result = (ResolutionWithChainMaps *)memory;
+    memory += sizeof(ResolutionWithChainMaps);
     result->resolution = res;
-    result->max_product_homological_degree = max_homological_degree;
+    result->max_product_homological_degree = 0;
     result->unit_resolution = unit_res;
+    result->product_list.capacity = number_of_products;
+    result->product_list.length = 0;
+    result->product_list.list = (Cocycle*) memory;
+    memory += number_of_products * sizeof(Cocycle);
     result->chain_maps_to_trivial_module_resolution = (ResolutionHomomorphism****)memory;
     memory += sizeof(ResolutionHomomorphism***) * res->max_homological_degree;
     for(uint i=0; i<res->max_homological_degree; i++){
@@ -156,11 +161,24 @@ ResolutionWithMapsToUnitResolution *ResolutionWithMapsToUnitResolution_construct
     return result;
 }
 
-void ResolutionWithMapsToUnitResolution_extendMaps(ResolutionWithMapsToUnitResolution *res_with_maps, uint homological_degree, int internal_degree){
+void ResolutionWithChainMaps_addProduct(ResolutionWithChainMaps *res_with_maps, uint homological_degree, int degree, uint index){
+    assert(res_with_maps->product_list.length < res_with_maps->product_list.capacity);
+    if(homological_degree > res_with_maps->max_product_homological_degree){
+        res_with_maps->max_product_homological_degree = homological_degree;
+    }
+    Cocycle *c = &res_with_maps->product_list.list[res_with_maps->product_list.length];
+    res_with_maps->product_list.length ++;
+    c->homological_degree = homological_degree;
+    c->internal_degree = degree;
+    c->index = index;
+}
+
+void ResolutionWithChainMaps_extendMaps(ResolutionWithChainMaps *res_with_maps, uint homological_degree, int internal_degree){
+    assert(res_with_maps->product_list.capacity == res_with_maps->product_list.length);
     if(res_with_maps->max_product_homological_degree == 0){
         return;
     }
-    printf("   ems: (%d, %d)\n", homological_degree,internal_degree);
+    // printf("   ems: (%d, %d)\n", homological_degree,internal_degree);
     uint max_hom_deg = homological_degree;
     uint shifted_degree = internal_degree - res_with_maps->resolution->module->min_degree;
     if(res_with_maps->max_product_homological_degree < max_hom_deg){
@@ -191,7 +209,7 @@ void ResolutionWithMapsToUnitResolution_extendMaps(ResolutionWithMapsToUnitResol
             hom_deg = homological_degree - i;
             uint num_gens = FreeModule_getNumberOfGensInDegree(res_with_maps->resolution->modules[hom_deg + 1], j);
             for(uint k = 0; k < num_gens; k++){
-                printf("      cocyc (%d, %d, %d) to (%d, %d) \n", hom_deg, j, k,  i, internal_degree);
+                // printf("      cocyc (%d, %d, %d) to (%d, %d) \n", hom_deg, j, k,  i, internal_degree);
                 ResolutionHomomorphism *f = res_with_maps->chain_maps_to_trivial_module_resolution[hom_deg][j - min_degree][k];
                 ResolutionHomomorphism_extendBaseMap(f, internal_degree + 1);
                 f->computed_degree[0] = internal_degree + 1;                
@@ -199,4 +217,27 @@ void ResolutionWithMapsToUnitResolution_extendMaps(ResolutionWithMapsToUnitResol
             }
         }
     }
+}
+
+void ResolutionWithChainMaps_computeProduct(
+    ResolutionWithChainMaps *res_with_maps, 
+    uint elt_hom_deg, int elt_deg, uint elt_idx,
+    uint source_hom_deg, int source_deg, uint source_idx
+){
+    Resolution *res = res_with_maps->resolution;
+    ResolutionHomomorphism *f = res_with_maps->chain_maps_to_trivial_module_resolution[source_hom_deg][source_deg][source_idx];
+    uint target_hom_deg = source_hom_deg + elt_hom_deg;
+    uint target_deg = source_deg + elt_deg;
+    FreeModule *output_module = res->modules[elt_hom_deg + 1];
+    uint output_gens = FreeModule_getNumberOfGensInDegree(output_module, elt_deg);
+    Vector *output = Vector_construct(res->algebra->p, Module_getDimension((Module*)output_module,  elt_deg), 0);
+    for(uint l = 0; l < Resolution_numberOfGensInDegree(res, target_hom_deg, target_deg); l++){
+        FreeModuleHomomorphism_applyToGenerator(f->maps[elt_hom_deg], output, 1, target_deg, l);
+        if(Vector_getEntry(output, output->dimension - output_gens + elt_idx) != 0){
+            res->addStructline(
+                source_hom_deg, source_deg, source_idx, 
+                target_hom_deg, target_deg, l
+            );
+        }
+    }    
 }

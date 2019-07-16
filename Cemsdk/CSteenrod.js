@@ -1096,11 +1096,11 @@ function updateGlobalBufferViews() {
 
 
 var STATIC_BASE = 1024,
-    STACK_BASE = 22272,
+    STACK_BASE = 22416,
     STACKTOP = STACK_BASE,
-    STACK_MAX = 5265152,
-    DYNAMIC_BASE = 5265152,
-    DYNAMICTOP_PTR = 22016;
+    STACK_MAX = 5265296,
+    DYNAMIC_BASE = 5265296,
+    DYNAMICTOP_PTR = 22160;
 
 
 
@@ -1486,7 +1486,7 @@ var ASM_CONSTS = [];
 
 
 
-// STATICTOP = STATIC_BASE + 21248;
+// STATICTOP = STATIC_BASE + 21392;
 /* global initializers */ /*__ATINIT__.push();*/
 
 
@@ -1497,7 +1497,7 @@ var ASM_CONSTS = [];
 
 
 /* no memory initializer */
-var tempDoublePtr = 22256
+var tempDoublePtr = 22400
 
 function copyTempFloat(ptr) { // functions, because inlining this code increases code size too much
   HEAP8[tempDoublePtr] = HEAP8[ptr];
@@ -1782,7 +1782,8 @@ var _ResolutionHomomorphism_construct = Module["_ResolutionHomomorphism_construc
 var _ResolutionHomomorphism_extend = Module["_ResolutionHomomorphism_extend"] = function() {  return Module["asm"]["_ResolutionHomomorphism_extend"].apply(null, arguments) };
 var _ResolutionHomomorphism_getMap = Module["_ResolutionHomomorphism_getMap"] = function() {  return Module["asm"]["_ResolutionHomomorphism_getMap"].apply(null, arguments) };
 var _ResolutionHomomorphism_setBaseMap = Module["_ResolutionHomomorphism_setBaseMap"] = function() {  return Module["asm"]["_ResolutionHomomorphism_setBaseMap"].apply(null, arguments) };
-var _ResolutionWithMapsToUnitResolution_construct = Module["_ResolutionWithMapsToUnitResolution_construct"] = function() {  return Module["asm"]["_ResolutionWithMapsToUnitResolution_construct"].apply(null, arguments) };
+var _ResolutionWithChainMaps_addProduct = Module["_ResolutionWithChainMaps_addProduct"] = function() {  return Module["asm"]["_ResolutionWithChainMaps_addProduct"].apply(null, arguments) };
+var _ResolutionWithChainMaps_construct = Module["_ResolutionWithChainMaps_construct"] = function() {  return Module["asm"]["_ResolutionWithChainMaps_construct"].apply(null, arguments) };
 var _Resolution_construct = Module["_Resolution_construct"] = function() {  return Module["asm"]["_Resolution_construct"].apply(null, arguments) };
 var _Resolution_getDifferential = Module["_Resolution_getDifferential"] = function() {  return Module["asm"]["_Resolution_getDifferential"].apply(null, arguments) };
 var _Resolution_serialize = Module["_Resolution_serialize"] = function() {  return Module["asm"]["_Resolution_serialize"].apply(null, arguments) };

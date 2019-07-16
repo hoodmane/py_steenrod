@@ -11,7 +11,7 @@
 #include "ResolutionHomomorphism.h"
 
 
-void resolveThroughDegree(ResolutionWithMapsToUnitResolution *res_with_maps, int degree){
+void resolveThroughDegree(ResolutionWithChainMaps *res_with_maps, int degree){
     for(int int_deg = res_with_maps->resolution->module->min_degree; int_deg < degree; int_deg ++){
         for(int hom_deg = 0; hom_deg <= int_deg - res_with_maps->resolution->module->min_degree; hom_deg++){           
             // printf("(%d, %d)\n", hom_deg, int_deg);
@@ -20,7 +20,7 @@ void resolveThroughDegree(ResolutionWithMapsToUnitResolution *res_with_maps, int
     }
 }
 
-void stepResolution(ResolutionWithMapsToUnitResolution *res_with_maps, uint homological_degree, int degree){
+void stepResolution(ResolutionWithChainMaps *res_with_maps, uint homological_degree, int degree){
     Resolution *res = res_with_maps->resolution;
     // printf("degree: %d, homological_degree: %d\n", degree, homological_degree);
     // Construct kernel -- say that it's everything.
@@ -37,25 +37,20 @@ void stepResolution(ResolutionWithMapsToUnitResolution *res_with_maps, uint homo
         }
     }
     // printf("extend-maps %d, %d", homological_degree, degree)
-    ResolutionWithMapsToUnitResolution_extendMaps(res_with_maps, homological_degree, degree);    
-    uint beta_homological_degree = 2;
-    int beta_degree = 12;
-    if(homological_degree >= beta_homological_degree && degree >= beta_degree){
-        uint source_homological_degree = homological_degree - beta_homological_degree;
-        int source_degree = degree - beta_degree;
+    ResolutionWithChainMaps_extendMaps(res_with_maps, homological_degree, degree);
+    for(uint i = 0; i < res_with_maps->product_list.length; i++){
+        Cocycle elt = res_with_maps->product_list.list[i];
+        if(homological_degree < elt.homological_degree || degree < elt.internal_degree){
+            continue;
+        }
+        uint source_homological_degree = homological_degree - elt.homological_degree;
+        int source_degree = degree - elt.internal_degree;
         for(uint k = 0; k < Resolution_numberOfGensInDegree(res, source_homological_degree, source_degree); k++){
-            ResolutionHomomorphism *f = res_with_maps->chain_maps_to_trivial_module_resolution[source_homological_degree][source_degree][k];
-            FreeModule *output_module = res->modules[beta_homological_degree + 1];
-            Vector *output = Vector_construct(res->algebra->p, Module_getDimension((Module*)output_module,  beta_degree), 0);
-            for(uint l = 0; l < Resolution_numberOfGensInDegree(res, homological_degree, degree); l++){
-                FreeModuleHomomorphism_applyToGenerator(f->maps[beta_homological_degree], output, 1, degree, l);
-                if(Vector_getEntry(output, output->dimension - 1) != 0){
-                    res->addStructline(
-                        source_homological_degree, source_degree, k, 
-                        homological_degree, degree, l
-                    );
-                }
-            }
+            ResolutionWithChainMaps_computeProduct(
+                res_with_maps, 
+                elt.homological_degree, elt.internal_degree, elt.index,
+                source_homological_degree, source_degree, k
+            );   
         }
     }
 }
@@ -117,7 +112,8 @@ int main(int argc, char *argv[]){
     // FiniteDimensionalModule_setAction(module, 1, 0, min_degree, 1, output);
     // degree--;
     Resolution *res = Resolution_construct(module, degree, NULL, NULL);
-    ResolutionWithMapsToUnitResolution *res_with_maps = ResolutionWithMapsToUnitResolution_construct(res, res, 2);
+    ResolutionWithChainMaps *res_with_maps = ResolutionWithChainMaps_construct(res, res, 1);
+    ResolutionWithChainMaps_addProduct(res_with_maps, 2, 12, 0);
     resolveThroughDegree(res_with_maps, degree);
 
     // SerializedResolution *sres = Resolution_serialize(res);

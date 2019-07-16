@@ -28,16 +28,36 @@ void ResolutionHomomorphism_extend(ResolutionHomomorphism *f, uint source_homolo
 
 FreeModuleHomomorphism *ResolutionHomomorphism_getMap(ResolutionHomomorphism *f, uint homological_degree);
 
+typedef struct {
+    uint homological_degree;
+    int internal_degree;
+    uint index;
+} Cocycle;
+
+typedef struct {
+    uint length;
+    uint capacity;
+    Cocycle *list;
+} Cocycle_list;
 
 typedef struct {
     Resolution *resolution;
     Resolution *unit_resolution;
     uint max_product_homological_degree;
+    Cocycle_list product_list;
     ResolutionHomomorphism ****chain_maps_to_trivial_module_resolution;
-} ResolutionWithMapsToUnitResolution;
+} ResolutionWithChainMaps;
 
 
-ResolutionWithMapsToUnitResolution *ResolutionWithMapsToUnitResolution_construct(Resolution *res, Resolution *unit_res, uint max_homological_degree);
-void ResolutionWithMapsToUnitResolution_extendMaps(ResolutionWithMapsToUnitResolution *res, uint homological_degree, int internal_degree);
+ResolutionWithChainMaps *ResolutionWithChainMaps_construct(Resolution *res, Resolution *unit_res, uint number_of_products);
+void ResolutionWithChainMaps_addProduct(ResolutionWithChainMaps *res_with_maps, uint homological_degree, int degree, uint index);
+
+
+void ResolutionWithChainMaps_extendMaps(ResolutionWithChainMaps *res_with_maps, uint homological_degree, int internal_degree);
+void ResolutionWithChainMaps_computeProduct(
+    ResolutionWithChainMaps *res_with_maps, 
+    uint elt_hom_deg, int elt_deg, uint elt_idx,
+    uint source_hom_deg, int source_deg, uint source_idx
+);
 
 #endif // CSTEENROD_RESOLUTION_HOMOMORPHISM_H
