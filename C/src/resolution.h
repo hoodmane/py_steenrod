@@ -23,6 +23,7 @@ typedef struct Resolution_s {
 
     void (*addClass)(uint hom_deg, int int_deg, char *cocycle_name);
     void (*addStructline)(
+        char *type,
         uint source_hom_deg, int source_int_deg, uint source_idx, 
         uint target_hom_deg, int target_int_deg, uint target_idx
     );
@@ -37,6 +38,7 @@ Resolution *Resolution_construct(
     uint max_homological_degree,
     void (*addClass)(uint hom_deg, int int_deg, char *cocycle_name),
     void (*addStructline)(
+        char *type,
         uint source_hom_deg, int source_int_deg, uint source_idx, 
         uint target_hom_deg, int target_int_deg, uint target_idx
     )    

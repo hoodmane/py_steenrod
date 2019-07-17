@@ -243,7 +243,8 @@ message_handlers["addStructline"] = function addStructline(m){
     let source = classTable[source_key][m.source.idx];
     let target = classTable[target_key][m.target.idx];
 
-    sseq.addStructline(source, target);
+    let sl = sseq.addStructline(source, target);
+    sl.type = m.type;
     sleep(0).then(() => sseq.update());
 }
 

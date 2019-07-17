@@ -37,18 +37,15 @@ MilnorAlgebra *MilnorAlgebra_construct(uint p, bool generic, Profile *profile){
     size_t algebra_size =         
         sizeof(MilnorAlgebraInternal) 
         + profile_ppart_length * sizeof(uint) // Store the P list part of the profile here
-        + sizeof(FiltrationOneProductList) // These are for listing out the products.
-            + 2 * num_products * sizeof(uint); // more product space
+        + num_products * sizeof(FiltrationOneProduct); // product space
     MilnorAlgebraInternal *algebra = malloc(algebra_size);
 
     // This next assignment gets written over in initializer so we'll need to do it again...
     algebra->public_algebra.profile.p_part = profile_ppart_length > 0 ? (uint*)(algebra + 1) : NULL;
     Algebra *inner_algebra = &algebra->public_algebra.algebra; 
-    inner_algebra->product_list = (FiltrationOneProductList*)((uint*)(algebra + 1) + profile_ppart_length);
-    inner_algebra->product_list->degrees = (int*)(inner_algebra->product_list + 1);
-    inner_algebra->product_list->indices = (uint*)inner_algebra->product_list->degrees + num_products;
-
-    assert((char*)(inner_algebra->product_list->indices + num_products) == ((char *)algebra) + algebra_size);
+    inner_algebra->product_list.length = num_products;
+    inner_algebra->product_list.list = (FiltrationOneProduct*)((uint*)(algebra + 1) + profile_ppart_length);
+    assert((char*)(inner_algebra->product_list.list + num_products) == ((char *)algebra) + algebra_size);
     MilnorAlgebra__initializeFields(algebra, p, generic, profile);
     return (MilnorAlgebra*)algebra;
 }
@@ -94,21 +91,24 @@ MilnorAlgebra *MilnorAlgebra__initializeFields(MilnorAlgebraInternal *algebra, u
     // Products
     // Length field has to match with amount of space we decided to allocate for this
     // in constructor function directly before this.
-    FiltrationOneProductList *product_list = algebra->public_algebra.algebra.product_list;
+    FiltrationOneProduct *product_list = algebra->public_algebra.algebra.product_list.list;
     if(generic){
-        product_list->length = 2;
-        product_list->degrees[0] = 1; // beta
-        product_list->indices[0] = 0;        
-        product_list->degrees[1] = 2 * (p - 1); // P1
-        product_list->indices[1] = 0;
+        product_list[0].type = "a0";
+        product_list[0].degree = 1;
+        product_list[0].index = 0;
+        product_list[1].type = "h0";
+        product_list[1].degree = 2 * (p - 1); // P1
+        product_list[1].index = 0;
     } else {
-        product_list->length = 3;
-        product_list->degrees[0] = 1; // Sq1
-        product_list->indices[0] = 0; 
-        product_list->degrees[1] = 2; // Sq2
-        product_list->indices[1] = 0; 
-        product_list->degrees[2] = 4; // Sq4
-        product_list->indices[2] = 0;  
+        product_list[0].type = "h0";
+        product_list[0].degree = 1; // Sq1
+        product_list[0].index = 0; 
+        product_list[1].type = "h1";
+        product_list[1].degree = 2; // Sq2
+        product_list[1].index = 0; 
+        product_list[2].type = "h2";
+        product_list[2].degree = 4; // Sq4
+        product_list[2].index = 0;  
     }
     MilnorAlgebra__generateName((MilnorAlgebra*)algebra);
     return (MilnorAlgebra*)algebra;

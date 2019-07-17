@@ -62,6 +62,11 @@ void Matrix_free(Matrix *M){
     free(M);
 }
 
+Vector *Matrix_getRow(Matrix *M, uint row){
+    assert(row < M->rows);
+    return M->vectors[row];
+}
+
 
 uint Matrix_getSliceSize(uint p __attribute__((unused)), uint rows){
     return sizeof(Matrix) + rows*(sizeof(Vector*) + VECTOR_CONTAINER_SIZE);

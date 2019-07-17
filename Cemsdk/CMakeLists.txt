@@ -22,6 +22,11 @@ SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
 )
 
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
+    '_Matrix_construct', '_Matrix_free', \
+    '_Matrix_getRow'"
+)
+
+SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
     '_Algebra_computeBasis_function', '_Algebra_getDimension_function', \
     '_Algebra_multiplyBasisElements_function', '_Algebra_basisElementToString_function'"
 )
@@ -77,7 +82,8 @@ SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
 )
 
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
-    '_ResolutionWithChainMaps_construct', '_ResolutionWithChainMaps_addProduct'"
+    '_ResolutionWithChainMaps_construct', '_ResolutionWithChainMaps_addProduct', \
+    '_ResolutionWithChainMaps_addSelfMap'"
 )
 
 

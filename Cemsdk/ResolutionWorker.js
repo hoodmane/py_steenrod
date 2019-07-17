@@ -27,10 +27,14 @@ function javascriptStringToC(offset, string){
     Module.HEAPU8[offset + string.length + 1] = 0;
 }
 
-function cStringToJavascript(offset, length){
+function cStringToJavascript(offset){
     let result = [];
-    for(let i = 0; i < length; i++){
-        result.push(Module.HEAPU8[offset + i]);
+    for(let i = 0; ; i++){
+        let byte = Module.HEAPU8[offset + i];
+        if(byte == 0){
+            break;
+        }
+        result.push(byte);
     }
     return String.fromCharCode(...result);
 }
@@ -94,10 +98,12 @@ function getCallbacks(){
     }
     
     function addStructlineCallback(
+        type,
         source_hom_deg, source_int_deg, source_idx, 
         target_hom_deg, target_int_deg, target_idx
     ){
         self.postMessage({"cmd" : "addStructline", 
+            "type" : cStringToJavascript(type),
             "source" : {"x" : source_int_deg - source_hom_deg, "y": source_hom_deg, "idx": source_idx},
             "target" : {"x" : target_int_deg - target_hom_deg, "y": target_hom_deg, "idx": target_idx}
         })
@@ -242,8 +248,14 @@ message_handlers["resolve"] = function resolve(data){
     t0 = performance.now();
     self.p = p;
     self.cResolution = cResolution_construct(module.cModule, max_degree, callbacks.addClassPtr, callbacks.addStructlinePtr);
-    self.cResWithMaps = cResolutionWithChainMaps_construct(self.cResolution, self.cResolution, 1);
-    cResolutionWithChainMaps_addProduct(self.cResWithMaps, 2, 12);
+    self.cResWithMaps = cResolutionWithChainMaps_construct(self.cResolution, self.cResolution, 0, 1);
+    let matrix = cMatrix_construct(p, 1, 1);
+    let vector = cMatrix_getRow(matrix, 0);
+    cVector_setEntry(vector, 0, 1);
+    cResolutionWithChainMaps_addSelfMap(self.cResWithMaps, 4, 12, "v1", matrix);
+
+    // cResolutionWithChainMaps_addProduct(self.cResWithMaps, 2, 12);
+
     cresolveThroughDegree(self.cResWithMaps, max_degree);
 
     // self.x_homological_degree = 1;
@@ -301,7 +313,7 @@ message_handlers["serialize"] = function serialize(data){
     let serialized_resolution_json_length = cSerializedResolution_getJSONSize(serialized_resolution);
     let serialized_resolution_binary_data = cSerializedResolution_getBinaryData(serialized_resolution);
     let serialized_resolution_binary_length = cSerializedResolution_getBinarySize(serialized_resolution);
-    let json_string = cStringToJavascript(serialized_resolution_json_data, serialized_resolution_json_length);
+    let json_string = cStringToJavascript(serialized_resolution_json_data);
     let buffer = new ArrayBuffer(serialized_resolution_binary_length);
     for(let i=0; i<serialized_resolution_binary_length; i++){
         buffer[i] = Module.HEAPU8[serialized_resolution_binary_data + i];

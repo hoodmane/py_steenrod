@@ -36,23 +36,9 @@ void stepResolution(ResolutionWithChainMaps *res_with_maps, uint homological_deg
             Resolution_computeFiltrationOneProducts(res, homological_degree, degree, i);
         }
     }
-    // printf("extend-maps %d, %d", homological_degree, degree)
-    ResolutionWithChainMaps_extendMaps(res_with_maps, homological_degree, degree);
-    for(uint i = 0; i < res_with_maps->product_list.length; i++){
-        Cocycle elt = res_with_maps->product_list.list[i];
-        if(homological_degree < elt.homological_degree || degree < elt.internal_degree){
-            continue;
-        }
-        uint source_homological_degree = homological_degree - elt.homological_degree;
-        int source_degree = degree - elt.internal_degree;
-        for(uint k = 0; k < Resolution_numberOfGensInDegree(res, source_homological_degree, source_degree); k++){
-            ResolutionWithChainMaps_computeProduct(
-                res_with_maps, 
-                elt.homological_degree, elt.internal_degree, elt.index,
-                source_homological_degree, source_degree, k
-            );   
-        }
-    }
+    
+    ResolutionWithChainMaps_computeProducts(res_with_maps, homological_degree, degree);
+    ResolutionWithChainMaps_computeSelfMaps(res_with_maps, homological_degree, degree);
 }
 
 
@@ -101,19 +87,21 @@ int main(int argc, char *argv[]){
     }
 
     uint min_degree = 0;
-    uint degree_range = 0;
+    uint degree_range = 1;
     uint max_generator_degree = degree_range + min_degree + 1;
-    uint graded_dimension[5] = {1};
+    uint graded_dimension[5] = {1, 1};
     Algebra_computeBasis(algebra, degree - min_degree);
     FiniteDimensionalModule *module = 
         FiniteDimensionalModule_construct(algebra, "my_module", min_degree, max_generator_degree, graded_dimension);
-    // uint output[1] = {1};
-    // FiniteDimensionalModule_setAction(module, 1, 0, min_degree, 1, output);
-    // FiniteDimensionalModule_setAction(module, 1, 0, min_degree, 1, output);
+    uint output[1] = {1};
+    FiniteDimensionalModule_setAction(module, 1, 0, 0, 0, output);
     // degree--;
     Resolution *res = Resolution_construct(module, degree, NULL, NULL);
-    ResolutionWithChainMaps *res_with_maps = ResolutionWithChainMaps_construct(res, res, 1);
-    ResolutionWithChainMaps_addProduct(res_with_maps, 2, 12, 0);
+    ResolutionWithChainMaps *res_with_maps = ResolutionWithChainMaps_construct(res, res, 0, 1);
+    Matrix *matrix = Matrix_construct(p, 1, 1);
+    Vector *vector = Matrix_getRow(matrix, 0);
+    Vector_setEntry(vector, 0, 1);
+    ResolutionWithChainMaps_addSelfMap(res_with_maps, 4, 12, "v1", matrix);
     resolveThroughDegree(res_with_maps, degree);
 
     // SerializedResolution *sres = Resolution_serialize(res);

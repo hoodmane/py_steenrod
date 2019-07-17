@@ -25,6 +25,15 @@ let cVector_setEntry = cwrap('Vector_setEntry', 'void', ['pointer', 'number', 'n
 
 let cVector_print = cwrap("Vector_print", 'void', ['string', 'pointer']);
 
+// Matrix *Matrix_construct(uint p, uint rows, uint cols);
+let cMatrix_construct = cwrap("Matrix_construct", 'pointer', ['number', 'number', 'number']);
+
+// void Matrix_free(Matrix *M);
+let cMatrix_free = cwrap("Matrix_free", 'void', ['pointer']);
+
+// Vector *Matrix_getRow(Matrix *M, uint row);
+let cMatrix_getRow = cwrap("Matrix_getRow", 'pointer', ['pointer', 'number']);
+
 /**
  * algebra.h
  */
@@ -190,5 +199,8 @@ let cResolutionHomomorphism_getMap = Module.cwrap('ResolutionHomomorphism_getMap
 // ResolutionWithChainMaps *ResolutionWithChainMaps_construct(Resolution *res, Resolution *unit_res, uint max_homological_degree);
 let cResolutionWithChainMaps_construct = Module.cwrap('ResolutionWithChainMaps_construct', 'pointer', ['pointer', 'pointer', 'number']);
 
-// void ResolutionWithChainMaps_addProduct(ResolutionWithChainMaps *res_with_maps, uint homological_degree, int degree, uint index)
-let cResolutionWithChainMaps_addProduct = Module.cwrap('ResolutionWithChainMaps_addProduct', 'void', ['pointer', 'number', 'number', 'number']);
+// void ResolutionWithChainMaps_addProduct(ResolutionWithChainMaps *res_with_maps, uint homological_degree, int degree, uint index, char *name);
+let cResolutionWithChainMaps_addProduct = Module.cwrap('ResolutionWithChainMaps_addProduct', 'void', ['pointer', 'number', 'number', 'number', 'string']);
+
+// void ResolutionWithChainMaps_addSelfMap(ResolutionWithChainMaps *res_with_maps, uint homological_degree, int degree, char *name, Matrix *data);
+let cResolutionWithChainMaps_addSelfMap = Module.cwrap('ResolutionWithChainMaps_addSelfMap', 'void', ['pointer', 'number', 'number', 'string', 'pointer']);

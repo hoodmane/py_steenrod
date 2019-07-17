@@ -75,15 +75,13 @@ AdemAlgebra *AdemAlgebra_construct(uint p, bool generic, bool unstable){
     }
     size_t algebra_size =         
         sizeof(AdemAlgebraInternal) 
-        + sizeof(FiltrationOneProductList) // These are for listing out the products.
-            + 2 * num_products * sizeof(uint); // more product space    
+        + num_products * sizeof(FiltrationOneProduct); // product space
 
     AdemAlgebraInternal *algebra = malloc(algebra_size);
     Algebra *inner_algebra = &algebra->public_algebra.algebra;
-    inner_algebra->product_list = (FiltrationOneProductList*)(algebra + 1);
-    inner_algebra->product_list->degrees = (int*)(inner_algebra->product_list + 1);
-    inner_algebra->product_list->indices = (uint*)inner_algebra->product_list->degrees + num_products;
-    assert((char*)(inner_algebra->product_list->indices + num_products) == ((char *)algebra) + algebra_size);
+    inner_algebra->product_list.length = num_products;
+    inner_algebra->product_list.list = (FiltrationOneProduct*)(algebra + 1);    
+    assert((char*)(inner_algebra->product_list.list + num_products) == ((char *)algebra) + algebra_size);
 
     AdemAlgebra__initializeFields(algebra, p, generic, unstable);
     AdemAlgebra__generateName((AdemAlgebra*)algebra);
@@ -118,7 +116,7 @@ static void AdemAlgebra__initializeFields(AdemAlgebraInternal *algebra, uint p, 
     // Products
     // Length field has to match with amount of space we decided to allocate for this
     // in constructor function directly before this.
-    FiltrationOneProductList *product_list = algebra->public_algebra.algebra.product_list;
+    FiltrationOneProduct *product_list = algebra->public_algebra.algebra.product_list.list;
     uint num_basis_elements;
     uint total_p_length;
     if(generic){
@@ -170,19 +168,22 @@ static void AdemAlgebra__initializeFields(AdemAlgebraInternal *algebra, uint p, 
         }
     }
     if(generic){
-        product_list->length = 2;
-        product_list->degrees[0] = 1; // beta
-        product_list->indices[0] = 0;        
-        product_list->degrees[1] = 2 * (p - 1); // P1
-        product_list->indices[1] = 0;
+        product_list[0].type = "a0";
+        product_list[0].degree = 1;
+        product_list[0].index = 0;
+        product_list[1].type = "h0";
+        product_list[1].degree = 2 * (p - 1); // P1
+        product_list[1].index = 0;
     } else {
-        product_list->length = 3;
-        product_list->degrees[0] = 1; // Sq1
-        product_list->indices[0] = 0; 
-        product_list->degrees[1] = 2; // Sq2
-        product_list->indices[1] = 0; 
-        product_list->degrees[2] = 4; // Sq4
-        product_list->indices[2] = 0;  
+        product_list[0].type = "h0";
+        product_list[0].degree = 1; // Sq1
+        product_list[0].index = 0; 
+        product_list[1].type = "h1";
+        product_list[1].degree = 2; // Sq2
+        product_list[1].index = 0; 
+        product_list[2].type = "h2";
+        product_list[2].degree = 4; // Sq4
+        product_list[2].index = 0;  
     }
 }
 
@@ -251,7 +252,7 @@ void AdemAlgebra_generateBasis(Algebra *this, int max_degree){
     for(uint i = 0; i < algebra->filtrationOneProduct_basisElements.length; i++){
         AdemBasisElement *b = algebra->filtrationOneProduct_basisElements.list[i];
         if(b->degree < max_degree){
-            this->product_list->indices[i] = AdemAlgebra_basisElement_toIndex(&algebra->public_algebra, b);
+            this->product_list.list[i].index = AdemAlgebra_basisElement_toIndex(&algebra->public_algebra, b);
         }
     }
 }

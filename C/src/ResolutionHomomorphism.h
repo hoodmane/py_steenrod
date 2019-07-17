@@ -32,6 +32,7 @@ typedef struct {
     uint homological_degree;
     int internal_degree;
     uint index;
+    char *name;    
 } Cocycle;
 
 typedef struct {
@@ -41,23 +42,41 @@ typedef struct {
 } Cocycle_list;
 
 typedef struct {
+    uint homological_degree;
+    int internal_degree;
+    char *name;
+    Matrix *map_data;    
+    ResolutionHomomorphism *map;
+} SelfMap;
+
+typedef struct {
+    uint length;
+    uint capacity;
+    SelfMap *list;
+} SelfMap_list;
+
+typedef struct {
     Resolution *resolution;
     Resolution *unit_resolution;
     uint max_product_homological_degree;
     Cocycle_list product_list;
-    ResolutionHomomorphism ****chain_maps_to_trivial_module_resolution;
+    ResolutionHomomorphism ****chain_maps_to_trivial_module;
+    SelfMap_list self_maps;
 } ResolutionWithChainMaps;
 
 
-ResolutionWithChainMaps *ResolutionWithChainMaps_construct(Resolution *res, Resolution *unit_res, uint number_of_products);
-void ResolutionWithChainMaps_addProduct(ResolutionWithChainMaps *res_with_maps, uint homological_degree, int degree, uint index);
-
+ResolutionWithChainMaps *ResolutionWithChainMaps_construct(Resolution *res, Resolution *unit_res, uint number_of_products, uint number_of_self_maps);
+void ResolutionWithChainMaps_addProduct(ResolutionWithChainMaps *res_with_maps, uint homological_degree, int degree, uint index, char* name);
 
 void ResolutionWithChainMaps_extendMaps(ResolutionWithChainMaps *res_with_maps, uint homological_degree, int internal_degree);
+void ResolutionWithChainMaps_computeProducts(ResolutionWithChainMaps *res_with_maps, uint homological_degree, int degree);
 void ResolutionWithChainMaps_computeProduct(
     ResolutionWithChainMaps *res_with_maps, 
-    uint elt_hom_deg, int elt_deg, uint elt_idx,
+    uint elt_hom_deg, int elt_deg, uint elt_idx, char *elt_name,
     uint source_hom_deg, int source_deg, uint source_idx
 );
 
+
+void ResolutionWithChainMaps_addSelfMap(ResolutionWithChainMaps *res_with_maps, uint homological_degree, int degree, char* name , Matrix *data);
+void ResolutionWithChainMaps_computeSelfMaps(ResolutionWithChainMaps *res_with_maps, uint homological_degree, int degree);
 #endif // CSTEENROD_RESOLUTION_HOMOMORPHISM_H

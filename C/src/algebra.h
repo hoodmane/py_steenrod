@@ -11,16 +11,21 @@
 // List of structlines to indicate.
 // TODO: generalize to higher filtration elements?
 typedef struct {
+    char *type;
+    int degree;
+    uint index;
+} FiltrationOneProduct;
+
+typedef struct {
     uint length;
-    int *degrees;
-    uint *indices;
-} FiltrationOneProductList;
+    FiltrationOneProduct *list;
+} FiltrationOneProduct_list;
 
 typedef struct Algebra {
     uint p;
     int max_degree; 
     char *name;
-    FiltrationOneProductList *product_list; // This determines which indecomposibles have lines drawn for them.
+    FiltrationOneProduct_list product_list; // This determines which indecomposibles have lines drawn for them.
 // Methods:
     void (*computeBasis)(struct Algebra *this, int degree);
     uint (*getDimension)(struct Algebra *this, int degree, int excess);

@@ -25,6 +25,8 @@ Matrix *Matrix_deserialize(char **buffer);
 void Matrix_getRowPermutation(Matrix *M, uint *result);
 void Matrix_applyRowPermutation(Matrix *M, uint *permutation, uint rows);
 
+Vector *Matrix_getRow(Matrix *M, uint row);
+
 // Row reduce M. For each column i, column_to_pivot_row[i] is equal to: the row
 // with a pivot in column i or -1 if no such row exists.
 // When you delete the -1's from column_to_pivot_row, it looks like [0,1,2,...,rank(M)].

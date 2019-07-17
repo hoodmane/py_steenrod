@@ -23,6 +23,7 @@ void addClass_doNothing(uint hom_deg __attribute__((unused)), int int_deg __attr
 }
 
 void addStructline_doNothing(
+    char *type __attribute__((unused)),
     uint source_hom_deg __attribute__((unused)), int source_int_deg __attribute__((unused)), uint source_idx __attribute__((unused)), 
     uint target_hom_deg __attribute__((unused)), int target_int_deg __attribute__((unused)), uint target_idx __attribute__((unused))
 ){
@@ -39,6 +40,7 @@ Resolution * Resolution_construct(
     uint max_homological_degree,
     void (*addClass)(uint hom_deg, int int_deg, char *cocycle_name),
     void (*addStructline)(
+        char *type,
         uint source_hom_deg, int source_int_deg, uint source_idx, 
         uint target_hom_deg, int target_int_deg, uint target_idx
     )    
@@ -123,10 +125,11 @@ void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_d
     FreeModuleHomomorphism *d = res->differentials[homological_degree + 1];
     FreeModule *T = (FreeModule*)d->target;        
     Vector *dx = d->outputs[degree - res->module->min_degree][source_idx];
-    FiltrationOneProductList *product_list = res->algebra->product_list; 
-    for(uint j = 0; j < product_list->length; j++){
-        uint op_degree = product_list->degrees[j];
-        uint op_index = product_list->indices[j];
+    FiltrationOneProduct_list product_list = res->algebra->product_list; 
+    for(uint j = 0; j < product_list.length; j++){
+        char *op_name = product_list.list[j].type;
+        uint op_degree = product_list.list[j].degree;
+        uint op_index = product_list.list[j].index;
         int gen_degree = degree - op_degree;
 
         if(gen_degree < res->module->min_degree){
@@ -143,7 +146,7 @@ void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_d
                 // printf("hom_deg: %d, deg: %d, source_idx: %d, op_deg: %d, entry: %d\n", homological_degree, degree, source_idx, op_degree, Vector_getEntry(dx, vector_idx));
                 if(Vector_getEntry(dx, vector_idx) != 0){
                     // There was a product!
-                    res->addStructline(homological_degree - 1, gen_degree, target, homological_degree, degree, source_idx);
+                    res->addStructline(op_name, homological_degree - 1, gen_degree, target, homological_degree, degree, source_idx);
                 }
             }
         }

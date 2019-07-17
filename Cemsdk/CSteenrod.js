@@ -1096,11 +1096,11 @@ function updateGlobalBufferViews() {
 
 
 var STATIC_BASE = 1024,
-    STACK_BASE = 22416,
+    STACK_BASE = 22560,
     STACKTOP = STACK_BASE,
-    STACK_MAX = 5265296,
-    DYNAMIC_BASE = 5265296,
-    DYNAMICTOP_PTR = 22160;
+    STACK_MAX = 5265440,
+    DYNAMIC_BASE = 5265440,
+    DYNAMICTOP_PTR = 22304;
 
 
 
@@ -1467,8 +1467,8 @@ Module['asm'] = function(global, env, providedBuffer) {
   ;
   // import table
   env['table'] = wasmTable = new WebAssembly.Table({
-    'initial': 320,
-    'maximum': 320,
+    'initial': 288,
+    'maximum': 288,
     'element': 'anyfunc'
   });
   env['__memory_base'] = 1024; // tell the memory segments where to place themselves
@@ -1486,7 +1486,7 @@ var ASM_CONSTS = [];
 
 
 
-// STATICTOP = STATIC_BASE + 21392;
+// STATICTOP = STATIC_BASE + 21536;
 /* global initializers */ /*__ATINIT__.push();*/
 
 
@@ -1497,7 +1497,7 @@ var ASM_CONSTS = [];
 
 
 /* no memory initializer */
-var tempDoublePtr = 22400
+var tempDoublePtr = 22544
 
 function copyTempFloat(ptr) { // functions, because inlining this code increases code size too much
   HEAP8[tempDoublePtr] = HEAP8[ptr];
@@ -1722,10 +1722,6 @@ function jsCall_viii(index,a1,a2,a3) {
     functionPointers[index](a1,a2,a3);
 }
 
-function jsCall_viiiiii(index,a1,a2,a3,a4,a5,a6) {
-    functionPointers[index](a1,a2,a3,a4,a5,a6);
-}
-
 function jsCall_viiiiiii(index,a1,a2,a3,a4,a5,a6,a7) {
     functionPointers[index](a1,a2,a3,a4,a5,a6,a7);
 }
@@ -1736,7 +1732,7 @@ function jsCall_viiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8) {
 
 var asmGlobalArg = {}
 
-var asmLibraryArg = { "abort": abort, "setTempRet0": setTempRet0, "getTempRet0": getTempRet0, "jsCall_ii": jsCall_ii, "jsCall_iii": jsCall_iii, "jsCall_iiii": jsCall_iiii, "jsCall_iiiii": jsCall_iiiii, "jsCall_vi": jsCall_vi, "jsCall_vii": jsCall_vii, "jsCall_viii": jsCall_viii, "jsCall_viiiiii": jsCall_viiiiii, "jsCall_viiiiiii": jsCall_viiiiiii, "jsCall_viiiiiiii": jsCall_viiiiiiii, "___assert_fail": ___assert_fail, "___setErrNo": ___setErrNo, "___syscall140": ___syscall140, "___syscall146": ___syscall146, "___syscall54": ___syscall54, "___syscall6": ___syscall6, "_abort": _abort, "_emscripten_get_heap_size": _emscripten_get_heap_size, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_emscripten_resize_heap": _emscripten_resize_heap, "_llvm_stackrestore": _llvm_stackrestore, "_llvm_stacksave": _llvm_stacksave, "abortOnCannotGrowMemory": abortOnCannotGrowMemory, "flush_NO_FILESYSTEM": flush_NO_FILESYSTEM, "tempDoublePtr": tempDoublePtr, "DYNAMICTOP_PTR": DYNAMICTOP_PTR }
+var asmLibraryArg = { "abort": abort, "setTempRet0": setTempRet0, "getTempRet0": getTempRet0, "jsCall_ii": jsCall_ii, "jsCall_iii": jsCall_iii, "jsCall_iiii": jsCall_iiii, "jsCall_iiiii": jsCall_iiiii, "jsCall_vi": jsCall_vi, "jsCall_vii": jsCall_vii, "jsCall_viii": jsCall_viii, "jsCall_viiiiiii": jsCall_viiiiiii, "jsCall_viiiiiiii": jsCall_viiiiiiii, "___assert_fail": ___assert_fail, "___setErrNo": ___setErrNo, "___syscall140": ___syscall140, "___syscall146": ___syscall146, "___syscall54": ___syscall54, "___syscall6": ___syscall6, "_abort": _abort, "_emscripten_get_heap_size": _emscripten_get_heap_size, "_emscripten_memcpy_big": _emscripten_memcpy_big, "_emscripten_resize_heap": _emscripten_resize_heap, "_llvm_stackrestore": _llvm_stackrestore, "_llvm_stacksave": _llvm_stacksave, "abortOnCannotGrowMemory": abortOnCannotGrowMemory, "flush_NO_FILESYSTEM": flush_NO_FILESYSTEM, "tempDoublePtr": tempDoublePtr, "DYNAMICTOP_PTR": DYNAMICTOP_PTR }
 // EMSCRIPTEN_START_ASM
 var asm =Module["asm"]// EMSCRIPTEN_END_ASM
 (asmGlobalArg, asmLibraryArg, buffer);
@@ -1768,6 +1764,9 @@ var _FreeModuleHomomorphism_getSource = Module["_FreeModuleHomomorphism_getSourc
 var _FreeModuleHomomorphism_getTarget = Module["_FreeModuleHomomorphism_getTarget"] = function() {  return Module["asm"]["_FreeModuleHomomorphism_getTarget"].apply(null, arguments) };
 var _FreeModule_element_toJSONString = Module["_FreeModule_element_toJSONString"] = function() {  return Module["asm"]["_FreeModule_element_toJSONString"].apply(null, arguments) };
 var _FreeModule_getDimension = Module["_FreeModule_getDimension"] = function() {  return Module["asm"]["_FreeModule_getDimension"].apply(null, arguments) };
+var _Matrix_construct = Module["_Matrix_construct"] = function() {  return Module["asm"]["_Matrix_construct"].apply(null, arguments) };
+var _Matrix_free = Module["_Matrix_free"] = function() {  return Module["asm"]["_Matrix_free"].apply(null, arguments) };
+var _Matrix_getRow = Module["_Matrix_getRow"] = function() {  return Module["asm"]["_Matrix_getRow"].apply(null, arguments) };
 var _MilnorAlgebra_construct = Module["_MilnorAlgebra_construct"] = function() {  return Module["asm"]["_MilnorAlgebra_construct"].apply(null, arguments) };
 var _MilnorAlgebra_free = Module["_MilnorAlgebra_free"] = function() {  return Module["asm"]["_MilnorAlgebra_free"].apply(null, arguments) };
 var _MilnorAlgebra_generateBasis = Module["_MilnorAlgebra_generateBasis"] = function() {  return Module["asm"]["_MilnorAlgebra_generateBasis"].apply(null, arguments) };
@@ -1783,6 +1782,7 @@ var _ResolutionHomomorphism_extend = Module["_ResolutionHomomorphism_extend"] = 
 var _ResolutionHomomorphism_getMap = Module["_ResolutionHomomorphism_getMap"] = function() {  return Module["asm"]["_ResolutionHomomorphism_getMap"].apply(null, arguments) };
 var _ResolutionHomomorphism_setBaseMap = Module["_ResolutionHomomorphism_setBaseMap"] = function() {  return Module["asm"]["_ResolutionHomomorphism_setBaseMap"].apply(null, arguments) };
 var _ResolutionWithChainMaps_addProduct = Module["_ResolutionWithChainMaps_addProduct"] = function() {  return Module["asm"]["_ResolutionWithChainMaps_addProduct"].apply(null, arguments) };
+var _ResolutionWithChainMaps_addSelfMap = Module["_ResolutionWithChainMaps_addSelfMap"] = function() {  return Module["asm"]["_ResolutionWithChainMaps_addSelfMap"].apply(null, arguments) };
 var _ResolutionWithChainMaps_construct = Module["_ResolutionWithChainMaps_construct"] = function() {  return Module["asm"]["_ResolutionWithChainMaps_construct"].apply(null, arguments) };
 var _Resolution_construct = Module["_Resolution_construct"] = function() {  return Module["asm"]["_Resolution_construct"].apply(null, arguments) };
 var _Resolution_getDifferential = Module["_Resolution_getDifferential"] = function() {  return Module["asm"]["_Resolution_getDifferential"].apply(null, arguments) };
@@ -1817,7 +1817,6 @@ var dynCall_iiiii = Module["dynCall_iiiii"] = function() {  return Module["asm"]
 var dynCall_vi = Module["dynCall_vi"] = function() {  return Module["asm"]["dynCall_vi"].apply(null, arguments) };
 var dynCall_vii = Module["dynCall_vii"] = function() {  return Module["asm"]["dynCall_vii"].apply(null, arguments) };
 var dynCall_viii = Module["dynCall_viii"] = function() {  return Module["asm"]["dynCall_viii"].apply(null, arguments) };
-var dynCall_viiiiii = Module["dynCall_viiiiii"] = function() {  return Module["asm"]["dynCall_viiiiii"].apply(null, arguments) };
 var dynCall_viiiiiii = Module["dynCall_viiiiiii"] = function() {  return Module["asm"]["dynCall_viiiiiii"].apply(null, arguments) };
 var dynCall_viiiiiiii = Module["dynCall_viiiiiiii"] = function() {  return Module["asm"]["dynCall_viiiiiiii"].apply(null, arguments) };
 ;
