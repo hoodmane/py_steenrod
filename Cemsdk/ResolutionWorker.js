@@ -2,6 +2,15 @@
 importScripts("CSteenrod.js");
 importScripts("CSteenrodWrappers.js");
 
+let higher_filtration_products = {
+    3 : [{
+        "homological_degree" : 2,
+        "degree" : 12,
+        "index" : 0,
+        "name" : "\\beta"
+    }]
+}
+
 function constructCString(string){
     let offset = Module._malloc(string.length + 1);
     javascriptStringToC(offset, string);
@@ -102,7 +111,8 @@ function getCallbacks(){
         source_hom_deg, source_int_deg, source_idx, 
         target_hom_deg, target_int_deg, target_idx
     ){
-        self.postMessage({"cmd" : "addStructline", 
+        self.postMessage({
+            "cmd" : "addStructline", 
             "type" : cStringToJavascript(type),
             "source" : {"x" : source_int_deg - source_hom_deg, "y": source_hom_deg, "idx": source_idx},
             "target" : {"x" : target_int_deg - target_hom_deg, "y": target_hom_deg, "idx": target_idx}
@@ -246,13 +256,29 @@ message_handlers["resolve"] = function resolve(data){
     let module = constructFiniteDimensionalModule(data.module, cAlgebra);
     let callbacks = getCallbacks();
     t0 = performance.now();
+    console.log(data);
     self.p = p;
     self.cResolution = cResolution_construct(module.cModule, max_degree, callbacks.addClassPtr, callbacks.addStructlinePtr);
-    self.cResWithMaps = cResolutionWithChainMaps_construct(self.cResolution, self.cResolution, 0, 1);
-    let matrix = cMatrix_construct(p, 1, 1);
-    let vector = cMatrix_getRow(matrix, 0);
-    cVector_setEntry(vector, 0, 1);
-    cResolutionWithChainMaps_addSelfMap(self.cResWithMaps, 4, 12, "v1", matrix);
+    let products = higher_filtration_products[p] || [];
+    let self_maps = data.module.self_maps || [];
+    self.cResWithMaps = cResolutionWithChainMaps_construct(self.cResolution, self.cResolution, products.length, self_maps.length);
+    for(let product of products){
+        cResolutionWithChainMaps_addProduct(cResWithMaps, product.homological_degree, product.degree, product.index, product.name);
+    }
+    for(let self_map of self_maps){
+        console.log(self_map);
+        let json_matrix = self_map.matrix;
+        let c_matrix = cMatrix_construct(p, json_matrix.length, json_matrix[0].length);
+        for(let i = 0; i < json_matrix.length; i++){
+            let json_row = json_matrix[i];
+            let crow = cMatrix_getRow(c_matrix, i);
+            for(let j = 0; j < json_matrix.length; j++){
+                cVector_setEntry(crow, j, json_row[j]);
+            }
+        }
+        cResolutionWithChainMaps_addSelfMap(self.cResWithMaps, self_map.homological_degree, self_map.degree, self_map.name, c_matrix);
+    }
+
 
     // cResolutionWithChainMaps_addProduct(self.cResWithMaps, 2, 12);
 

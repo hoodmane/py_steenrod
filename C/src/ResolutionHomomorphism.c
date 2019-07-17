@@ -167,6 +167,7 @@ ResolutionWithChainMaps *ResolutionWithChainMaps_construct(Resolution *res, Reso
 }
 
 void ResolutionWithChainMaps_addProduct(ResolutionWithChainMaps *res_with_maps, uint homological_degree, int degree, uint index, char* name){
+    printf("hi\n");
     assert(res_with_maps->product_list.length < res_with_maps->product_list.capacity);
     if(homological_degree > res_with_maps->max_product_homological_degree){
         res_with_maps->max_product_homological_degree = homological_degree;

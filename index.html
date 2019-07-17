@@ -172,6 +172,7 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+
 function startResolution(dict){
     let degree = Number.parseInt(dict.degree);
     let module_file_name = dict.module;
@@ -196,6 +197,7 @@ function startResolution(dict){
         sseq.offset_size = 0.1
         dss.getPageDescriptor = (page) => katexMathInDelims(module.name);        
         sseq.display(main_div);
+        Object.assign(product_styles, module.product_styles || {});
         worker.postMessage({
             "cmd" : "resolve",
             "module" : module,
@@ -234,6 +236,11 @@ message_handlers["addClass"] = function addClass(m){
     classTable[key].push(c);
 } 
 
+window.product_styles = {
+    "\\beta" : { "color" : "gray" },
+    "v1" : { "color" : "gray" }
+}
+
 message_handlers["addStructline"] = function addStructline(m){
     if(m.target.x > 0 && m.target.y > m.target.x/2 + 5){
         return;
@@ -245,6 +252,15 @@ message_handlers["addStructline"] = function addStructline(m){
 
     let sl = sseq.addStructline(source, target);
     sl.type = m.type;
+    let style = product_styles[sl.type] || {};
+    if(style.color){
+        sl.setColor(style.color);
+    }
+    if(style.visible !== undefined){
+        sl.visible = style.visible;
+    }
+    sseq.updateEdge(sl);
+
     sleep(0).then(() => sseq.update());
 }
 
