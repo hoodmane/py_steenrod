@@ -15,6 +15,10 @@ SET(EXTRA_EXPORTED_RUNTIME_METHODS
 )
 SET(EXPORTED_FUNCTIONS "'_initializePrime'")
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
+    '_getTauDegrees', '_getXiDegrees'"
+)
+
+SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
     '_Vector_construct', '_Vector_pack', \
     '_Vector_unpack', '_Vector_print', \
     '_Vector_setEntry', '_Vector_getEntry', \

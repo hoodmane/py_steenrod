@@ -101,7 +101,7 @@ int main(int argc, char *argv[]){
     Matrix *matrix = Matrix_construct(p, 1, 1);
     Vector *vector = Matrix_getRow(matrix, 0);
     Vector_setEntry(vector, 0, 1);
-    ResolutionWithChainMaps_addSelfMap(res_with_maps, 4, 12, "v1", matrix);
+    ResolutionWithChainMaps_addSelfMap(res_with_maps, 1, 5, "v1", matrix);
     resolveThroughDegree(res_with_maps, degree);
 
     // SerializedResolution *sres = Resolution_serialize(res);

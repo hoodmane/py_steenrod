@@ -5,6 +5,9 @@
 // void initializePrime(uint p);
 let cinitializePrime = cwrap("initializePrime", 'void', ['number']);
 
+let cgetTauDegrees = cwrap("getTauDegrees", 'pointer', ['number']);
+let cgetXiDegrees = cwrap("getXiDegrees", 'pointer', ['number']);
+
 // Vector *Vector_construct(uint p, uint dimension, uint offset);
 let cVector_construct = cwrap("Vector_construct", 'pointer', ['number', 'number', 'number']);
 

@@ -1096,11 +1096,11 @@ function updateGlobalBufferViews() {
 
 
 var STATIC_BASE = 1024,
-    STACK_BASE = 22560,
+    STACK_BASE = 22528,
     STACKTOP = STACK_BASE,
-    STACK_MAX = 5265440,
-    DYNAMIC_BASE = 5265440,
-    DYNAMICTOP_PTR = 22304;
+    STACK_MAX = 5265408,
+    DYNAMIC_BASE = 5265408,
+    DYNAMICTOP_PTR = 22272;
 
 
 
@@ -1486,7 +1486,7 @@ var ASM_CONSTS = [];
 
 
 
-// STATICTOP = STATIC_BASE + 21536;
+// STATICTOP = STATIC_BASE + 21504;
 /* global initializers */ /*__ATINIT__.push();*/
 
 
@@ -1497,7 +1497,7 @@ var ASM_CONSTS = [];
 
 
 /* no memory initializer */
-var tempDoublePtr = 22544
+var tempDoublePtr = 22512
 
 function copyTempFloat(ptr) { // functions, because inlining this code increases code size too much
   HEAP8[tempDoublePtr] = HEAP8[ptr];
@@ -1800,6 +1800,8 @@ var _Vector_setEntry = Module["_Vector_setEntry"] = function() {  return Module[
 var _Vector_unpack = Module["_Vector_unpack"] = function() {  return Module["asm"]["_Vector_unpack"].apply(null, arguments) };
 var ___errno_location = Module["___errno_location"] = function() {  return Module["asm"]["___errno_location"].apply(null, arguments) };
 var _free = Module["_free"] = function() {  return Module["asm"]["_free"].apply(null, arguments) };
+var _getTauDegrees = Module["_getTauDegrees"] = function() {  return Module["asm"]["_getTauDegrees"].apply(null, arguments) };
+var _getXiDegrees = Module["_getXiDegrees"] = function() {  return Module["asm"]["_getXiDegrees"].apply(null, arguments) };
 var _initializePrime = Module["_initializePrime"] = function() {  return Module["asm"]["_initializePrime"].apply(null, arguments) };
 var _malloc = Module["_malloc"] = function() {  return Module["asm"]["_malloc"].apply(null, arguments) };
 var _memcpy = Module["_memcpy"] = function() {  return Module["asm"]["_memcpy"].apply(null, arguments) };

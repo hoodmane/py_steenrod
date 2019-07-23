@@ -178,15 +178,25 @@ function constructFiniteDimensionalModule(module, cAlgebra){
     Module.HEAPU32.set(graded_dimension, c_array_offset/sizeof_uint);
     let cModule = cFiniteDimensionalModule_construct(cAlgebra, c_module_name, min_basis_degree, min_basis_degree + max_basis_degree, c_array_offset);
     Module._free(c_module_name);
+    let xi_degrees = cgetXiDegrees(p);
     for(let {op, input, output} of module.milnor_actions){
-        let op_degree;
+        let op_degree = 0;
         if(p==2){
-            op = op.concat([0,0,0]);
-            op_degree = op[0] + 3*op[1] + 7*op[2]; // TODO: fix me.
+            let xi_degrees = cgetXiDegrees(p);
+            for(let i in op){
+                op_degree += op[i] * Module.HEAPU32[xi_degrees/sizeof_uint + i];
+            }
         } else {
             let opQ = op[0];
-            let opP = op[1].concat([0,0]);
-            op_degree = 2*(p-1)*opP[0] + opQ.length;
+            let opP = op[1];
+            let tau_degrees = cgetXiDegrees(p);
+            let xi_degrees = cgetXiDegrees(p);
+            for(let i in opQ){
+                op_degree += opQ[i] * Module.HEAPU32[tau_degrees/sizeof_uint + i];
+            }
+            for(let i in opP){
+                op_degree += opP[i] * Module.HEAPU32[xi_degrees/sizeof_uint + i];
+            }
         }
         if(op_degree == 0){
             continue;
@@ -252,12 +262,15 @@ message_handlers["resolve"] = function resolve(data){
     algebraData.max_degree = max_degree - Math.min(...Object.values(moduleData.gens));
     moduleData.max_degree = max_degree;
     algebraData.algebra = moduleData.algebra;
+    console.log("construct algebra");
     let cAlgebra = constructAlgebra(algebraData);
+    console.log("construct module");
     let module = constructFiniteDimensionalModule(data.module, cAlgebra);
     let callbacks = getCallbacks();
     t0 = performance.now();
     console.log(data);
     self.p = p;
+    console.log("construct resolution");
     self.cResolution = cResolution_construct(module.cModule, max_degree, callbacks.addClassPtr, callbacks.addStructlinePtr);
     let products = higher_filtration_products[p] || [];
     let self_maps = data.module.self_maps || [];
@@ -265,9 +278,10 @@ message_handlers["resolve"] = function resolve(data){
     for(let product of products){
         cResolutionWithChainMaps_addProduct(cResWithMaps, product.homological_degree, product.degree, product.index, product.name);
     }
+    console.log("hi");
     for(let self_map of self_maps){
-        console.log(self_map);
         let json_matrix = self_map.matrix;
+        console.log(json_matrix, p, json_matrix.length, json_matrix[0].length);
         let c_matrix = cMatrix_construct(p, json_matrix.length, json_matrix[0].length);
         for(let i = 0; i < json_matrix.length; i++){
             let json_row = json_matrix[i];
@@ -276,6 +290,7 @@ message_handlers["resolve"] = function resolve(data){
                 cVector_setEntry(crow, j, json_row[j]);
             }
         }
+        console.log([self.cResWithMaps, self_map.homological_degree, self_map.degree, self_map.name, c_matrix]);
         cResolutionWithChainMaps_addSelfMap(self.cResWithMaps, self_map.homological_degree, self_map.degree, self_map.name, c_matrix);
     }
 

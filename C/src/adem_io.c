@@ -53,7 +53,7 @@ uint AdemAlgebra_basisElement_toString(char *buffer, AdemAlgebra *algebra, AdemB
     uint bockstein;
     for(uint i = 0; i < b->P_length; i++){
         bockstein = (b->bocksteins >> i) & 1;
-        if(bockstein && bockstein){
+        if(bockstein){
             len += sprintf(buffer + len, "b");
         }
         len += sprintf(buffer + len, "%s%d ", P_or_Sq, b->Ps[i]);
