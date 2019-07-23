@@ -97,11 +97,11 @@ int main(int argc, char *argv[]){
     FiniteDimensionalModule_setAction(module, 1, 0, 0, 0, output);
     // degree--;
     Resolution *res = Resolution_construct(module, degree, NULL, NULL);
-    ResolutionWithChainMaps *res_with_maps = ResolutionWithChainMaps_construct(res, res, 0, 1);
-    Matrix *matrix = Matrix_construct(p, 1, 1);
-    Vector *vector = Matrix_getRow(matrix, 0);
-    Vector_setEntry(vector, 0, 1);
-    ResolutionWithChainMaps_addSelfMap(res_with_maps, 1, 5, "v1", matrix);
+    ResolutionWithChainMaps *res_with_maps = ResolutionWithChainMaps_construct(res, res, 0, 0);
+    // Matrix *matrix = Matrix_construct(p, 1, 1);
+    // Vector *vector = Matrix_getRow(matrix, 0);
+    // Vector_setEntry(vector, 0, 1);
+    // ResolutionWithChainMaps_addSelfMap(res_with_maps, 4, 12, "v1", matrix);
     resolveThroughDegree(res_with_maps, degree);
 
     // SerializedResolution *sres = Resolution_serialize(res);

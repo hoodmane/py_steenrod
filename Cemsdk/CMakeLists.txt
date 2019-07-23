@@ -38,6 +38,7 @@ SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
 SET(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS},\
     '_MilnorAlgebra_construct', '_MilnorAlgebra_free', \
     '_MilnorAlgebra_generateBasis', '_MilnorAlgebra_getDimension', \
+    '_MilnorAlgebra_basisElement_toIndex_forJavascript',\
     '_Profile_construct', '_Profile_free'"
 )
 

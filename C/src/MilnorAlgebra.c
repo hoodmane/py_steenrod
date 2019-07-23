@@ -557,6 +557,18 @@ uint MilnorAlgebra_basisElement_toIndex(MilnorAlgebra *public_algebra, MilnorBas
     return result;
 }
 
+uint MilnorAlgebra_basisElement_toIndex_forJavascript(MilnorAlgebra *public_algebra,
+    int q_degree, uint q_part, int p_degree, uint *ps, uint p_len
+){
+    printf("MAbEtIfJ: p_len : %d\n", p_len);
+    MilnorBasisElement result;
+    result.q_degree = q_degree;    
+    result.q_part = q_part;
+    result.p_degree = p_degree;
+    result.p_length = p_len;
+    result.p_part = ps;
+    return MilnorAlgebra_basisElement_toIndex(public_algebra, &result);
+}
 // 
 // Multiplication
 // 

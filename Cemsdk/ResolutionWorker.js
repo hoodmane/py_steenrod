@@ -158,8 +158,8 @@ function constructAlgebra(algebraData){
     return cAlgebra;
 }
 
-
 function constructFiniteDimensionalModule(module, cAlgebra){
+    console.log("constructFiniteDimensionalModule");
     let p = module.p;
     let min_basis_degree = Math.min(...Object.values(module.gens))
     let max_basis_degree = Math.max(...Object.values(module.gens)) - min_basis_degree + 1;
@@ -177,34 +177,47 @@ function constructFiniteDimensionalModule(module, cAlgebra){
     let c_array_offset = Module._malloc(sizeof_uint * Math.max(max_basis_degree, ...graded_dimension));
     Module.HEAPU32.set(graded_dimension, c_array_offset/sizeof_uint);
     let cModule = cFiniteDimensionalModule_construct(cAlgebra, c_module_name, min_basis_degree, min_basis_degree + max_basis_degree, c_array_offset);
+    console.log("graded_dimension:", graded_dimension);
     Module._free(c_module_name);
-    let xi_degrees = cgetXiDegrees(p);
+    
     for(let {op, input, output} of module.milnor_actions){
-        let op_degree = 0;
+        let opQ;
+        let opP;
         if(p==2){
-            let xi_degrees = cgetXiDegrees(p);
-            for(let i in op){
-                op_degree += op[i] * Module.HEAPU32[xi_degrees/sizeof_uint + i];
-            }
+            opQ = [];
+            opP = op;
         } else {
-            let opQ = op[0];
-            let opP = op[1];
-            let tau_degrees = cgetXiDegrees(p);
-            let xi_degrees = cgetXiDegrees(p);
-            for(let i in opQ){
-                op_degree += opQ[i] * Module.HEAPU32[tau_degrees/sizeof_uint + i];
-            }
-            for(let i in opP){
-                op_degree += opP[i] * Module.HEAPU32[xi_degrees/sizeof_uint + i];
-            }
+            opQ = op[0];
+            opP = op[1];
         }
+        let tau_degrees = cgetTauDegrees(p);
+        let xi_degrees = cgetXiDegrees(p);
+        let Q_degree = 0;
+        let P_degree = 0;
+        for(let i in opQ){
+            Q_degree += Module.HEAPU32[tau_degrees/sizeof_uint + opQ[i]];
+        }
+        for(let i in opP){
+            let xi_deg = Module.HEAPU32[xi_degrees/sizeof_uint] * (2*p-2);
+            P_degree += opP[i] * xi_deg;
+        }
+        let op_degree = Q_degree + P_degree;
         if(op_degree == 0){
             continue;
         }
         let input_degree = module.gens[input];
         let input_index = basis_element_indices[input];
-        let output_degree = input_degree + op_degree;        
-        let op_index = 0; //cMilnorBasisElement.toIndex(algebra, op);        
+        let output_degree = input_degree + op_degree;  
+        let q_part = 0;
+        for(let i in opQ){
+            q_part |= 1 << opQ[i];
+        }
+        let P_len = opP.length;
+        let P_part = Module._malloc(sizeof_uint * P_len);
+        Module.HEAPU32.set(new Uint32Array(opP), P_part/sizeof_uint);
+        // console.log(Module.HEAPU32[P_part/sizeof_uint]);
+        // console.log("MBETIFJ");
+        let op_index = cMilnorAlgebra_basisElement_toIndex_forJavascript(cAlgebra, Q_degree, q_part, P_degree, P_part, P_len);
         let output_vector = new Uint32Array(graded_dimension[output_degree - min_basis_degree]);
         for( let {gen, coeff} of output) {
             output_vector[basis_element_indices[gen]] = coeff
@@ -216,10 +229,11 @@ function constructFiniteDimensionalModule(module, cAlgebra){
             op_degree, op_index,
             input_degree, input_index,
             c_array_offset
-        )
+        );
     }
     Module._free(c_array_offset);
     let result = {cModule : cModule};
+    console.log("done with module");
     return result;
 }
 
@@ -278,7 +292,6 @@ message_handlers["resolve"] = function resolve(data){
     for(let product of products){
         cResolutionWithChainMaps_addProduct(cResWithMaps, product.homological_degree, product.degree, product.index, product.name);
     }
-    console.log("hi");
     for(let self_map of self_maps){
         let json_matrix = self_map.matrix;
         console.log(json_matrix, p, json_matrix.length, json_matrix[0].length);

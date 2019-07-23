@@ -32,7 +32,7 @@
 // The code will always segfault if this is 150000, so this is about as much memory
 // as I can ever stack allocate.
 // TODO: Move this stuff to global variables.
-#define MAX_DIMENSION 147500
+#define MAX_DIMENSION  70000//147500
 typedef unsigned long long uint64;
 typedef long long int64;
 typedef unsigned int uint;

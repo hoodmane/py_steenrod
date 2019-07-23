@@ -113,7 +113,11 @@ let cMilnorAlgebra_generateBasis = Module.cwrap("MilnorAlgebra_generateBasis", '
 // uint MilnorAlgebra_getDimension(Algebra *algebra, int degree, int excess);
 let cMilnorAlgebra_getDimension = Module.cwrap("MilnorAlgebra_getDimension", 'number', ['pointer', 'number', 'number']);
 
-
+// uint MilnorAlgebra_basisElement_toIndex_forJavascript(MilnorAlgebra *public_algebra,
+//     int q_degree, uint q_part, int p_degree, uint *ps, uint p_len
+// );
+let cMilnorAlgebra_basisElement_toIndex_forJavascript =
+    Module.cwrap("MilnorAlgebra_basisElement_toIndex_forJavascript", 'number', ['pointer', 'number', 'number', 'number', 'pointer', 'number']);
 /**
  * modules.h
  */

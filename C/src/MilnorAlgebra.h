@@ -65,6 +65,10 @@ uint MilnorAlgebra_getDimension(Algebra *this, int degree, int excess);
 MilnorBasisElement_list MilnorAlgebra_getBasis(MilnorAlgebra *algebra, int degree);
 MilnorBasisElement *MilnorAlgebra_basisElement_fromIndex(MilnorAlgebra *algebra, int degree, uint index);
 uint MilnorAlgebra_basisElement_toIndex(MilnorAlgebra *algebra,  MilnorBasisElement *b);
+uint MilnorAlgebra_basisElement_toIndex_forJavascript(MilnorAlgebra *public_algebra,
+    int q_degree, uint q_part, int p_degree, uint *ps, uint p_len
+);
+
 
 void MilnorAlgebra_multiply(Algebra *this, Vector *result, uint coeff, int r_degree, uint r_index, int s_degree, uint s_index, int excess);
 
