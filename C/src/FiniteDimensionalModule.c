@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <limits.h>
+#include <stdio.h>
 
 #include "FiniteDimensionalModule.h"
 
@@ -7,6 +8,8 @@
 FiniteDimensionalModule *FiniteDimensionalModule_allocate(Algebra *algebra, uint name_length, int max_basis_degree, uint *graded_dimension);
 
 FiniteDimensionalModule *FiniteDimensionalModule_construct(Algebra *algebra, char *name, int min_degree, int max_basis_degree, uint *graded_dimension){
+    printf("FiniteDimensionalModule_construct(-,-,min_degree=%d, max_basis_degree=%d, graded_dimension=",min_degree, max_basis_degree); 
+    array_print("%s)\n", graded_dimension, max_basis_degree - min_degree);
     uint name_length = strlen(name) + 1;
     FiniteDimensionalModule *result = FiniteDimensionalModule_allocate(algebra, name_length, max_basis_degree - min_degree, graded_dimension);
     result->module.p = algebra->p;
@@ -150,8 +153,12 @@ void FiniteDimensionalModule_setAction(
     uint output_degree = input_degree + operation_degree;
     // (in_deg) -> (out_deg) -> (op_index) -> (in_index) -> Vector
     // printf("operation_degree: %d, module_degree: %d, output_degree: %d, operation_index: %d, module_index: %d\n", operation_degree, input_degree, output_degree, operation_index, input_index);    
-    Vector *output_vector = module->actions[input_degree][output_degree][operation_index][input_index];  
+    printf("input_deg : %d, output_deg : %d, operation_index : %d, input_index : %d\n", input_degree, output_degree, operation_index, input_index);
+    printf("%p\n", (void*)module->actions[input_degree][output_degree]);
+    Vector *output_vector = module->actions[input_degree][output_degree][operation_index][input_index];
+    printf("Vector_packaaa\n");
     Vector_pack(output_vector, output);
+    printf("set action is done\n");
 }
 
 
