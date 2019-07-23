@@ -120,8 +120,8 @@ function getCallbacks(){
     }
     
     // TODO: remove these addFunctions as part of cleanup?
-    let addClassCallbackPtr = Module.addFunction(addClassCallback);
-    let addStructlineCallbackPtr = Module.addFunction(addStructlineCallback);
+    let addClassCallbackPtr = Module.addFunction(addClassCallback, "viii");
+    let addStructlineCallbackPtr = Module.addFunction(addStructlineCallback, "viiiiiii");
     return {addClassPtr : addClassCallbackPtr, addStructlinePtr : addStructlineCallbackPtr};
 }
 
