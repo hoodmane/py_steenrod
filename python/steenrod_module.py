@@ -155,6 +155,20 @@ class FiniteSteenrodModule:
                     if output:
                         self.milnor_actions[(monomial, x)] = output
 
+    def generate_adem_action(self):
+        max_degree = max(self.gens.values()) 
+        min_degree = min(self.gens.values())
+        max_degree_op = max_degree - min_degree
+        self.adem_actions = {}
+        adem = self.adem_algebra
+        for degree in range(1, max_degree - min_degree + 1):
+            for b in adem.basis(degree):
+                monomial = list(b.keys())[0]
+                for x in self.gens:
+                    output = self.get_basis_element(x).adem_act(b)
+                    if output:
+                        self.adem_actions[(monomial, x)] = output                        
+
 
     @staticmethod
     def milnor_basis_act(basis_elt, adem_elt, *, module):
@@ -536,6 +550,7 @@ class FiniteSteenrodModule:
     def to_json_obj(self):
         self.__ensure_valid()
         self.generate_milnor_action()
+        self.generate_adem_action()
         d = {}
         if self.name:
             d['name'] = self.name
@@ -551,6 +566,12 @@ class FiniteSteenrodModule:
               "input" : k[1], 
               "output" : [{"gen" : gen, "coeff": coeff} for gen, coeff in v.items()] 
            } for k,v in self.sq_actions.items() if k[0] != 0 
+        ]
+        d["adem_actions"] = [{
+                "op" : k[0], 
+                "input" : k[1], 
+                "output" : [{"gen" : gen, "coeff": coeff} for gen, coeff in v.items()] 
+           } for k,v in self.adem_actions.items() 
         ]
         d["milnor_actions"] = [ {
                 "op" : k[0], 

@@ -49,6 +49,8 @@ void Resolution_step(Resolution *resolution, uint homological_degree, int degree
 void Resolution_computeFiltrationOneProducts(Resolution *res, uint homological_degree, int degree, uint source_idx);
 bool Resolution_cycleQ(Resolution *res, uint homological_degree, int degree, Vector *element);
 uint Resolution_numberOfGensInDegree(Resolution *res, uint homological_degree, int internal_degree);
+uint Resolution_gradedDimensionString(char *buffer, Resolution *resolution);
+
 
 typedef struct {
     size_t json_size;

@@ -43,7 +43,7 @@ Resolution * Resolution_construct(
         char *type,
         uint source_hom_deg, int source_int_deg, uint source_idx, 
         uint target_hom_deg, int target_int_deg, uint target_idx
-    )    
+    )
 ){
     printf("Module name: %s\n", module->module.name);
     int min_degree = module->module.min_degree;
@@ -197,22 +197,22 @@ void Resolution_generateOldKernelAndComputeNewKernel(Resolution *resolution, uin
 
     // The part of the matrix that contains interesting information is occupied_rows x (target_dimension + source_dimension + kernel_size).
     // Allocate a matrix coimage_to_image with these dimensions.
-    uint coimage_to_image_rows = first_new_row + new_generators;
-    source_dimension += new_generators;
-    Matrix *coimage_to_image = Matrix_construct(p, coimage_to_image_rows, source_dimension);
-    current_differential->coimage_to_image_isomorphism[shifted_degree] = coimage_to_image;
+    // uint coimage_to_image_rows = first_new_row + new_generators;
+    // source_dimension += new_generators;
+    // Matrix *coimage_to_image = Matrix_construct(p, coimage_to_image_rows, source_dimension);
+    // current_differential->coimage_to_image_isomorphism[shifted_degree] = coimage_to_image;
 
-    int useless_pivots[matrix->columns];
-    rowReduce(matrix, useless_pivots, 0, 0);
+    // int useless_pivots[matrix->columns];
+    // rowReduce(matrix, useless_pivots, 0, 0);
 
-    // Copy matrix contents to coimage_to_image
-    char slice_memory[Vector_getSize(p, 0, 0)]; 
-    char *slice_ptr = slice_memory;
-    Vector *slice = Vector_initialize(p, &slice_ptr, 0, 0);
-    for(uint i = 0; i < coimage_to_image_rows; i++) {
-        Vector_slice(slice, matrix->vectors[i], first_source_index, first_source_index + source_dimension);
-        Vector_assign(coimage_to_image->vectors[i], slice);
-    }
+    // // Copy matrix contents to coimage_to_image
+    // char slice_memory[Vector_getSize(p, 0, 0)]; 
+    // char *slice_ptr = slice_memory;
+    // Vector *slice = Vector_initialize(p, &slice_ptr, 0, 0);
+    // for(uint i = 0; i < coimage_to_image_rows; i++) {
+    //     Vector_slice(slice, matrix->vectors[i], first_source_index, first_source_index + source_dimension);
+    //     Vector_assign(coimage_to_image->vectors[i], slice);
+    // }
 }
 
 uint Resolution_gradedDimensionString(char *buffer, Resolution *resolution){

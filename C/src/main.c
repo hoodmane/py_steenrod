@@ -28,17 +28,17 @@ void stepResolution(ResolutionWithChainMaps *res_with_maps, uint homological_deg
     Resolution_step(res, homological_degree, degree);
     // Report the answers.
     // Classes:
-    uint num_gens = FreeModule_getNumberOfGensInDegree(res->modules[homological_degree + 1], degree);
-    for(uint i=0; i < num_gens; i++){
-        // printf("addClass(%d, %d)\n", homological_degree, degree);
-        res->addClass(homological_degree, degree, "");
-        if(homological_degree > 0){
-            Resolution_computeFiltrationOneProducts(res, homological_degree, degree, i);
-        }
-    }
+    // uint num_gens = FreeModule_getNumberOfGensInDegree(res->modules[homological_degree + 1], degree);
+    // for(uint i=0; i < num_gens; i++){
+    //     // printf("addClass(%d, %d)\n", homological_degree, degree);
+    //     res->addClass(homological_degree, degree, "");
+    //     if(homological_degree > 0){
+    //         Resolution_computeFiltrationOneProducts(res, homological_degree, degree, i);
+    //     }
+    // }
     
-    ResolutionWithChainMaps_computeProducts(res_with_maps, homological_degree, degree);
-    ResolutionWithChainMaps_computeSelfMaps(res_with_maps, homological_degree, degree);
+    // ResolutionWithChainMaps_computeProducts(res_with_maps, homological_degree, degree);
+    // ResolutionWithChainMaps_computeSelfMaps(res_with_maps, homological_degree, degree);
 }
 
 
@@ -103,6 +103,9 @@ int main(int argc, char *argv[]){
     // Vector_setEntry(vector, 0, 1);
     // ResolutionWithChainMaps_addSelfMap(res_with_maps, 4, 12, "v1", matrix);
     resolveThroughDegree(res_with_maps, degree);
+    char buffer[10000];
+    Resolution_gradedDimensionString(buffer, res);
+    printf("%s", buffer);
 
     // SerializedResolution *sres = Resolution_serialize(res);
     // Resolution *res2 = Resolution_deserialize(module, sres, NULL, NULL);
@@ -137,7 +140,7 @@ int main(int argc, char *argv[]){
     // for(int i = degree - 1 - res->min_degree; i >= 0; i--){
     //     printf("stage %*d: ", 2, i);
     //     array_print("%s\n", &res->modules[i+1]->number_of_generators_in_degree[i], degree - i - res->min_degree);
-    // }       
+    // }
     // MilnorAlgebra_free((MilnorAlgebra*)res->algebra);
     Resolution_free(res);
     FiniteDimensionalModule_free(module);

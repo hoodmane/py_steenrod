@@ -792,9 +792,6 @@ static void AdemAlgebra__generateMultiplicationTableGeneric_step(AdemAlgebraInte
             int bPj_rest_degree =  rest_of_term.degree + bj_degree;
             // total degree ==> b^eP^j ==> rest of term idx ==> Vector
             Vector *rest_of_term_reduced = algebra->multiplication_table[bPj_rest_degree][bj_idx][rest_of_term_idx];
-            if(n==40 && x==2 && b==0 && idx == 62){
-                Vector_print("    rest_of_term_reduced: %s\n", rest_of_term_reduced);
-            }
             for(
                 VectorIterator it = Vector_getIterator(rest_of_term_reduced);
                 it.has_more;

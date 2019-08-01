@@ -159,7 +159,6 @@ function constructAlgebra(algebraData){
 }
 
 function constructFiniteDimensionalModule(module, cAlgebra){
-    console.log("constructFiniteDimensionalModule");
     let p = module.p;
     let min_basis_degree = Math.min(...Object.values(module.gens))
     let max_basis_degree = Math.max(...Object.values(module.gens)) - min_basis_degree + 1;
@@ -177,7 +176,6 @@ function constructFiniteDimensionalModule(module, cAlgebra){
     let c_array_offset = Module._malloc(sizeof_uint * Math.max(max_basis_degree, ...graded_dimension));
     Module.HEAPU32.set(graded_dimension, c_array_offset/sizeof_uint);
     let cModule = cFiniteDimensionalModule_construct(cAlgebra, c_module_name, min_basis_degree, min_basis_degree + max_basis_degree, c_array_offset);
-    console.log("graded_dimension:", graded_dimension);
     Module._free(c_module_name);
     
     for(let {op, input, output} of module.milnor_actions){
@@ -215,8 +213,6 @@ function constructFiniteDimensionalModule(module, cAlgebra){
         let P_len = opP.length;
         let P_part = Module._malloc(sizeof_uint * P_len);
         Module.HEAPU32.set(new Uint32Array(opP), P_part/sizeof_uint);
-        // console.log(Module.HEAPU32[P_part/sizeof_uint]);
-        // console.log("MBETIFJ");
         let op_index = cMilnorAlgebra_basisElement_toIndex_forJavascript(cAlgebra, Q_degree, q_part, P_degree, P_part, P_len);
         let output_vector = new Uint32Array(graded_dimension[output_degree - min_basis_degree]);
         for( let {gen, coeff} of output) {
@@ -233,7 +229,6 @@ function constructFiniteDimensionalModule(module, cAlgebra){
     }
     Module._free(c_array_offset);
     let result = {cModule : cModule};
-    console.log("done with module");
     return result;
 }
 
@@ -276,15 +271,12 @@ message_handlers["resolve"] = function resolve(data){
     algebraData.max_degree = max_degree - Math.min(...Object.values(moduleData.gens));
     moduleData.max_degree = max_degree;
     algebraData.algebra = moduleData.algebra;
-    console.log("construct algebra");
     let cAlgebra = constructAlgebra(algebraData);
-    console.log("construct module");
     let module = constructFiniteDimensionalModule(data.module, cAlgebra);
     let callbacks = getCallbacks();
     t0 = performance.now();
     console.log(data);
     self.p = p;
-    console.log("construct resolution");
     self.cResolution = cResolution_construct(module.cModule, max_degree, callbacks.addClassPtr, callbacks.addStructlinePtr);
     let products = higher_filtration_products[p] || [];
     let self_maps = data.module.self_maps || [];
